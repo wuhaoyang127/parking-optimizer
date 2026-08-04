@@ -1,19 +1,19 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 5
+status_version: 6
 last_updated: 2026-08-04
-current_stage: A
-stage_status: approved
-current_milestone: stage-a-approved
+current_stage: B
+stage_status: awaiting_review
+current_milestone: stage-b-completed
 git_initialized: true
-current_branch: stage-a-research
-last_verified_commit: d9baa01
-current_exec_plan: docs/plans/stage-a-research.md
+current_branch: stage-b-model
+last_verified_commit: null
+current_exec_plan: docs/plans/stage-b-specification.md
 latest_handoff: null
-next_prompt: prompts/B_数学模型与工程设计.md
+next_prompt: prompts/阶段验收与复核.md
 authoritative_route_document: docs/research/05_最终路线决策.md
-current_stage_blockers: []
-downstream_blockers: [{"target_stage":"C","issue":"纵深阻挡、移位、缓冲位和指标口径尚未在阶段 B 冻结"}]
+current_stage_blockers: [{"issue":"等待用户审查并批准阶段B的数学模型和工程设计"}]
+downstream_blockers: []
 ui_framework_preference: Streamlit（暂定，阶段 D0 复核）
 deliverable_type: 向管理员推荐方案的Dashboard
 status_maintainer: 项目主线程或用户指定协调线程
