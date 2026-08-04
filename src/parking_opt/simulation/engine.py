@@ -87,7 +87,7 @@ class SimulationEngine:
         yield self.env.timeout(drive_time)
 
         self._log(self.env.now, EventType.SPOT_ENTRY, vehicle.vehicle_id,
-                  spot.spot_id, metadata={'drive_distance': drive_dist})
+                  spot.spot_id, drive_distance=drive_dist)
 
         # 调度离场
         dep_time = self.env.now + vehicle.parking_duration
@@ -104,18 +104,18 @@ class SimulationEngine:
             # 无阻挡，直接离场
             self.parking_lot.free(spot)
             self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
-                      spot.spot_id, metadata={'had_blocking': False})
+                      spot.spot_id, had_blocking=False)
             return
 
         # 有阻挡，执行移位
         self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
-                  spot.spot_id, metadata={'had_blocking': True, 'blocker_count': len(blockers)})
+                  spot.spot_id, had_blocking=True, blocker_count=len(blockers))
 
         for blk_spot, blk_vid in blockers:
             buffer = self.parking_lot.select_buffer()
             if buffer is None:
                 self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
-                          metadata={'blocked_vehicle': vehicle.vehicle_id})
+                          blocked_vehicle=vehicle.vehicle_id)
                 continue
 
             # 移位
@@ -123,8 +123,8 @@ class SimulationEngine:
             travel_time = dist / self.CAR_SPEED
 
             self._log(self.env.now, EventType.SHIFT_START, blk_vid,
-                      metadata={'from_spot': blk_spot.spot_id, 'to_spot': buffer.spot_id,
-                                'blocked_vehicle': vehicle.vehicle_id, 'distance': dist})
+                      from_spot=blk_spot.spot_id, to_spot=buffer.spot_id,
+                      blocked_vehicle=vehicle.vehicle_id, distance=dist)
             self.shift_count += 1
             self.total_shift_dist += dist * 2
 
@@ -142,7 +142,7 @@ class SimulationEngine:
             self.parking_lot.release_buffer(buffer.spot_id)
 
             self._log(self.env.now, EventType.SHIFT_END, blk_vid,
-                      metadata={'final_spot': target.spot_id})
+                      final_spot=target.spot_id)
 
     def _find_innermost_available(self, spot: Spot) -> Spot | None:
         """找纵深组中最内侧的空闲车位（用于前移归位）"""

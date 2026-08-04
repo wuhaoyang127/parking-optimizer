@@ -45,16 +45,8 @@ class ParkingLot:
     # ========== 可用性 ==========
 
     def is_available(self, spot: Spot) -> bool:
-        """车位是否可分配"""
-        if spot.is_occupied:
-            return False
-        if spot.spot_type == SpotType.STANDALONE or spot.depth == 1:
-            return True
-        # depth > 1: 所有外侧车位必须空闲
-        for outer in self.get_outer_spots(spot):
-            if outer.is_occupied:
-                return False
-        return True
+        """车位是否可分配（只要空闲即可，深度约束由策略决定）"""
+        return not spot.is_occupied
 
     def get_available_spots(self) -> list[Spot]:
         """所有当前可分配车位"""
