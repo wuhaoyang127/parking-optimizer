@@ -1,0 +1,53 @@
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.*
+credentials.*
+
+# Build and packaging
+build/
+dist/
+*.egg-info/
+
+# Runtime outputs
+outputs/**
+!outputs/.gitkeep
+logs/
+*.log
+
+# Raw or generated data: never commit without explicit review
+data/raw/**
+!data/raw/.gitkeep
+data/interim/**
+!data/interim/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
+data/synthetic/generated/**
+
+# Local notebooks and temporary files
+.ipynb_checkpoints/
+tmp/
+temp/
+*.tmp
+~$*

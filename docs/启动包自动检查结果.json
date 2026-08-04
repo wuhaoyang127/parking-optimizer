@@ -1,0 +1,63 @@
+{
+  "check_version": "3.0",
+  "checked_at_utc": "2026-07-13T08:43:39.123775+00:00",
+  "mode": "initial",
+  "result": "passed",
+  "scope": [
+    "required files and state pointers",
+    "current/downstream blocker schema",
+    "actual Git initialization and branch consistency",
+    "DOCX container integrity",
+    "UTF-8, Markdown fences, and JSON syntax",
+    "obsolete references and product wording",
+    "Git initialization commands",
+    "A/B/D prompt neutrality",
+    "controlled project file count excluding runtime directories"
+  ],
+  "checks": {
+    "required_files": {
+      "missing": []
+    },
+    "obsolete_files": {
+      "present": []
+    },
+    "markdown": {
+      "controlled_markdown_count": 30,
+      "unbalanced_fences": []
+    },
+    "json": {
+      "errors": []
+    },
+    "project_status": {
+      "mode": "initial",
+      "actual_git_initialized": false,
+      "actual_branch": null,
+      "actual_commit": null,
+      "errors": []
+    },
+    "docx": {
+      "errors": []
+    },
+    "obsolete_references": [],
+    "old_product_wording": [],
+    "git_commands": [],
+    "stage_a_route_neutrality": [],
+    "stage_b_route_neutrality": [],
+    "stage_d_framework_neutrality": [],
+    "controlled_file_count": 50,
+    "excluded_runtime_examples": [
+      ".git/",
+      ".venv/",
+      "Python caches",
+      "outputs/ except .gitkeep",
+      "ignored raw/interim/processed/generated data except .gitkeep"
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "limitations": [
+    "The check does not prove future mathematical models are correct.",
+    "The check does not prove an algorithm is optimal, useful, or deployable.",
+    "The check does not validate future citations or experimental results."
+  ]
+}
