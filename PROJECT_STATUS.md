@@ -2,11 +2,11 @@
 project: 智能停车场车位分配与纵深移位优化
 status_version: 6
 last_updated: 2026-08-04
-current_stage: B
-stage_status: awaiting_review
-current_milestone: stage-b-completed
+current_stage: C
+stage_status: in_progress
+current_milestone: stage-c-c1-domain
 git_initialized: true
-current_branch: stage-b-model
+current_branch: stage-c-implementation
 last_verified_commit: null
 current_exec_plan: docs/plans/stage-b-specification.md
 latest_handoff: null

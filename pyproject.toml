@@ -1,0 +1,23 @@
+[project]
+name = "parking-opt"
+version = "0.1.0"
+description = "智能停车场车位分配与纵深移位优化"
+requires-python = ">=3.11"
+dependencies = [
+    "networkx>=3.0",
+    "simpy>=4.0",
+    "ortools>=9.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "streamlit>=1.28",
+]
+
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
