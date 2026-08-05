@@ -549,8 +549,9 @@ if run or st.session_state.get("sim_has_run"):
         st.download_button("📥 下载指标", pd.DataFrame([metrics]).to_csv(index=False).encode('utf-8'),
                            f"parking_{strategy_name}.csv", "text/csv")
 
-        with st.expander("📋 事件日志"):
-            ev = [{"时间":f"{e['time']:.0f}s","类型":e["type"],"车辆":e["vehicle_id"] or "-","车位":e["spot_id"] or "-",**e["metadata"]} for e in events[:200]]
-            st.dataframe(pd.DataFrame(ev), use_container_width=True, hide_index=True)
+        # 事件日志暂时关闭排查NULL
+        # with st.expander("📋 事件日志"):
+        #     ev = [...]
+        #     st.dataframe(pd.DataFrame(ev), ...)
 else:
     st.markdown('<div style="text-align:center;padding:2rem">🚗<h2>车位分配 · 纵深移位 · 仿真对比</h2><p style="color:#607D8B">👈 左侧配置参数，点击「运行仿真」开始</p></div>', unsafe_allow_html=True)
