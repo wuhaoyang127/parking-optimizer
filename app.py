@@ -485,14 +485,12 @@ if run or st.session_state.get("sim_has_run"):
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
         # 动态渲染
-        t_now = st.session_state.replay_time
-        st.caption("🔍 DEBUG——NULL应该在这一行前面还是后面？")
         try:
-            state = get_state_at_time(t_now, timeline, net, spots)
+            state = get_state_at_time(st.session_state.replay_time, timeline, net, spots)
         except:
             state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
 
-        st.subheader(f"🅿️ 停车场布局 (t={t_now:.1f}s)")
+        st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
         all_x = [net.nodes[s.spot_id].x for s in spots if s.spot_id in net.nodes]
         all_y = [net.nodes[s.spot_id].y for s in spots if s.spot_id in net.nodes]
@@ -546,7 +544,7 @@ if run or st.session_state.get("sim_has_run"):
 
         occ = sum(1 for sd in state["ss"].values() if sd["occ"])
         c1,c2,c3=st.columns(3)
-        c1.metric("占用",f"{occ}/{len(spots)}");c2.metric("行驶中",str(len(state["dv"])));c3.metric("时间",f"{t_now:.1f}s")
+        c1.metric("占用",f"{occ}/{len(spots)}");c2.metric("行驶中",str(len(state["dv"])));c3.metric("时间",f"{st.session_state.replay_time:.1f}s")
 
         st.download_button("📥 下载指标", pd.DataFrame([metrics]).to_csv(index=False).encode('utf-8'),
                            f"parking_{strategy_name}.csv", "text/csv")
