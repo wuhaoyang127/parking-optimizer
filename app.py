@@ -84,19 +84,40 @@ def save_users(users):
     try: Path(USER_FILE).write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
     except: pass
 
+def _get_token():
+    try:
+        return st.query_params.get("t", None)
+    except: pass
+    try:
+        params = st.experimental_get_query_params()
+        return params.get("t", [None])[0]
+    except: return None
+
+def _set_token(v):
+    try: st.query_params["t"] = v; return
+    except: pass
+    try: st.experimental_set_query_params(t=v); return
+    except: pass
+
+def _clear_token():
+    try: st.query_params.clear(); return
+    except: pass
+    try: st.experimental_set_query_params(); return
+    except: pass
+
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
     if not st.session_state.logged_in:
-        token = st.experimental_get_query_params().get("t", [None])[0]
+        token = _get_token()
         if token:
             try:
                 uname, role_str = base64.b64decode(token).decode().split("|", 1)
                 st.session_state.logged_in = True; st.session_state.username = uname
                 st.session_state.role = role_str
                 st.session_state.user_perms = load_users().get(uname, {}).get("perms", {}) if role_str != "admin" else {}
-            except: st.experimental_set_query_params()
+            except: _clear_token()
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
@@ -119,7 +140,7 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        st.experimental_set_query_params(t=base64.b64encode(
+                        _set_token(base64.b64encode(
                             f"{st.session_state.username}|{st.session_state.role}".encode()).decode())
                         st.rerun()
                     else: st.error("用户名或密码错误")
@@ -362,7 +383,7 @@ with st.sidebar:
         f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{st.session_state.username}</div>'
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
-        st.session_state.logged_in = False; st.experimental_set_query_params()
+        st.session_state.logged_in = False; _clear_token()
         st.markdown('<script>history.replaceState(null,"",location.pathname)</script>', unsafe_allow_html=True); st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
