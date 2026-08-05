@@ -486,7 +486,10 @@ if run or st.session_state.get("sim_has_run"):
 
         # 动态渲染
         t_now = st.session_state.replay_time
-        state = get_state_at_time(t_now, timeline, net, spots)
+        try:
+            state = get_state_at_time(t_now, timeline, net, spots)
+        except:
+            state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
 
         st.subheader(f"🅿️ 停车场布局 (t={t_now:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
