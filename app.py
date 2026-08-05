@@ -510,11 +510,12 @@ if run or st.session_state.get("sim_has_run"):
         st.caption("🟢空闲 🔴占用 🟠被挡")
         cols = st.columns(min(len(spots), 8))
         for idx, s in enumerate(spots):
-            c = cols[idx % 8]; sd = state["ss"].get(s.spot_id, {})
-            if sd.get("occ") and sd.get("blocked"): bg = "#ffa500"; icon = "🚗"
-            elif sd.get("occ"): bg = "#ff6b6b"; icon = "🚗"
-            else: bg = "#51cf66"; icon = "⬜"
-            c.markdown(f"<div style='background:{bg};padding:3px;margin:1px;border-radius:4px;text-align:center;font-size:9px;color:white'>{s.spot_id}<br>{icon}</div>", True)
+            with cols[idx % 8]:
+                sd = state["ss"].get(s.spot_id, {})
+                if sd.get("occ") and sd.get("blocked"): bg = "#ffa500"; icon = "🚗"
+                elif sd.get("occ"): bg = "#ff6b6b"; icon = "🚗"
+                else: bg = "#51cf66"; icon = "⬜"
+                st.markdown(f"<div style='background:{bg};padding:3px;margin:1px;border-radius:4px;text-align:center;font-size:9px;color:white'>{s.spot_id}<br>{icon}</div>", True)
 
         with st.expander("📋 事件日志"):
             ev = [{"时间":f"{e['time']:.0f}s","类型":e["type"],"车辆":e["vehicle_id"] or "-","车位":e["spot_id"] or "-",**e["metadata"]} for e in events[:200]]
