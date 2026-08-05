@@ -387,7 +387,7 @@ with st.sidebar:
         st.markdown('<script>history.replaceState(null,"",location.pathname)</script>', unsafe_allow_html=True); st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
-        with st.expander("🔧 用户管理", ):
+        with st.expander("🔧 用户管理"):
             users = load_users()
             if not users: st.caption("暂无注册用户")
             for u, info in users.items():
@@ -567,7 +567,7 @@ if run or st.session_state.get("sim_has_run"):
         st.download_button("📥 下载指标", pd.DataFrame([metrics]).to_csv(index=False).encode('utf-8'),
                            f"parking_{strategy_name}.csv", "text/csv")
 
-        with st.expander("📋 事件日志", ):
+        with st.expander("📋 事件日志"):
             ev = [{"时间":f"{e['time']:.0f}s","类型":e["type"],"车辆":e["vehicle_id"] or "-","车位":e["spot_id"] or "-",**e["metadata"]} for e in events[:200]]
             st.dataframe(pd.DataFrame(ev), use_container_width=True, hide_index=True)
 else:
