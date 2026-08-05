@@ -1,6 +1,6 @@
 """智能停车场优化 — Dashboard (Streamlit) + 权限管理 + 时间轴回放"""
 
-import sys, hashlib, json, math
+import sys, hashlib, json, math, base64
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
@@ -58,8 +58,40 @@ hr { margin: 0.5rem 0; border-color: var(--border); }
 # ==================== 权限系统 ====================
 ADMIN_USER = "wuhaoyang127"
 ADMIN_PW = "Sa1248jkl@why050212"
-USER_FILE = Path(__file__).parent / "configs" / "users.json"
-USER_FILE.parent.mkdir(exist_ok=True)
+_USER_FILES = [Path(__file__).parent / "configs" / "users.json", "/tmp/parking_users.json"]
+_USER_FILES[0].parent.mkdir(exist_ok=True)
+
+def _pwrite(path, text):
+    try: path.write_text(text, encoding="utf-8"); return True
+    except: return False
+
+def _pread(path):
+    try: return json.loads(path.read_text(encoding="utf-8"))
+    except: return {}
+
+def _prime():
+    if "all_users" not in st.session_state:
+        st.session_state.all_users = {}
+        for f in _USER_FILES:
+            ud = _pread(Path(f))
+            if ud:
+                st.session_state.all_users.update(ud)
+                st.session_state._user_file = f
+                return
+        st.session_state._user_file = str(_USER_FILES[1])
+
+def load_users():
+    _prime()
+    return st.session_state.all_users
+
+def save_users(users):
+    st.session_state.all_users = users
+    path = Path(st.session_state.get("_user_file", str(_USER_FILES[1])))
+    ok = _pwrite(path, json.dumps(users, indent=2, ensure_ascii=False))
+    if not ok:
+        fallback = Path(_USER_FILES[1])
+        _pwrite(fallback, json.dumps(users, indent=2, ensure_ascii=False))
+        st.session_state._user_file = str(fallback)
 
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -71,23 +103,19 @@ EXTRA_PERMS = {"can_configure": "调整参数", "can_export": "下载结果", "c
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
-def load_users():
-    if "all_users" not in st.session_state: st.session_state.all_users = {}
-    try:
-        if Path(USER_FILE).exists():
-            st.session_state.all_users.update(json.loads(Path(USER_FILE).read_text(encoding="utf-8")))
-    except: pass
-    return st.session_state.all_users
-
-def save_users(users):
-    st.session_state.all_users = users
-    try: Path(USER_FILE).write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
-    except: pass
-
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
+    if not st.session_state.logged_in:
+        try:
+            token = st.experimental_get_query_params().get("t", [None])[0]
+            if token:
+                uname, role_str = base64.b64decode(token).decode().split("|", 1)
+                st.session_state.logged_in = True; st.session_state.username = uname
+                st.session_state.role = role_str
+                st.session_state.user_perms = load_users().get(uname, {}).get("perms", {}) if role_str != "admin" else {}
+        except: pass
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
@@ -110,7 +138,10 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        
+                        try:
+                            st.experimental_set_query_params(t=base64.b64encode(
+                                f"{st.session_state.username}|{st.session_state.role}".encode()).decode())
+                        except: pass
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
