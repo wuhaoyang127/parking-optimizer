@@ -1,12 +1,13 @@
 """智能停车场优化 — Dashboard (Streamlit) + 权限管理 + 时间轴回放"""
 
-import sys, hashlib, json, base64, math
+import sys, hashlib, json, math
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import streamlit as st
 import pandas as pd
 import time
+import plotly.graph_objects as go
 
 from parking_opt.domain.spot import RoadNetwork, RoadNode, NodeType, Spot, SpotType
 from parking_opt.routing.path_engine import PathEngine
@@ -83,27 +84,6 @@ def save_users(users):
     try: Path(USER_FILE).write_text(json.dumps(users, indent=2, ensure_ascii=False), encoding="utf-8")
     except: pass
 
-def _get_token():
-    try:
-        return st.query_params.get("t", None)
-    except: pass
-    try:
-        params = st.experimental_get_query_params()
-        return params.get("t", [None])[0]
-    except: return None
-
-def _set_token(v):
-    try: st.query_params["t"] = v; return
-    except: pass
-    try: st.experimental_set_query_params(t=v); return
-    except: pass
-
-def _clear_token():
-    try: st.query_params.clear(); return
-    except: pass
-    try: st.experimental_set_query_params(); return
-    except: pass
-
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
@@ -130,6 +110,7 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
+                        
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
@@ -503,6 +484,58 @@ if run or st.session_state.get("sim_has_run"):
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
+        # 动态渲染
+        t_now = st.session_state.replay_time
+        state = get_state_at_time(t_now, timeline, net, spots)
+
+        st.subheader(f"🅿️ 停车场布局 (t={t_now:.1f}s)")
+        st.caption("🟢空闲 🔴占用 🟠被挡")
+        parts = []
+        for s in spots:
+            sd = state["ss"].get(s.spot_id, {})
+            if sd.get("occ") and sd.get("blocked"): marker = "🔶"
+            elif sd.get("occ"): marker = "🔴"
+            else: marker = "🟢"
+            parts.append(f"{marker}{s.spot_id}")
+        st.write(" | ".join(parts))
+
+        # 路网图
+        st.subheader("🛣️ 路网与车辆路径")
+        fig = go.Figure()
+        for edge in net.edges:
+            fn = net.nodes[edge.from_node]; tn = net.nodes[edge.to_node]
+            is_se = fn.node_type == NodeType.PARKING_SPOT or tn.node_type == NodeType.PARKING_SPOT
+            fig.add_trace(go.Scatter(x=[fn.x, tn.x], y=[fn.y, tn.y], mode='lines',
+                line=dict(color='#90A4AE', width=2, dash='dot' if is_se else 'solid'), showlegend=False, hoverinfo='none'))
+        en = next((n for n in net.nodes.values() if n.node_type == NodeType.ENTRY), None)
+        if en: fig.add_trace(go.Scatter(x=[en.x], y=[en.y], mode='markers',
+            marker=dict(color='#2E7D32', size=14, symbol='triangle-up'), showlegend=False))
+        for s in spots:
+            if s.spot_id not in net.nodes: continue
+            node = net.nodes[s.spot_id]; sd = state["ss"].get(s.spot_id, {})
+            if sd.get("occ") and sd.get("blocked"): color = '#FF9800'
+            elif sd.get("occ"): color = '#EF5350'
+            else: color = '#66BB6A'
+            fig.add_trace(go.Scatter(x=[node.x], y=[node.y], mode='markers',
+                marker=dict(color=color, size=11, symbol='square'), showlegend=False, hoverinfo='skip'))
+        for dv in state["dv"]:
+            fig.add_trace(go.Scatter(x=[dv["x"]], y=[dv["y"]], mode='markers+text',
+                marker=dict(color='#2196F3', size=14, symbol='circle'), text=dv["vid"],
+                textposition="top center", textfont=dict(size=8), showlegend=False, hoverinfo='skip'))
+            if dv.get("from_node") and dv["from_node"] in net.nodes:
+                fn = net.nodes[dv["from_node"]]
+                fig.add_trace(go.Scatter(x=[fn.x, dv["x"]], y=[fn.y, dv["y"]], mode='lines',
+                    line=dict(color='#64B5F6', width=2, dash='dash'), showlegend=False, hoverinfo='none'))
+        fig.update_layout(xaxis_title="X (m)", yaxis_title="Y (m)", height=400,
+            margin=dict(l=20, r=20, t=20, b=20), plot_bgcolor='#FAFBFC')
+        st.plotly_chart(fig, use_container_width=True)
+
+        occ = sum(1 for sd in state["ss"].values() if sd["occ"])
+        c1,c2,c3=st.columns(3)
+        c1.metric("占用",f"{occ}/{len(spots)}");c2.metric("行驶中",str(len(state["dv"])));c3.metric("时间",f"{t_now:.1f}s")
+
+        st.download_button("📥 下载指标", pd.DataFrame([metrics]).to_csv(index=False).encode('utf-8'),
+                           f"parking_{strategy_name}.csv", "text/csv")
 
         with st.expander("📋 事件日志"):
             ev = [{"时间":f"{e['time']:.0f}s","类型":e["type"],"车辆":e["vehicle_id"] or "-","车位":e["spot_id"] or "-",**e["metadata"]} for e in events[:200]]
