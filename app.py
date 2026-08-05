@@ -194,7 +194,6 @@ def build_triangle(n_spots,tandem_ratio):
     import math as _m;R=25
     net=RoadNetwork();vs=[("V0",0,0),("V1",R,0),("V2",R*0.5,R*0.866)]
     for vid,vx,vy in vs:_an(net,vid,NodeType.ROAD_NODE if vid!="V0" else NodeType.ENTRY,vx,vy)
-    _an(net,"ENTRY",NodeType.ENTRY,0,0)
     for a,b in[(0,1),(1,2),(2,0)]:va,vb=vs[a],vs[b];net.add_edge(va[0],vb[0],R);net.add_edge(vb[0],va[0],R)
     spots=[];nt=int(n_spots*tandem_ratio/2);ns=n_spots-nt*2
     per_side=ns//3;rem=ns%3;counts=[per_side+(1 if i<rem else 0) for i in range(3)]
@@ -444,6 +443,8 @@ if run or st.session_state.get("sim_has_run"):
             "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "", "metadata": dict(e.metadata)}
             for e in evts] for t, evts in timeline["events_by_time"].items()}
         st.session_state.sim_timeline = timeline; st.rerun()
+    elif "sim_timeline" not in st.session_state:
+        st.info("请选择单策略运行仿真查看时间轴回放")
     else:
         events = st.session_state.sim_events_raw; metrics = st.session_state.sim_metrics
         timeline = st.session_state.sim_timeline; max_time = timeline["max_time"]
