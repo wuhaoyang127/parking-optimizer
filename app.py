@@ -110,15 +110,6 @@ def check_login():
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
     if not st.session_state.logged_in:
-        token = _get_token()
-        if token:
-            try:
-                uname, role_str = base64.b64decode(token).decode().split("|", 1)
-                st.session_state.logged_in = True; st.session_state.username = uname
-                st.session_state.role = role_str
-                st.session_state.user_perms = load_users().get(uname, {}).get("perms", {}) if role_str != "admin" else {}
-            except: _clear_token()
-    if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
             '<p style="color:#607D8B">车位分配 · 纵深移位 · 仿真对比</p></div>', unsafe_allow_html=True)
@@ -140,8 +131,6 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        _set_token(base64.b64encode(
-                            f"{st.session_state.username}|{st.session_state.role}".encode()).decode())
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
@@ -383,7 +372,7 @@ with st.sidebar:
         f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{st.session_state.username}</div>'
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
-        st.session_state.logged_in = False; _clear_token()
+        st.session_state.logged_in = False
         st.markdown('<script>history.replaceState(null,"",location.pathname)</script>', unsafe_allow_html=True); st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
