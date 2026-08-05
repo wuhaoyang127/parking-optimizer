@@ -396,11 +396,11 @@ with st.sidebar:
                 if cb.button("🗑", key=f"del_{u}"): del users[u]; save_users(users); st.rerun()
             st.divider(); st.caption("**授权额外权限：**")
             for uname, info in users.items():
-                with st.expander(f"⚙ {uname}"):
-                    for pk, plabel in EXTRA_PERMS.items():
-                        nv = st.checkbox(plabel, value=info.get("perms", {}).get(pk, False), key=f"perm_{uname}_{pk}")
-                        if nv != info.get("perms", {}).get(pk, False):
-                            users[uname].setdefault("perms", {})[pk] = nv; save_users(users); st.rerun()
+                st.caption(f"⚙ {uname}")
+                for pk, plabel in EXTRA_PERMS.items():
+                    nv = st.checkbox(plabel, value=info.get("perms", {}).get(pk, False), key=f"perm_{uname}_{pk}")
+                    if nv != info.get("perms", {}).get(pk, False):
+                        users[uname].setdefault("perms", {})[pk] = nv; save_users(users); st.rerun()
         st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     st.markdown("### ⚙️ 仿真配置")
     perms = st.session_state.user_perms; disabled = not (role["can_configure"] or perms.get("can_configure"))
