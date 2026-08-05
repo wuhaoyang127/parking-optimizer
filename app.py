@@ -490,13 +490,22 @@ if run or st.session_state.get("sim_has_run"):
 
         st.subheader(f"🅿️ 停车场布局 (t={t_now:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
-        spot_html = '<div style="display:flex;flex-wrap:wrap;gap:3px">'
+        all_x = [net.nodes[s.spot_id].x for s in spots if s.spot_id in net.nodes]
+        all_y = [net.nodes[s.spot_id].y for s in spots if s.spot_id in net.nodes]
+        min_x, max_x = min(all_x)-5, max(all_x)+5
+        min_y, max_y = min(all_y)-5, max(all_y)+5
+        scale = min(500/(max_x-min_x or 1), 300/(max_y-min_y or 1), 20)
+        spot_html = f'<div style="position:relative;width:{int((max_x-min_x)*scale)}px;height:{int((max_y-min_y)*scale)}px;margin:10px auto;background:#F0F4F8;border:1px solid #E0E6ED;border-radius:8px">'
         for s in spots:
+            if s.spot_id not in net.nodes: continue
+            node = net.nodes[s.spot_id]
+            px = int((node.x - min_x) * scale)
+            py = int((max_y - node.y) * scale)
             sd = state["ss"].get(s.spot_id, {})
             if sd.get("occ") and sd.get("blocked"): bg = "#ffa500"; icon = "🚗"
             elif sd.get("occ"): bg = "#ff6b6b"; icon = "🚗"
             else: bg = "#51cf66"; icon = "⬜"
-            spot_html += f'<div style="background:{bg};padding:3px 5px;border-radius:4px;text-align:center;font-size:9px;color:white;min-width:42px">{s.spot_id}<br>{icon}</div>'
+            spot_html += f'<div style="position:absolute;left:{px}px;top:{py}px;background:{bg};padding:2px 4px;border-radius:4px;text-align:center;font-size:8px;color:white;transform:translate(-50%,-50%)">{s.spot_id}<br>{icon}</div>'
         spot_html += '</div>'
         st.markdown(spot_html, True)
 
