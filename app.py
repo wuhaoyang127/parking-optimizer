@@ -487,10 +487,8 @@ if run or st.session_state.get("sim_has_run"):
 
         # 动态渲染
         st.caption("🔹 标记B: get_state_at_time前")
-        try:
-            spot_state = get_state_at_time(st.session_state.replay_time, timeline, net, spots)
-        except:
-            spot_state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
+        state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
+        # state = get_state_at_time(...) ← 注释掉了
 
         st.caption("🔹 标记C: get_state_at_time后")
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
@@ -506,7 +504,7 @@ if run or st.session_state.get("sim_has_run"):
             node = net.nodes[s.spot_id]
             px = int((node.x - min_x) * scale)
             py = int((max_y - node.y) * scale)
-            sd = spot_state["ss"].get(s.spot_id, {})
+            sd = state["ss"].get(s.spot_id, {})
             if sd.get("occ") and sd.get("blocked"): bg = "#ffa500"; icon = "🚗"
             elif sd.get("occ"): bg = "#ff6b6b"; icon = "🚗"
             else: bg = "#51cf66"; icon = "⬜"
@@ -527,13 +525,13 @@ if run or st.session_state.get("sim_has_run"):
             marker=dict(color='#2E7D32', size=14, symbol='triangle-up'), showlegend=False))
         for s in spots:
             if s.spot_id not in net.nodes: continue
-            node = net.nodes[s.spot_id]; sd = spot_state["ss"].get(s.spot_id, {})
+            node = net.nodes[s.spot_id]; sd = state["ss"].get(s.spot_id, {})
             if sd.get("occ") and sd.get("blocked"): color = '#FF9800'
             elif sd.get("occ"): color = '#EF5350'
             else: color = '#66BB6A'
             fig.add_trace(go.Scatter(x=[node.x], y=[node.y], mode='markers',
                 marker=dict(color=color, size=11, symbol='square'), showlegend=False, hoverinfo='skip'))
-        for dv in spot_state["dv"]:
+        for dv in state["dv"]:
             fig.add_trace(go.Scatter(x=[dv["x"]], y=[dv["y"]], mode='markers+text',
                 marker=dict(color='#2196F3', size=14, symbol='circle'), text=dv["vid"],
                 textposition="top center", textfont=dict(size=8), showlegend=False, hoverinfo='skip'))
@@ -545,9 +543,9 @@ if run or st.session_state.get("sim_has_run"):
             margin=dict(l=20, r=20, t=20, b=20), plot_bgcolor='#FAFBFC')
         st.plotly_chart(fig, use_container_width=True)
 
-        occ = sum(1 for sd in spot_state["ss"].values() if sd["occ"])
+        occ = sum(1 for sd in state["ss"].values() if sd["occ"])
         c1,c2,c3=st.columns(3)
-        c1.metric("占用",f"{occ}/{len(spots)}");c2.metric("行驶中",str(len(spot_state["dv"])));c3.metric("时间",f"{st.session_state.replay_time:.1f}s")
+        c1.metric("占用",f"{occ}/{len(spots)}");c2.metric("行驶中",str(len(state["dv"])));c3.metric("时间",f"{st.session_state.replay_time:.1f}s")
 
         st.download_button("📥 下载指标", pd.DataFrame([metrics]).to_csv(index=False).encode('utf-8'),
                            f"parking_{strategy_name}.csv", "text/csv")
