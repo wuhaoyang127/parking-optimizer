@@ -486,6 +486,7 @@ if run or st.session_state.get("sim_has_run"):
 
         # 动态渲染
         t_now = st.session_state.replay_time
+        st.caption("🔍 DEBUG——NULL应该在这一行前面还是后面？")
         try:
             state = get_state_at_time(t_now, timeline, net, spots)
         except:
