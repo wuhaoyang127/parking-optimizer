@@ -490,14 +490,15 @@ if run or st.session_state.get("sim_has_run"):
 
         st.subheader(f"🅿️ 停车场布局 (t={t_now:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
-        parts = []
+        spot_html = '<div style="display:flex;flex-wrap:wrap;gap:3px">'
         for s in spots:
             sd = state["ss"].get(s.spot_id, {})
-            if sd.get("occ") and sd.get("blocked"): marker = "🔶"
-            elif sd.get("occ"): marker = "🔴"
-            else: marker = "🟢"
-            parts.append(f"{marker}{s.spot_id}")
-        st.write(" | ".join(parts))
+            if sd.get("occ") and sd.get("blocked"): bg = "#ffa500"; icon = "🚗"
+            elif sd.get("occ"): bg = "#ff6b6b"; icon = "🚗"
+            else: bg = "#51cf66"; icon = "⬜"
+            spot_html += f'<div style="background:{bg};padding:3px 5px;border-radius:4px;text-align:center;font-size:9px;color:white;min-width:42px">{s.spot_id}<br>{icon}</div>'
+        spot_html += '</div>'
+        st.markdown(spot_html, True)
 
         # 路网图
         st.subheader("🛣️ 路网与车辆路径")
