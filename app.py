@@ -483,13 +483,10 @@ if run or st.session_state.get("sim_has_run"):
             if st.button("⏭", help="终点", use_container_width=True): st.session_state.replay_time = max_time
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
-        st.caption("🔹 标记A: 时间caption后")
 
         # 动态渲染
-        st.caption("🔹 标记B: get_state_at_time前")
         state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
 
-        st.caption("🔹 标记C: get_state_at_time后")
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
         all_x = [net.nodes[s.spot_id].x for s in spots if s.spot_id in net.nodes]
