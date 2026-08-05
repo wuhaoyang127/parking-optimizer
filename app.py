@@ -396,7 +396,7 @@ with st.sidebar:
                 if cb.button("🗑", key=f"del_{u}"): del users[u]; save_users(users); st.rerun()
             st.divider(); st.caption("**授权额外权限：**")
             for uname, info in users.items():
-                with st.expander(f"⚙ {uname}", ):
+                with st.expander(f"⚙ {uname}"):
                     for pk, plabel in EXTRA_PERMS.items():
                         nv = st.checkbox(plabel, value=info.get("perms", {}).get(pk, False), key=f"perm_{uname}_{pk}")
                         if nv != info.get("perms", {}).get(pk, False):
