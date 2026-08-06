@@ -318,6 +318,53 @@ def build_timeline_from_raw(events_raw):
     return {"all_times": all_times, "max_time": all_times[-1] if all_times else 0,
             "vehicles": vehicles_tl}
 
+def replay_state(events_raw, t, spots, net):
+    """极简回放：逐事件推进到时刻 t，只返回 spot 状态和行驶中车辆"""
+    ss = {s.spot_id: {"occ": False, "by": "", "blocked": False} for s in spots}
+    dv = []
+    v_spot = {}      # vid -> spot_id
+    v_entered = {}   # vid -> bool
+    v_departing = {} # vid -> bool
+    for e in events_raw:
+        if e["time"] > t:
+            break
+        vid = str(e.get("vehicle_id", ""))
+        if not vid: continue
+        et = e["type"]
+        if et == "vehicle_arrival":
+            v_spot[vid] = None; v_entered[vid] = False; v_departing[vid] = False
+        elif et == "parking_assigned":
+            v_spot[vid] = e.get("spot_id", "")
+        elif et == "spot_entry":
+            v_entered[vid] = True
+        elif et in ("departure", "shift_start", "shift_end"):
+            v_departing[vid] = True
+        elif et == "rejected":
+            v_spot.pop(vid, None); v_entered.pop(vid, None); v_departing.pop(vid, None)
+    # 停在车位上的
+    for vid, spot_id in v_spot.items():
+        if spot_id and v_entered.get(vid) and not v_departing.get(vid):
+            if spot_id in ss:
+                ss[spot_id]["occ"] = True; ss[spot_id]["by"] = vid
+    # 行驶中的
+    for vid, spot_id in v_spot.items():
+        if spot_id and not v_entered.get(vid) and not v_departing.get(vid):
+            nx, ny = 0.0, 0.0
+            if spot_id in net.nodes:
+                nd = net.nodes[spot_id]; nx, ny = nd.x, nd.y
+            dv.append({"vid": vid, "x": nx, "y": ny, "st": "驶入", "target": spot_id})
+    # 计算被挡
+    sg = {}
+    for s in spots:
+        sg.setdefault(s.stack_group_id, []).append(s)
+    for g, grp in sg.items():
+        grp.sort(key=lambda s: s.depth)
+        for i, inner in enumerate(grp):
+            for j in range(i):
+                if ss[grp[j].spot_id]["occ"] and ss[inner.spot_id]["occ"]:
+                    ss[inner.spot_id]["blocked"] = True
+    return {"ss": ss, "dv": dv}
+
 def _interp(path_nodes, progress, net):
     if not path_nodes or len(path_nodes) < 2: return None
     segs = []; total = 0.0
@@ -550,21 +597,7 @@ if run or st.session_state.get("sim_has_run"):
         # 动态渲染：从序列化事件实时重建+清洗
         state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
         try:
-            _tl = build_timeline_from_raw(events)
-            _st = get_state_at_time(st.session_state.replay_time, _tl, net, spots)
-            _clean_ss = {}
-            for _sid in (s.spot_id for s in spots):
-                _sd = _st["ss"].get(_sid, {})
-                _clean_ss[_sid] = {"occ": bool(_sd.get("occ")), "by": _sd.get("by") or "",
-                                   "blocked": bool(_sd.get("blocked"))}
-            _clean_dv = []
-            for _d in _st.get("dv", []):
-                _x, _y, _vid = _d.get("x"), _d.get("y"), _d.get("vid")
-                if _x is not None and _y is not None:
-                    _clean_dv.append({"vid": str(_vid) if _vid is not None else "?",
-                                      "x": float(_x), "y": float(_y),
-                                      "st": _d.get("st", ""), "target": _d.get("target", "")})
-            state = {"ss": _clean_ss, "dv": _clean_dv}
+            state = replay_state(events, st.session_state.replay_time, spots, net)
         except Exception:
             pass
 
