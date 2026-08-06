@@ -370,6 +370,27 @@ with st.sidebar:
                 rl = ROLES.get(info["role"], {}).get("label", info["role"])
                 ca, cb = st.columns([2.5, 1.5]); ca.write(f"**{u}** — {rl}")
                 if cb.button("🗑", key=f"del_{u}"): del users[u]; save_users(users); st.rerun()
+            # — 备份/恢复 —
+            st.divider(); st.caption("**💾 数据备份（Reboot 前下载，Reboot 后上传恢复）**")
+            c_dl, c_up = st.columns(2)
+            with c_dl:
+                st.download_button("📥 导出用户数据", json.dumps(users, indent=2, ensure_ascii=False),
+                                   "users_backup.json", "application/json", use_container_width=True,
+                                   disabled=not users)
+            with c_up:
+                uploaded = st.file_uploader("📤 导入用户数据", type=["json"], key="restore_users",
+                                            label_visibility="collapsed")
+                if uploaded is not None:
+                    try:
+                        restored = json.loads(uploaded.read().decode("utf-8"))
+                        if isinstance(restored, dict):
+                            current = load_users()
+                            current.update(restored)
+                            save_users(current)
+                            st.success(f"已导入 {len(restored)} 个用户！")
+                            st.rerun()
+                    except Exception:
+                        st.error("文件格式错误")
             st.divider(); st.caption("**授权额外权限：**")
             for uname, info in users.items():
                 st.caption(f"⚙ {uname}")
