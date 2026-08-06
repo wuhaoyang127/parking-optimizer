@@ -308,13 +308,14 @@ def get_state_at_time(t, timeline, net, spots):
         arr = tl["arrival_time"]; asg = tl["assigned_time"]; ent = tl["spot_entry_time"]
         ds = tl["departure_start"]; de = tl["departure_end"]
         if arr is None or t < arr or tl["rejected"] or asg is None: continue
+        _vid = str(vid) if vid is not None else "?"
         if ent is not None and asg <= t < ent:
             p = (t-asg)/max(ent-asg, 0.1); pos = _interp(tl["path_nodes"], p, net)
-            if pos: dv.append({"vid": vid, "x": pos[0], "y": pos[1], "st": "驶入", "target": tl["spot_id"]})
+            if pos: dv.append({"vid": _vid, "x": pos[0], "y": pos[1], "st": "驶入", "target": tl["spot_id"]})
             continue
         if ent is not None and (ds is None or t < ds):
             sid = tl["spot_id"]
-            if sid and sid in ss: ss[sid]["occ"] = True; ss[sid]["by"] = vid
+            if sid and sid in ss: ss[sid]["occ"] = True; ss[sid]["by"] = _vid
             continue
         if ds is not None and (de is None or t < de):
             for sh in tl["shifts"]:
@@ -322,7 +323,7 @@ def get_state_at_time(t, timeline, net, spots):
                     sp = (t-sh["start"])/max((sh["end"]or t+1)-sh["start"],0.1)
                     if sh["from"] in net.nodes and sh["to"] in net.nodes:
                         fn=net.nodes[sh["from"]]; tn=net.nodes[sh["to"]]
-                        dv.append({"vid":vid,"x":fn.x+(tn.x-fn.x)*min(sp,1),"y":fn.y+(tn.y-fn.y)*min(sp,1),
+                        dv.append({"vid":_vid,"x":fn.x+(tn.x-fn.x)*min(sp,1),"y":fn.y+(tn.y-fn.y)*min(sp,1),
                                    "st":"移位","target":sh["to"]})
                     break
             else:
@@ -331,7 +332,7 @@ def get_state_at_time(t, timeline, net, spots):
                     sn=net.nodes[sid]; ex=next((n for n in net.nodes.values() if n.node_type==NodeType.ENTRY),None)
                     if ex:
                         p=(t-ds)/max((de or t+1)-ds,0.1)
-                        dv.append({"vid":vid,"x":sn.x+(ex.x-sn.x)*min(p,1),"y":sn.y+(ex.y-sn.y)*min(p,1),
+                        dv.append({"vid":_vid,"x":sn.x+(ex.x-sn.x)*min(p,1),"y":sn.y+(ex.y-sn.y)*min(p,1),
                                    "st":"驶离","target":"出口"})
     sg={};[sg.setdefault(s.stack_group_id,[]).append(s) for s in spots]
     for g,grp in sg.items():
@@ -513,7 +514,10 @@ if run or st.session_state.get("sim_has_run"):
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
         # 动态渲染
-        state = get_state_at_time(st.session_state.replay_time, timeline, net, spots)
+        try:
+            state = get_state_at_time(st.session_state.replay_time, timeline, net, spots)
+        except Exception:
+            state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
 
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
