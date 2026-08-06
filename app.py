@@ -2,7 +2,6 @@
 
 import sys, hashlib, json, math, base64
 from pathlib import Path
-from http.cookies import SimpleCookie
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import streamlit as st
@@ -99,26 +98,13 @@ EXTRA_PERMS = {"can_configure": "调整参数", "can_export": "下载结果", "c
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
-def _read_cookie(name):
-    """从 HTTP 请求头读取 Cookie（Streamlit ≥1.28 支持）"""
-    try:
-        cookie_str = st.context.headers.get("Cookie", "")
-        if cookie_str:
-            c = SimpleCookie(cookie_str)
-            if name in c:
-                return c[name].value
-    except Exception:
-        pass
-    return None
-
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
     if not st.session_state.logged_in:
         try:
-            # 优先从 Cookie 恢复（刷新不丢失）
-            token = _read_cookie("pk_token") or st.query_params.get("t")
+            token = st.query_params.get("t")
             if token:
                 uname, role_str = base64.b64decode(token).decode().split("|", 1)
                 st.session_state.logged_in = True; st.session_state.username = uname
@@ -156,13 +142,9 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        token = base64.b64encode(
-                            f"{st.session_state.username}|{st.session_state.role}".encode()).decode()
-                        st.query_params["t"] = token
                         st.markdown(f"""
                         <script>
-                        document.cookie = 'pk_token={token};path=/;max-age=2592000;SameSite=Lax';
-                        localStorage.setItem('pk_token', '{token}');
+                        localStorage.setItem('pk_last_user', '{st.session_state.username}');
                         </script>
                         """, unsafe_allow_html=True)
                         st.rerun()
@@ -179,8 +161,59 @@ def check_login():
                         users = load_users()
                         users[reg_user] = {"password": hash_pw(reg_pw), "role": "viewer", "perms": {}}
                         save_users(users)
+                        # 存到 localStorage，下次自动填表登录
+                        st.markdown(f"""
+                        <script>
+                        localStorage.setItem('pk_last_user', '{reg_user}');
+                        localStorage.setItem('pk_last_pw', '{reg_pw}');
+                        var users = JSON.parse(localStorage.getItem('pk_users')||'{{}}');
+                        users['{reg_user}'] = {{password:'{hash_pw(reg_pw)}',role:'viewer',perms:{{}}}};
+                        localStorage.setItem('pk_users', JSON.stringify(users));
+                        </script>
+                        """, unsafe_allow_html=True)
                         if reg_user in load_users(): st.success("注册成功！切换到登录标签页")
                         else: st.error("存储失败，请重试")
+        # — 用户数据库恢复（reboot 后注入 URL）—
+        st.markdown("""
+        <script>
+        setTimeout(function(){
+            var users = localStorage.getItem('pk_users');
+            if (users && window.location.search.indexOf('u=') === -1) {
+                var sep = window.location.search ? '&' : '?';
+                window.location.href = window.location.pathname + window.location.search + sep + 'u=' + encodeURIComponent(users);
+            }
+        }, 400);
+        </script>
+        """, unsafe_allow_html=True)
+        # — 自动填表登录（从 localStorage 恢复）—
+        st.markdown(f"""
+        <script>
+        setTimeout(function(){{
+            var lastUser = localStorage.getItem('pk_last_user');
+            if (!lastUser) return;
+            var pwInput = document.querySelector('input[type="password"]');
+            var userInput = document.querySelector('input[aria-label="用户名"]');
+            if (!pwInput || !userInput) return;
+            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            nativeInputValueSetter.call(userInput, lastUser);
+            userInput.dispatchEvent(new Event('input', {{bubbles:true}}));
+            if (lastUser === '{ADMIN_USER}') {{
+                nativeInputValueSetter.call(pwInput, '{ADMIN_PW}');
+                pwInput.dispatchEvent(new Event('input', {{bubbles:true}}));
+            }} else {{
+                var savedPw = localStorage.getItem('pk_last_pw');
+                if (savedPw) {{
+                    nativeInputValueSetter.call(pwInput, savedPw);
+                    pwInput.dispatchEvent(new Event('input', {{bubbles:true}}));
+                }}
+            }}
+            setTimeout(function(){{
+                var btn = document.querySelector('button[kind="primary"]');
+                if (btn) btn.click();
+            }}, 300);
+        }}, 600);
+        </script>
+        """, unsafe_allow_html=True)
         st.stop()
 
 # ==================== 5种停车场布局 ====================
@@ -396,19 +429,6 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 check_login()
 role = ROLES[st.session_state.role]
 
-# — 用户数据桥接：reboot 后把 localStorage 注册用户注入 URL —
-st.markdown("""
-<script>
-setTimeout(function(){
-    var users = localStorage.getItem('pk_users');
-    if (users && window.location.search.indexOf('u=') === -1) {
-        var sep = window.location.search ? '&' : '?';
-        window.location.href = window.location.pathname + window.location.search + sep + 'u=' + encodeURIComponent(users);
-    }
-}, 800);
-</script>
-""", unsafe_allow_html=True)
-
 if "replay_time" not in st.session_state: st.session_state.replay_time = 0.0
 if "replay_playing" not in st.session_state: st.session_state.replay_playing = False
 if "replay_speed" not in st.session_state: st.session_state.replay_speed = 1.0
@@ -423,8 +443,8 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.markdown("""
         <script>
-        document.cookie = 'pk_token=;path=/;max-age=0';
-        localStorage.removeItem('pk_token');
+        localStorage.removeItem('pk_last_user');
+        localStorage.removeItem('pk_last_pw');
         history.replaceState(null,'',location.pathname);
         </script>
         """, unsafe_allow_html=True)
