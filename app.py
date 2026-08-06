@@ -57,7 +57,13 @@ hr { margin: 0.5rem 0; border-color: var(--border); }
 
 # ==================== 权限系统 ====================
 ADMIN_USER = "wuhaoyang127"
-ADMIN_PW = st.secrets.get("admin_password", "Sa1248jkl@why050212")
+
+def _get_admin_pw():
+    try:
+        return st.secrets.get("admin_password", "Sa1248jkl@why050212")
+    except Exception:
+        return "Sa1248jkl@why050212"
+
 _USER_FILE = Path(__file__).parent / "configs" / "users.json"
 _USER_FILE.parent.mkdir(exist_ok=True)
 
@@ -72,10 +78,11 @@ def _pread(path):
 def _prime():
     if "all_users" not in st.session_state:
         st.session_state.all_users = _pread(_USER_FILE) or {}
-    # 强制：admin 永远存在且永远是最高权限
-    st.session_state.all_users[ADMIN_USER] = {
-        "password": st.session_state.all_users.get(ADMIN_USER, {}).get("password", hash_pw(ADMIN_PW)),
-        "role": "admin"}
+        # 首次加载时保证 admin 存在
+        if ADMIN_USER not in st.session_state.all_users or st.session_state.all_users[ADMIN_USER].get("role") != "admin":
+            st.session_state.all_users[ADMIN_USER] = {
+                "password": st.session_state.all_users.get(ADMIN_USER, {}).get("password", hash_pw(_get_admin_pw())),
+                "role": "admin"}
 
 def load_users():
     _prime()
