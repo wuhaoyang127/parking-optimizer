@@ -72,10 +72,10 @@ def _pread(path):
 def _prime():
     if "all_users" not in st.session_state:
         st.session_state.all_users = _pread(_USER_FILE) or {}
-        # 保证 admin 始终存在
-        if ADMIN_USER not in st.session_state.all_users:
-            st.session_state.all_users[ADMIN_USER] = {
-                "password": hash_pw(ADMIN_PW), "role": "admin"}
+    # 强制：admin 永远存在且永远是最高权限
+    st.session_state.all_users[ADMIN_USER] = {
+        "password": st.session_state.all_users.get(ADMIN_USER, {}).get("password", hash_pw(ADMIN_PW)),
+        "role": "admin"}
 
 def load_users():
     _prime()
@@ -483,29 +483,41 @@ with st.sidebar:
     if role["can_manage_users"]:
         with st.expander("🔧 用户管理"):
             users = load_users()
-            if not users: st.caption("暂无注册用户")
+            if len(users) <= 1: st.caption("暂无其他注册用户")
             for u, info in users.items():
+                if u == ADMIN_USER: continue  # admin 单独显示
                 rl = ROLES.get(info["role"], {}).get("label", info["role"])
-                is_admin = (u == ADMIN_USER)
-                c1, c2, c3 = st.columns([2, 2, 1.5])
+                c1, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5])
                 c1.write(f"**{u}**")
-                if not is_admin:
-                    new_role = c2.selectbox("角色", ["viewer", "operator", "admin"],
-                        index=["viewer","operator","admin"].index(info.get("role","viewer")),
-                        key=f"role_{u}", label_visibility="collapsed")
-                    if new_role != info["role"]:
-                        users[u]["role"] = new_role; save_users(users); st.rerun()
-                else:
-                    c2.caption("管理员")
-                if c3.button("🗑", key=f"del_{u}", disabled=is_admin):
+                new_role = c2.selectbox("角色", ["viewer", "operator"],
+                    index=0 if info.get("role") == "viewer" else 1,
+                    key=f"role_{u}", label_visibility="collapsed")
+                if new_role != info["role"]:
+                    users[u]["role"] = new_role; save_users(users); st.rerun()
+                # — admin 可重置任何用户密码 —
+                if c3.button("🔑", key=f"rst_{u}", help="重置密码"):
+                    st.session_state[f"rst_open_{u}"] = True
+                if c4.button("🗑", key=f"del_{u}"):
                     del users[u]; save_users(users); st.rerun()
+                if st.session_state.get(f"rst_open_{u}"):
+                    rp = st.text_input("新密码", type="password", key=f"rst_pw_{u}")
+                    if st.button("确认重置", key=f"rst_ok_{u}"):
+                        if rp:
+                            users[u]["password"] = hash_pw(rp)
+                            save_users(users)
+                            st.session_state[f"rst_open_{u}"] = False
+                            st.success(f"{u} 密码已重置！")
+                            st.rerun()
+            # admin 自身显示
+            admin_info = users.get(ADMIN_USER, {})
+            st.divider()
+            st.caption(f"👑 **{ADMIN_USER}** — 管理员（不可删除/不可降级）")
             # — 备份/恢复 —
             st.divider(); st.caption("**💾 数据备份（Reboot 前下载，Reboot 后上传恢复）**")
             c_dl, c_up = st.columns(2)
             with c_dl:
                 st.download_button("📥 导出用户数据", json.dumps(users, indent=2, ensure_ascii=False),
-                                   "users_backup.json", "application/json", use_container_width=True,
-                                   disabled=not users)
+                                   "users_backup.json", "application/json", use_container_width=True)
             with c_up:
                 uploaded = st.file_uploader("📤 导入用户数据", type=["json"], key="restore_users",
                                             label_visibility="collapsed")
