@@ -5,7 +5,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import time
 import plotly.graph_objects as go
@@ -98,7 +97,7 @@ def check_login():
         st.session_state.role = None; st.session_state.user_perms = {}
     if not st.session_state.logged_in:
         try:
-            token = st.experimental_get_query_params().get("t", [None])[0]
+            token = st.query_params.get("t")
             if token:
                 uname, role_str = base64.b64decode(token).decode().split("|", 1)
                 st.session_state.logged_in = True; st.session_state.username = uname
@@ -129,7 +128,7 @@ def check_login():
                     if ok:
                         token = base64.b64encode(
                             f"{st.session_state.username}|{st.session_state.role}".encode()).decode()
-                        st.experimental_set_query_params(t=token)
+                        st.query_params["t"] = token
                         st.markdown(f"""
                         <script>
                         localStorage.setItem('pk_token', '{token}');
@@ -362,19 +361,6 @@ def get_state_at_time(t, timeline, net, spots):
 # ==================== 主入口 ====================
 st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
-
-# — localStorage 桥接：刷新/Reboot 后从浏览器恢复登录 —
-st.markdown("""
-<script>
-(function(){
-    var token = localStorage.getItem('pk_token');
-    if (token && window.location.search.indexOf('t=') === -1) {
-        var sep = window.location.search ? '&' : '?';
-        window.location.search = window.location.search + sep + 't=' + encodeURIComponent(token);
-    }
-})();
-</script>
-""", unsafe_allow_html=True)
 
 check_login()
 role = ROLES[st.session_state.role]
