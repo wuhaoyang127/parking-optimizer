@@ -463,11 +463,20 @@ if run or st.session_state.get("sim_has_run"):
             "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "", "metadata": dict(e.metadata)}
             for e in evts] for t, evts in timeline["events_by_time"].items()}
         st.session_state.sim_timeline = timeline
-        # — 预计算所有时间点的回放状态（纯 dict，不依赖 net/spots 对象）—
+        # — 预计算所有时间点的回放状态（纯 dict）—
         _all_states = {}
         for _t in timeline["all_times"]:
             _st = get_state_at_time(_t, timeline, net, spots)
             _all_states[_t] = {"ss": _st["ss"], "dv": _st["dv"]}
+        # 每 0.5s 补插值状态（匹配滑块步长，动画流畅）
+        _max_t = timeline["max_time"]
+        _t = 0.0
+        while _t <= _max_t + 0.001:
+            _t = round(_t, 1)
+            if _t not in _all_states:
+                _st = get_state_at_time(_t, timeline, net, spots)
+                _all_states[_t] = {"ss": _st["ss"], "dv": _st["dv"]}
+            _t += 0.5
         st.session_state.sim_states = _all_states
         st.rerun()
     elif "sim_timeline" not in st.session_state:
@@ -520,14 +529,10 @@ if run or st.session_state.get("sim_has_run"):
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
-        # 动态渲染：从预计算的状态表中查找
+        # 动态渲染：从预计算表中查找（0.5s 步长匹配滑块）
         _states = st.session_state.get("sim_states", {})
-        _keys = sorted(_states.keys())
-        _best = 0.0
-        for _k in _keys:
-            if _k <= st.session_state.replay_time + 0.001:
-                _best = _k
-        state = _states.get(_best, {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []})
+        _t = round(st.session_state.replay_time * 2) / 2  # 取最近 0.5s
+        state = _states.get(_t, {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []})
 
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
