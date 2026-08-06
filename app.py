@@ -5,6 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import time
 import plotly.graph_objects as go
@@ -58,8 +59,8 @@ hr { margin: 0.5rem 0; border-color: var(--border); }
 # ==================== 权限系统 ====================
 ADMIN_USER = "wuhaoyang127"
 ADMIN_PW = "Sa1248jkl@why050212"
-_USER_FILES = [Path(__file__).parent / "configs" / "users.json", "/tmp/parking_users.json"]
-_USER_FILES[0].parent.mkdir(exist_ok=True)
+_USER_FILE = Path(__file__).parent / "configs" / "users.json"
+_USER_FILE.parent.mkdir(exist_ok=True)
 
 def _pwrite(path, text):
     try: path.write_text(text, encoding="utf-8"); return True
@@ -71,14 +72,7 @@ def _pread(path):
 
 def _prime():
     if "all_users" not in st.session_state:
-        st.session_state.all_users = {}
-        for f in _USER_FILES:
-            ud = _pread(Path(f))
-            if ud:
-                st.session_state.all_users.update(ud)
-                st.session_state._user_file = f
-                return
-        st.session_state._user_file = str(_USER_FILES[1])
+        st.session_state.all_users = _pread(_USER_FILE) or {}
 
 def load_users():
     _prime()
@@ -86,12 +80,7 @@ def load_users():
 
 def save_users(users):
     st.session_state.all_users = users
-    path = Path(st.session_state.get("_user_file", str(_USER_FILES[1])))
-    ok = _pwrite(path, json.dumps(users, indent=2, ensure_ascii=False))
-    if not ok:
-        fallback = Path(_USER_FILES[1])
-        _pwrite(fallback, json.dumps(users, indent=2, ensure_ascii=False))
-        st.session_state._user_file = str(fallback)
+    _pwrite(_USER_FILE, json.dumps(users, indent=2, ensure_ascii=False))
 
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -138,10 +127,14 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        try:
-                            st.experimental_set_query_params(t=base64.b64encode(
-                                f"{st.session_state.username}|{st.session_state.role}".encode()).decode())
-                        except: pass
+                        token = base64.b64encode(
+                            f"{st.session_state.username}|{st.session_state.role}".encode()).decode()
+                        st.experimental_set_query_params(t=token)
+                        components.html(f"""
+                        <script>
+                        localStorage.setItem('pk_token', '{token}');
+                        </script>
+                        """, height=0)
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
@@ -369,6 +362,20 @@ def get_state_at_time(t, timeline, net, spots):
 # ==================== 主入口 ====================
 st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+
+# — localStorage 桥接：刷新/Reboot 后从浏览器恢复登录 —
+components.html("""
+<script>
+(function(){
+    var token = localStorage.getItem('pk_token');
+    if (token && window.location.search.indexOf('t=') === -1) {
+        var sep = window.location.search ? '&' : '?';
+        window.location.search = window.location.search + sep + 't=' + encodeURIComponent(token);
+    }
+})();
+</script>
+""", height=0)
+
 check_login()
 role = ROLES[st.session_state.role]
 
@@ -384,7 +391,13 @@ with st.sidebar:
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
         st.session_state.logged_in = False
-        st.markdown('<script>history.replaceState(null,"",location.pathname)</script>', unsafe_allow_html=True); st.stop()
+        components.html("""
+        <script>
+        localStorage.removeItem('pk_token');
+        history.replaceState(null,'',location.pathname);
+        </script>
+        """, height=0)
+        st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
         with st.expander("🔧 用户管理"):
