@@ -284,6 +284,40 @@ def build_timeline(events, net, pe):
     return {"all_times": all_times, "max_time": all_times[-1] if all_times else 0,
             "vehicles": vehicles_tl, "events_by_time": events_by_time}
 
+def build_timeline_from_raw(events_raw):
+    """从序列化事件列表重建 timeline（纯 dict，不依赖原始对象）"""
+    vehicles_tl = {}
+    for e in events_raw:
+        vid = e["vehicle_id"]
+        if not vid: continue
+        if vid not in vehicles_tl:
+            vehicles_tl[vid] = {"arrival_time": None, "assigned_time": None, "spot_entry_time": None,
+                "departure_start": None, "departure_end": None, "spot_id": None,
+                "path_nodes": None, "rejected": False, "shifts": []}
+        tl = vehicles_tl[vid]
+        et = e["type"]
+        if et == "vehicle_arrival": tl["arrival_time"] = e["time"]
+        elif et == "parking_assigned":
+            tl["assigned_time"] = e["time"]; tl["spot_id"] = e["spot_id"]
+            tl["path_nodes"] = ["ENTRY", e["spot_id"]]
+        elif et == "spot_entry": tl["spot_entry_time"] = e["time"]
+        elif et == "departure":
+            tl["departure_start"] = e["time"]
+            if not e.get("metadata", {}).get("had_blocking"): tl["departure_end"] = e["time"]
+        elif et == "shift_start":
+            meta = e.get("metadata", {})
+            tl["shifts"].append({"from": meta.get("from_spot"), "to": meta.get("to_spot"),
+                                "start": e["time"], "end": None})
+            if tl["departure_start"] is None: tl["departure_start"] = e["time"]
+        elif et == "shift_end":
+            if tl["shifts"]: tl["shifts"][-1]["end"] = e["time"]
+            tl["departure_end"] = e["time"]
+        elif et == "rejected": tl["rejected"] = True
+    all_times = sorted(set(e["time"] for e in events_raw))
+    if all_times and all_times[0] > 0: all_times.insert(0, 0.0)
+    return {"all_times": all_times, "max_time": all_times[-1] if all_times else 0,
+            "vehicles": vehicles_tl}
+
 def _interp(path_nodes, progress, net):
     if not path_nodes or len(path_nodes) < 2: return None
     segs = []; total = 0.0
@@ -513,8 +547,12 @@ if run or st.session_state.get("sim_has_run"):
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
-        # 动态渲染
-        state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
+        # 动态渲染：从序列化事件实时重建状态
+        try:
+            _tl = build_timeline_from_raw(events)
+            state = get_state_at_time(st.session_state.replay_time, _tl, net, spots)
+        except Exception:
+            state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
 
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
