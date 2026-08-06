@@ -80,13 +80,6 @@ def load_users():
 def save_users(users):
     st.session_state.all_users = users
     _pwrite(_USER_FILE, json.dumps(users, indent=2, ensure_ascii=False))
-    # 同步写入浏览器 localStorage，reboot 后自动恢复
-    encoded = base64.b64encode(json.dumps(users, ensure_ascii=False).encode()).decode()
-    st.markdown(f"""
-    <script>
-    localStorage.setItem('pk_users', '{encoded}');
-    </script>
-    """, unsafe_allow_html=True)
 
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -102,24 +95,6 @@ def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
-    if not st.session_state.logged_in:
-        try:
-            token = st.query_params.get("t")
-            if token:
-                uname, role_str = base64.b64decode(token).decode().split("|", 1)
-                st.session_state.logged_in = True; st.session_state.username = uname
-                st.session_state.role = role_str
-                st.session_state.user_perms = load_users().get(uname, {}).get("perms", {}) if role_str != "admin" else {}
-        except: pass
-    # — reboot 后从 localStorage 恢复用户数据库 —
-    if not load_users():
-        try:
-            archived = st.query_params.get("u")
-            if archived:
-                users = json.loads(base64.b64decode(archived).decode())
-                if isinstance(users, dict) and users:
-                    save_users(users)
-        except: pass
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
@@ -142,11 +117,6 @@ def check_login():
                             st.session_state.role = users[username]["role"]
                             st.session_state.user_perms = users[username].get("perms", {}); ok = True
                     if ok:
-                        st.markdown(f"""
-                        <script>
-                        localStorage.setItem('pk_last_user', '{st.session_state.username}');
-                        </script>
-                        """, unsafe_allow_html=True)
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
@@ -161,89 +131,8 @@ def check_login():
                         users = load_users()
                         users[reg_user] = {"password": hash_pw(reg_pw), "role": "viewer", "perms": {}}
                         save_users(users)
-                        # 存到 localStorage，下次自动填表登录
-                        st.markdown(f"""
-                        <script>
-                        localStorage.setItem('pk_last_user', '{reg_user}');
-                        localStorage.setItem('pk_last_pw', '{reg_pw}');
-                        var users = JSON.parse(localStorage.getItem('pk_users')||'{{}}');
-                        users['{reg_user}'] = {{password:'{hash_pw(reg_pw)}',role:'viewer',perms:{{}}}};
-                        localStorage.setItem('pk_users', JSON.stringify(users));
-                        </script>
-                        """, unsafe_allow_html=True)
                         if reg_user in load_users(): st.success("注册成功！切换到登录标签页")
                         else: st.error("存储失败，请重试")
-        # — 用户数据库恢复（reboot 后从 localStorage 注入 URL）—
-        st.markdown("""
-        <script>
-        setTimeout(function(){
-            var users = localStorage.getItem('pk_users');
-            if (users && window.location.search.indexOf('u=') === -1) {
-                var sep = window.location.search ? '&' : '?';
-                window.location.href = window.location.pathname + window.location.search + sep + 'u=' + encodeURIComponent(users);
-            }
-        }, 400);
-        </script>
-        """, unsafe_allow_html=True)
-        # — 自动填表登录（带调试提示）—
-        st.markdown("""
-        <div id="auto_dbg" style="position:fixed;top:0;left:0;right:0;z-index:9999;
-            background:#1E3A5F;color:#fff;padding:6px 16px;font-size:13px;text-align:center;display:none;"></div>
-        <script>
-        var _dbg = function(m) {
-            var d = document.getElementById('auto_dbg');
-            if (d) { d.style.display='block'; d.textContent = '\u81ea\u52a8\u767b\u5f55\uff1a' + m; }
-        };
-        setTimeout(function(){
-            _dbg('\u68c0\u6d4b\u7f13\u5b58...');
-            var lastUser = localStorage.getItem('pk_last_user');
-            if (!lastUser) { _dbg('\u2605 \u65e0\u7f13\u5b58\u7528\u6237\uff0c\u8bf7\u624b\u52a8\u767b\u5f55'); return; }
-            _dbg('\u627e\u5230\u7528\u6237: ' + lastUser + ', \u67e5\u627e\u8f93\u5165\u6846...');
-            var labels = document.querySelectorAll('label');
-            var userInput = null, pwInput = null;
-            for (var i = 0; i < labels.length; i++) {
-                var t = labels[i].textContent.trim();
-                if (t === '\u7528\u6237\u540d') {
-                    var w = labels[i].closest('[data-testid]');
-                    if (w) userInput = w.querySelector('input');
-                }
-                if (t === '\u5bc6\u7801') {
-                    var w = labels[i].closest('[data-testid]');
-                    if (w) pwInput = w.querySelector('input');
-                }
-            }
-            if (!userInput) { _dbg('\u2716 \u672a\u627e\u5230\u7528\u6237\u540d\u8f93\u5165\u6846'); return; }
-            if (!pwInput) { _dbg('\u2716 \u672a\u627e\u5230\u5bc6\u7801\u8f93\u5165\u6846'); return; }
-            _dbg('\u586b\u5165\u8868\u5355\u4e2d...');
-            var s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
-            s.call(userInput, lastUser);
-            userInput.dispatchEvent(new Event('input', {bubbles:true}));
-            userInput.dispatchEvent(new Event('change', {bubbles:true}));
-"""
-        + "            if (lastUser === '" + ADMIN_USER + "') {\n"
-        + "                s.call(pwInput, '" + ADMIN_PW + "');\n"
-        + "            } else {\n"
-        + "                var sp = localStorage.getItem('pk_last_pw');\n"
-        + "                if (sp) { s.call(pwInput, sp); }\n"
-        + "                else { _dbg('\u2716 \u666e\u901a\u7528\u6237\u65e0\u5bc6\u7801\u7f13\u5b58'); return; }\n"
-        + "            }\n"
-        + """            pwInput.dispatchEvent(new Event('input', {bubbles:true}));
-            pwInput.dispatchEvent(new Event('change', {bubbles:true}));
-            _dbg('\u70b9\u51fb\u767b\u5f55...');
-            setTimeout(function(){
-                var btns = document.querySelectorAll('button');
-                for (var j = 0; j < btns.length; j++) {
-                    if (btns[j].textContent.trim() === '\u767b\u5f55') {
-                        btns[j].click();
-                        _dbg('\u2714 \u5df2\u70b9\u51fb\u767b\u5f55!');
-                        return;
-                    }
-                }
-                _dbg('\u2716 \u672a\u627e\u5230\u767b\u5f55\u6309\u94ae');
-            }, 400);
-        }, 1200);
-        </script>
-        """, unsafe_allow_html=True)
         st.stop()
 
 # ==================== 5种停车场布局 ====================
@@ -471,13 +360,6 @@ with st.sidebar:
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
         st.session_state.logged_in = False
-        st.markdown("""
-        <script>
-        localStorage.removeItem('pk_last_user');
-        localStorage.removeItem('pk_last_pw');
-        history.replaceState(null,'',location.pathname);
-        </script>
-        """, unsafe_allow_html=True)
         st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
