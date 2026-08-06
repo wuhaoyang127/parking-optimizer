@@ -462,7 +462,14 @@ if run or st.session_state.get("sim_has_run"):
         timeline["events_by_time"] = {t: [{"time": e.time, "type": e.event_type.value,
             "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "", "metadata": dict(e.metadata)}
             for e in evts] for t, evts in timeline["events_by_time"].items()}
-        st.session_state.sim_timeline = timeline; st.rerun()
+        st.session_state.sim_timeline = timeline
+        # — 预计算所有时间点的回放状态（纯 dict，不依赖 net/spots 对象）—
+        _all_states = {}
+        for _t in timeline["all_times"]:
+            _st = get_state_at_time(_t, timeline, net, spots)
+            _all_states[_t] = {"ss": _st["ss"], "dv": _st["dv"]}
+        st.session_state.sim_states = _all_states
+        st.rerun()
     elif "sim_timeline" not in st.session_state:
         st.info("请选择单策略运行仿真查看时间轴回放")
     else:
@@ -513,11 +520,14 @@ if run or st.session_state.get("sim_has_run"):
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
-        # 动态渲染
-        try:
-            state = get_state_at_time(st.session_state.replay_time, timeline, net, spots)
-        except Exception:
-            state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
+        # 动态渲染：从预计算的状态表中查找
+        _states = st.session_state.get("sim_states", {})
+        _keys = sorted(_states.keys())
+        _best = 0.0
+        for _k in _keys:
+            if _k <= st.session_state.replay_time + 0.001:
+                _best = _k
+        state = _states.get(_best, {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []})
 
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
