@@ -173,7 +173,7 @@ def check_login():
                         """, unsafe_allow_html=True)
                         if reg_user in load_users(): st.success("注册成功！切换到登录标签页")
                         else: st.error("存储失败，请重试")
-        # — 用户数据库恢复（reboot 后注入 URL）—
+        # — 用户数据库恢复（reboot 后从 localStorage 注入 URL）—
         st.markdown("""
         <script>
         setTimeout(function(){
@@ -185,33 +185,48 @@ def check_login():
         }, 400);
         </script>
         """, unsafe_allow_html=True)
-        # — 自动填表登录（从 localStorage 恢复）—
-        st.markdown(f"""
+        # — 自动填表登录 —
+        st.markdown("""
         <script>
-        setTimeout(function(){{
+        setTimeout(function(){
             var lastUser = localStorage.getItem('pk_last_user');
             if (!lastUser) return;
-            var pwInput = document.querySelector('input[type="password"]');
-            var userInput = document.querySelector('input[aria-label="用户名"]');
-            if (!pwInput || !userInput) return;
-            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            nativeInputValueSetter.call(userInput, lastUser);
-            userInput.dispatchEvent(new Event('input', {{bubbles:true}}));
-            if (lastUser === '{ADMIN_USER}') {{
-                nativeInputValueSetter.call(pwInput, '{ADMIN_PW}');
-                pwInput.dispatchEvent(new Event('input', {{bubbles:true}}));
-            }} else {{
-                var savedPw = localStorage.getItem('pk_last_pw');
-                if (savedPw) {{
-                    nativeInputValueSetter.call(pwInput, savedPw);
-                    pwInput.dispatchEvent(new Event('input', {{bubbles:true}}));
-                }}
-            }}
-            setTimeout(function(){{
-                var btn = document.querySelector('button[kind="primary"]');
-                if (btn) btn.click();
-            }}, 300);
-        }}, 600);
+            var labels = document.querySelectorAll('label');
+            var userInput = null, pwInput = null;
+            for (var i = 0; i < labels.length; i++) {
+                var t = labels[i].textContent.trim();
+                if (t === '\u7528\u6237\u540d') {
+                    var w = labels[i].closest('[data-testid]');
+                    if (w) userInput = w.querySelector('input');
+                }
+                if (t === '\u5bc6\u7801') {
+                    var w = labels[i].closest('[data-testid]');
+                    if (w) pwInput = w.querySelector('input');
+                }
+            }
+            if (!userInput || !pwInput) return;
+            var s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+            s.call(userInput, lastUser);
+            userInput.dispatchEvent(new Event('input', {bubbles:true}));
+            userInput.dispatchEvent(new Event('change', {bubbles:true}));
+"""
+        + "            if (lastUser === '" + ADMIN_USER + "') {\n"
+        + "                s.call(pwInput, '" + ADMIN_PW + "');\n"
+        + "            } else {\n"
+        + "                var sp = localStorage.getItem('pk_last_pw');\n"
+        + "                if (sp) s.call(pwInput, sp);\n"
+        + "            }\n"
+        + """            pwInput.dispatchEvent(new Event('input', {bubbles:true}));
+            pwInput.dispatchEvent(new Event('change', {bubbles:true}));
+            setTimeout(function(){
+                var btns = document.querySelectorAll('button');
+                for (var j = 0; j < btns.length; j++) {
+                    if (btns[j].textContent.trim() === '\u767b\u5f55') {
+                        btns[j].click(); break;
+                    }
+                }
+            }, 400);
+        }, 900);
         </script>
         """, unsafe_allow_html=True)
         st.stop()
