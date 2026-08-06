@@ -185,12 +185,20 @@ def check_login():
         }, 400);
         </script>
         """, unsafe_allow_html=True)
-        # — 自动填表登录 —
+        # — 自动填表登录（带调试提示）—
         st.markdown("""
+        <div id="auto_dbg" style="position:fixed;top:0;left:0;right:0;z-index:9999;
+            background:#1E3A5F;color:#fff;padding:6px 16px;font-size:13px;text-align:center;display:none;"></div>
         <script>
+        var _dbg = function(m) {
+            var d = document.getElementById('auto_dbg');
+            if (d) { d.style.display='block'; d.textContent = '\u81ea\u52a8\u767b\u5f55\uff1a' + m; }
+        };
         setTimeout(function(){
+            _dbg('\u68c0\u6d4b\u7f13\u5b58...');
             var lastUser = localStorage.getItem('pk_last_user');
-            if (!lastUser) return;
+            if (!lastUser) { _dbg('\u2605 \u65e0\u7f13\u5b58\u7528\u6237\uff0c\u8bf7\u624b\u52a8\u767b\u5f55'); return; }
+            _dbg('\u627e\u5230\u7528\u6237: ' + lastUser + ', \u67e5\u627e\u8f93\u5165\u6846...');
             var labels = document.querySelectorAll('label');
             var userInput = null, pwInput = null;
             for (var i = 0; i < labels.length; i++) {
@@ -204,7 +212,9 @@ def check_login():
                     if (w) pwInput = w.querySelector('input');
                 }
             }
-            if (!userInput || !pwInput) return;
+            if (!userInput) { _dbg('\u2716 \u672a\u627e\u5230\u7528\u6237\u540d\u8f93\u5165\u6846'); return; }
+            if (!pwInput) { _dbg('\u2716 \u672a\u627e\u5230\u5bc6\u7801\u8f93\u5165\u6846'); return; }
+            _dbg('\u586b\u5165\u8868\u5355\u4e2d...');
             var s = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
             s.call(userInput, lastUser);
             userInput.dispatchEvent(new Event('input', {bubbles:true}));
@@ -214,19 +224,24 @@ def check_login():
         + "                s.call(pwInput, '" + ADMIN_PW + "');\n"
         + "            } else {\n"
         + "                var sp = localStorage.getItem('pk_last_pw');\n"
-        + "                if (sp) s.call(pwInput, sp);\n"
+        + "                if (sp) { s.call(pwInput, sp); }\n"
+        + "                else { _dbg('\u2716 \u666e\u901a\u7528\u6237\u65e0\u5bc6\u7801\u7f13\u5b58'); return; }\n"
         + "            }\n"
         + """            pwInput.dispatchEvent(new Event('input', {bubbles:true}));
             pwInput.dispatchEvent(new Event('change', {bubbles:true}));
+            _dbg('\u70b9\u51fb\u767b\u5f55...');
             setTimeout(function(){
                 var btns = document.querySelectorAll('button');
                 for (var j = 0; j < btns.length; j++) {
                     if (btns[j].textContent.trim() === '\u767b\u5f55') {
-                        btns[j].click(); break;
+                        btns[j].click();
+                        _dbg('\u2714 \u5df2\u70b9\u51fb\u767b\u5f55!');
+                        return;
                     }
                 }
+                _dbg('\u2716 \u672a\u627e\u5230\u767b\u5f55\u6309\u94ae');
             }, 400);
-        }, 900);
+        }, 1200);
         </script>
         """, unsafe_allow_html=True)
         st.stop()
