@@ -130,11 +130,11 @@ def check_login():
                         token = base64.b64encode(
                             f"{st.session_state.username}|{st.session_state.role}".encode()).decode()
                         st.experimental_set_query_params(t=token)
-                        components.html(f"""
+                        st.markdown(f"""
                         <script>
                         localStorage.setItem('pk_token', '{token}');
                         </script>
-                        """, height=0)
+                        """, unsafe_allow_html=True)
                         st.rerun()
                     else: st.error("用户名或密码错误")
             with tab_register:
@@ -364,7 +364,7 @@ st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout=
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 # — localStorage 桥接：刷新/Reboot 后从浏览器恢复登录 —
-components.html("""
+st.markdown("""
 <script>
 (function(){
     var token = localStorage.getItem('pk_token');
@@ -374,7 +374,7 @@ components.html("""
     }
 })();
 </script>
-""", height=0)
+""", unsafe_allow_html=True)
 
 check_login()
 role = ROLES[st.session_state.role]
@@ -391,12 +391,12 @@ with st.sidebar:
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
         st.session_state.logged_in = False
-        components.html("""
+        st.markdown("""
         <script>
         localStorage.removeItem('pk_token');
         history.replaceState(null,'',location.pathname);
         </script>
-        """, height=0)
+        """, unsafe_allow_html=True)
         st.stop()
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
