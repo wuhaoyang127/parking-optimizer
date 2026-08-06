@@ -547,12 +547,26 @@ if run or st.session_state.get("sim_has_run"):
 
         st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
-        # 动态渲染：从序列化事件实时重建状态
+        # 动态渲染：从序列化事件实时重建+清洗
+        state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
         try:
             _tl = build_timeline_from_raw(events)
-            state = get_state_at_time(st.session_state.replay_time, _tl, net, spots)
+            _st = get_state_at_time(st.session_state.replay_time, _tl, net, spots)
+            _clean_ss = {}
+            for _sid in (s.spot_id for s in spots):
+                _sd = _st["ss"].get(_sid, {})
+                _clean_ss[_sid] = {"occ": bool(_sd.get("occ")), "by": _sd.get("by") or "",
+                                   "blocked": bool(_sd.get("blocked"))}
+            _clean_dv = []
+            for _d in _st.get("dv", []):
+                _x, _y, _vid = _d.get("x"), _d.get("y"), _d.get("vid")
+                if _x is not None and _y is not None:
+                    _clean_dv.append({"vid": str(_vid) if _vid is not None else "?",
+                                      "x": float(_x), "y": float(_y),
+                                      "st": _d.get("st", ""), "target": _d.get("target", "")})
+            state = {"ss": _clean_ss, "dv": _clean_dv}
         except Exception:
-            state = {"ss": {s.spot_id: {"occ": False, "by": None, "blocked": False} for s in spots}, "dv": []}
+            pass
 
         st.subheader(f"🅿️ 停车场布局 (t={st.session_state.replay_time:.1f}s)")
         st.caption("🟢空闲 🔴占用 🟠被挡")
