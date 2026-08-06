@@ -80,6 +80,13 @@ def load_users():
 def save_users(users):
     st.session_state.all_users = users
     _pwrite(_USER_FILE, json.dumps(users, indent=2, ensure_ascii=False))
+    # 同步写入浏览器 localStorage，reboot 后自动恢复
+    encoded = base64.b64encode(json.dumps(users, ensure_ascii=False).encode()).decode()
+    st.markdown(f"""
+    <script>
+    localStorage.setItem('pk_users', '{encoded}');
+    </script>
+    """, unsafe_allow_html=True)
 
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -103,6 +110,15 @@ def check_login():
                 st.session_state.logged_in = True; st.session_state.username = uname
                 st.session_state.role = role_str
                 st.session_state.user_perms = load_users().get(uname, {}).get("perms", {}) if role_str != "admin" else {}
+        except: pass
+    # — reboot 后从 localStorage 恢复用户数据库 —
+    if not load_users():
+        try:
+            archived = st.query_params.get("u")
+            if archived:
+                users = json.loads(base64.b64decode(archived).decode())
+                if isinstance(users, dict) and users:
+                    save_users(users)
         except: pass
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
@@ -364,6 +380,29 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 check_login()
 role = ROLES[st.session_state.role]
+
+# — localStorage 桥接：把浏览器存储的 token 和用户数据注入 URL —
+st.markdown("""
+<script>
+setTimeout(function(){
+    var params = window.location.search;
+    var changed = false;
+    var token = localStorage.getItem('pk_token');
+    if (token && params.indexOf('t=') === -1) {
+        params += (params ? '&' : '?') + 't=' + encodeURIComponent(token);
+        changed = true;
+    }
+    var users = localStorage.getItem('pk_users');
+    if (users && params.indexOf('u=') === -1) {
+        params += (params ? '&' : '?') + 'u=' + encodeURIComponent(users);
+        changed = true;
+    }
+    if (changed) {
+        window.location.href = window.location.pathname + params;
+    }
+}, 800);
+</script>
+""", unsafe_allow_html=True)
 
 if "replay_time" not in st.session_state: st.session_state.replay_time = 0.0
 if "replay_playing" not in st.session_state: st.session_state.replay_playing = False
