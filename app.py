@@ -2,6 +2,7 @@
 
 import sys, hashlib, json, math, base64
 from pathlib import Path
+from http.cookies import SimpleCookie
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import streamlit as st
@@ -98,13 +99,26 @@ EXTRA_PERMS = {"can_configure": "调整参数", "can_export": "下载结果", "c
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
+def _read_cookie(name):
+    """从 HTTP 请求头读取 Cookie（Streamlit ≥1.28 支持）"""
+    try:
+        cookie_str = st.context.headers.get("Cookie", "")
+        if cookie_str:
+            c = SimpleCookie(cookie_str)
+            if name in c:
+                return c[name].value
+    except Exception:
+        pass
+    return None
+
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.user_perms = {}
     if not st.session_state.logged_in:
         try:
-            token = st.query_params.get("t")
+            # 优先从 Cookie 恢复（刷新不丢失）
+            token = _read_cookie("pk_token") or st.query_params.get("t")
             if token:
                 uname, role_str = base64.b64decode(token).decode().split("|", 1)
                 st.session_state.logged_in = True; st.session_state.username = uname
@@ -147,6 +161,7 @@ def check_login():
                         st.query_params["t"] = token
                         st.markdown(f"""
                         <script>
+                        document.cookie = 'pk_token={token};path=/;max-age=2592000;SameSite=Lax';
                         localStorage.setItem('pk_token', '{token}');
                         </script>
                         """, unsafe_allow_html=True)
@@ -381,24 +396,14 @@ st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 check_login()
 role = ROLES[st.session_state.role]
 
-# — localStorage 桥接：把浏览器存储的 token 和用户数据注入 URL —
+# — 用户数据桥接：reboot 后把 localStorage 注册用户注入 URL —
 st.markdown("""
 <script>
 setTimeout(function(){
-    var params = window.location.search;
-    var changed = false;
-    var token = localStorage.getItem('pk_token');
-    if (token && params.indexOf('t=') === -1) {
-        params += (params ? '&' : '?') + 't=' + encodeURIComponent(token);
-        changed = true;
-    }
     var users = localStorage.getItem('pk_users');
-    if (users && params.indexOf('u=') === -1) {
-        params += (params ? '&' : '?') + 'u=' + encodeURIComponent(users);
-        changed = true;
-    }
-    if (changed) {
-        window.location.href = window.location.pathname + params;
+    if (users && window.location.search.indexOf('u=') === -1) {
+        var sep = window.location.search ? '&' : '?';
+        window.location.href = window.location.pathname + window.location.search + sep + 'u=' + encodeURIComponent(users);
     }
 }, 800);
 </script>
@@ -418,6 +423,7 @@ with st.sidebar:
         st.session_state.logged_in = False
         st.markdown("""
         <script>
+        document.cookie = 'pk_token=;path=/;max-age=0';
         localStorage.removeItem('pk_token');
         history.replaceState(null,'',location.pathname);
         </script>
