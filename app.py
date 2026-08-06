@@ -57,7 +57,7 @@ hr { margin: 0.5rem 0; border-color: var(--border); }
 
 # ==================== 权限系统 ====================
 ADMIN_USER = "wuhaoyang127"
-ADMIN_PW = "Sa1248jkl@why050212"
+ADMIN_PW = st.secrets.get("admin_password", "Sa1248jkl@why050212")
 _USER_FILE = Path(__file__).parent / "configs" / "users.json"
 _USER_FILE.parent.mkdir(exist_ok=True)
 
@@ -72,6 +72,10 @@ def _pread(path):
 def _prime():
     if "all_users" not in st.session_state:
         st.session_state.all_users = _pread(_USER_FILE) or {}
+        # 保证 admin 始终存在
+        if ADMIN_USER not in st.session_state.all_users:
+            st.session_state.all_users[ADMIN_USER] = {
+                "password": hash_pw(ADMIN_PW), "role": "admin"}
 
 def load_users():
     _prime()
@@ -82,43 +86,60 @@ def save_users(users):
     _pwrite(_USER_FILE, json.dumps(users, indent=2, ensure_ascii=False))
 
 ROLES = {
-    "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
-              "can_export": True, "can_debug": True, "label": "管理员"},
-    "viewer": {"can_configure": False, "can_manage_users": False, "can_run_simulation": True,
-               "can_export": False, "can_debug": False, "label": "访客"},
+    "admin":    {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
+                 "can_export": True, "can_debug": True, "label": "管理员"},
+    "operator": {"can_configure": True, "can_manage_users": False, "can_run_simulation": True,
+                 "can_export": True, "can_debug": True, "label": "操作员"},
+    "viewer":   {"can_configure": False, "can_manage_users": False, "can_run_simulation": True,
+                 "can_export": False, "can_debug": False, "label": "访客"},
 }
-EXTRA_PERMS = {"can_configure": "调整参数", "can_export": "下载结果", "can_debug": "调试参数"}
 
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
-        st.session_state.role = None; st.session_state.user_perms = {}
+        st.session_state.role = None
+
+    # — P2: 登录失败限流 —
+    if "login_fails" not in st.session_state:
+        st.session_state.login_fails = 0
+        st.session_state.login_blocked_until = 0.0
+    if time.time() < st.session_state.login_blocked_until:
+        wait = int(st.session_state.login_blocked_until - time.time()) + 1
+
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
             '<p style="color:#607D8B">车位分配 · 纵深移位 · 仿真对比</p></div>', unsafe_allow_html=True)
+        # — P3: 刷新提示 —
+        st.info("⚠️ 刷新页面后需要重新登录", icon="🔔")
         c1, c2, c3 = st.columns([1, 2.5, 1])
         with c2:
+            # — P2: 限流显示 —
+            if time.time() < st.session_state.login_blocked_until:
+                wait = int(st.session_state.login_blocked_until - time.time()) + 1
+                st.error(f"⏳ 尝试次数过多，请 {wait} 秒后再试")
+                st.stop()
+
             tab_login, tab_register = st.tabs(["登录", "注册"])
             with tab_login:
                 username = st.text_input("用户名", key="login_user").strip()
                 password = st.text_input("密码", type="password", key="login_pw").strip()
                 if st.button("登录", type="primary", use_container_width=True):
                     ok = False
-                    if username == ADMIN_USER and password == ADMIN_PW:
-                        st.session_state.logged_in = True; st.session_state.username = ADMIN_USER
-                        st.session_state.role = "admin"; st.session_state.user_perms = {}; ok = True
-                    if not ok:
-                        users = load_users()
-                        if username in users and users[username]["password"] == hash_pw(password):
-                            st.session_state.logged_in = True; st.session_state.username = username
-                            st.session_state.role = users[username]["role"]
-                            st.session_state.user_perms = users[username].get("perms", {}); ok = True
+                    users = load_users()
+                    if username in users and users[username]["password"] == hash_pw(password):
+                        st.session_state.logged_in = True; st.session_state.username = username
+                        st.session_state.role = users[username]["role"]
+                        st.session_state.login_fails = 0; ok = True
                     if ok:
                         st.rerun()
-                    else: st.error("用户名或密码错误")
+                    else:
+                        st.session_state.login_fails += 1
+                        if st.session_state.login_fails >= 3:
+                            st.session_state.login_blocked_until = time.time() + 30
+                        st.error("用户名或密码错误")
             with tab_register:
                 reg_user = st.text_input("新用户名", key="reg_user").strip()
                 reg_pw = st.text_input("密码", type="password", key="reg_pw").strip()
@@ -126,10 +147,10 @@ def check_login():
                 if st.button("注册", use_container_width=True):
                     if not reg_user or not reg_pw: st.error("请填写用户名和密码")
                     elif reg_pw != reg_pw2: st.error("两次密码不一致")
-                    elif reg_user == ADMIN_USER or reg_user in load_users(): st.error("用户名已存在")
+                    elif reg_user in load_users(): st.error("用户名已存在")
                     else:
                         users = load_users()
-                        users[reg_user] = {"password": hash_pw(reg_pw), "role": "viewer", "perms": {}}
+                        users[reg_user] = {"password": hash_pw(reg_pw), "role": "viewer"}
                         save_users(users)
                         if reg_user in load_users(): st.success("注册成功！切换到登录标签页")
                         else: st.error("存储失败，请重试")
@@ -443,6 +464,21 @@ with st.sidebar:
     if st.button("🚪 退出", use_container_width=True):
         st.session_state.logged_in = False
         st.stop()
+    # — P1: 修改密码 —
+    with st.expander("🔑 修改密码"):
+        old_pw = st.text_input("当前密码", type="password", key="chg_old")
+        new_pw = st.text_input("新密码", type="password", key="chg_new")
+        new_pw2 = st.text_input("确认新密码", type="password", key="chg_new2")
+        if st.button("确认修改", use_container_width=True):
+            users = load_users()
+            uname = st.session_state.username
+            if not old_pw or not new_pw: st.error("请填写完整")
+            elif new_pw != new_pw2: st.error("两次密码不一致")
+            elif users[uname]["password"] != hash_pw(old_pw): st.error("当前密码错误")
+            else:
+                users[uname]["password"] = hash_pw(new_pw)
+                save_users(users)
+                st.success("密码已修改！")
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
         with st.expander("🔧 用户管理"):
@@ -450,8 +486,19 @@ with st.sidebar:
             if not users: st.caption("暂无注册用户")
             for u, info in users.items():
                 rl = ROLES.get(info["role"], {}).get("label", info["role"])
-                ca, cb = st.columns([2.5, 1.5]); ca.write(f"**{u}** — {rl}")
-                if cb.button("🗑", key=f"del_{u}"): del users[u]; save_users(users); st.rerun()
+                is_admin = (u == ADMIN_USER)
+                c1, c2, c3 = st.columns([2, 2, 1.5])
+                c1.write(f"**{u}**")
+                if not is_admin:
+                    new_role = c2.selectbox("角色", ["viewer", "operator", "admin"],
+                        index=["viewer","operator","admin"].index(info.get("role","viewer")),
+                        key=f"role_{u}", label_visibility="collapsed")
+                    if new_role != info["role"]:
+                        users[u]["role"] = new_role; save_users(users); st.rerun()
+                else:
+                    c2.caption("管理员")
+                if c3.button("🗑", key=f"del_{u}", disabled=is_admin):
+                    del users[u]; save_users(users); st.rerun()
             # — 备份/恢复 —
             st.divider(); st.caption("**💾 数据备份（Reboot 前下载，Reboot 后上传恢复）**")
             c_dl, c_up = st.columns(2)
@@ -473,16 +520,9 @@ with st.sidebar:
                             st.rerun()
                     except Exception:
                         st.error("文件格式错误")
-            st.divider(); st.caption("**授权额外权限：**")
-            for uname, info in users.items():
-                st.caption(f"⚙ {uname}")
-                for pk, plabel in EXTRA_PERMS.items():
-                    nv = st.checkbox(plabel, value=info.get("perms", {}).get(pk, False), key=f"perm_{uname}_{pk}")
-                    if nv != info.get("perms", {}).get(pk, False):
-                        users[uname].setdefault("perms", {})[pk] = nv; save_users(users); st.rerun()
         st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     st.markdown("### ⚙️ 仿真配置")
-    perms = st.session_state.user_perms; disabled = not (role["can_configure"] or perms.get("can_configure"))
+    disabled = not role["can_configure"]
     layout = st.selectbox("停车场布局", list(LAYOUTS.keys()), format_func=lambda x: LAYOUTS[x], disabled=disabled)
     n_spots = st.slider("车位数", 5, 50, 15, disabled=disabled)
     tandem_ratio = st.slider("纵深比例", 0.0, 1.0, 0.5, 0.1, disabled=disabled)
