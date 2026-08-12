@@ -67,11 +67,11 @@ section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.92)!i
     margin-bottom: 4px!important; border-left: 3px solid transparent!important;
     transition: all 0.15s!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-    background: rgba(255,255,255,.15)!important; color: #fff!important; }
+    background: rgba(255,255,255,.18)!important; color: #fff!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] {
-    background: rgba(59,130,246,.4)!important; color: #fff!important;
-    font-weight: 700!important; border-left-color: #93c5fd!important;
-    box-shadow: 0 0 14px rgba(59,130,246,.3)!important; }
+    background: rgba(255,255,255,.22)!important; color: #fff!important;
+    font-weight: 700!important; border-left-color: #22d3ee!important;
+    box-shadow: 0 0 14px rgba(34,211,238,.25)!important; }
 section[data-testid="stSidebar"] .stButton>button { background: rgba(255,255,255,.08)!important;
     color: rgba(255,255,255,.9)!important; border: 1px solid rgba(255,255,255,.15)!important;
     border-radius: 9px!important; font-size: 1rem!important; padding: .55rem 1rem!important; }
