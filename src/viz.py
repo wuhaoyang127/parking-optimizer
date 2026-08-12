@@ -1,6 +1,7 @@
 """停车场可视化 — Plotly 绘图模块"""
 
 import math
+from typing import Optional
 import plotly.graph_objects as go
 from parking_opt.domain.spot import RoadNetwork, NodeType, Spot, SpotType
 
@@ -30,11 +31,11 @@ def _s(key: str, scale: float) -> float:
 
 def draw_parking_layout(
     net: RoadNetwork, spots: list,
-    state: dict | None = None,
-    highlight_vehicle: str | None = None,
-    highlight_path: list | None = None,
-    view_center: tuple | None = None,
-    view_radius: float | None = None,
+    state: Optional[dict] = None,
+    highlight_vehicle: Optional[str] = None,
+    highlight_path: Optional[list] = None,
+    view_center: Optional[tuple] = None,
+    view_radius: Optional[float] = None,
     height: int = 420,
     scale: float = 1.0,
 ) -> go.Figure:

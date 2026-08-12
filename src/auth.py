@@ -1,5 +1,6 @@
 """Supabase 认证模块 — 替换本地 users.json"""
 
+from typing import Optional
 import streamlit as st
 from supabase import create_client, Client
 
@@ -93,7 +94,7 @@ def set_session_token(token: str):
     st.query_params["token"] = token
 
 
-def get_session_token() -> str | None:
+def get_session_token() -> Optional[str]:
     """从 URL 读取 session token"""
     return st.query_params.get("token")
 
@@ -104,7 +105,7 @@ def clear_session_token():
         del st.query_params["token"]
 
 
-def restore_session() -> dict | None:
+def restore_session() -> Optional[dict]:
     """页面加载时尝试恢复登录态，返回 {username, role, token} 或 None"""
     token = get_session_token()
     if not token:
