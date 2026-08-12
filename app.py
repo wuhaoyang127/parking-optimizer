@@ -729,7 +729,7 @@ def render_path_page():
                 st.session_state.replay_time = max(0, st.session_state.replay_time - 1)
                 st.session_state.replay_playing = False
         with c3:
-            rt = st.slider("时间轴", 0.0, max_time, st.session_state.replay_time, 0.5,
+            rt = st.slider("时间轴", 0.0, max_time, st.session_state.replay_time, 0.1,
                            key="time_slider", label_visibility="collapsed")
             if abs(rt - st.session_state.replay_time) > 0.01:
                 st.session_state.replay_time = rt
@@ -825,10 +825,11 @@ def render_path_page():
         fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
-    # 自动播放（放在图表渲染之后，确保画面先更新再前进）
+    # 自动播放
     if st.session_state.replay_playing:
-        time.sleep(0.05)
-        st.session_state.replay_time += st.session_state.replay_speed * 0.15
+        st.info(f"▶ 播放中 — {st.session_state.replay_time:.1f}s / {max_time:.0f}s — 速度 {st.session_state.replay_speed}x")
+        time.sleep(0.25)
+        st.session_state.replay_time += st.session_state.replay_speed * 0.2
         if st.session_state.replay_time >= max_time:
             st.session_state.replay_time = max_time
             st.session_state.replay_playing = False
