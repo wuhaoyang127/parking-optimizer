@@ -745,6 +745,8 @@ def render_path_page():
             ply_lbl = "⏸ 暂停" if st.session_state.replay_playing else "▶ 播放"
             if st.button(ply_lbl, use_container_width=True, type="primary" if st.session_state.replay_playing else "secondary"):
                 st.session_state.replay_playing = not st.session_state.replay_playing
+                if st.session_state.replay_playing:
+                    st.session_state._play_last_tick = 0  # 重置计时器
 
         c_speed = st.columns([1, 8])
         with c_speed[0]:
@@ -827,13 +829,19 @@ def render_path_page():
 
     # 自动播放
     if st.session_state.replay_playing:
-        st.info(f"▶ 播放中 — {st.session_state.replay_time:.1f}s / {max_time:.0f}s — 速度 {st.session_state.replay_speed}x")
-        time.sleep(0.25)
-        st.session_state.replay_time += st.session_state.replay_speed * 0.2
+        now = time.time()
+        last = st.session_state.get("_play_last_tick", now)
+        dt = now - last
+        st.session_state._play_last_tick = now
+        st.session_state.replay_time += st.session_state.replay_speed * dt
         if st.session_state.replay_time >= max_time:
             st.session_state.replay_time = max_time
             st.session_state.replay_playing = False
-        st.rerun()
+            st.session_state._play_last_tick = 0
+        else:
+            st.caption(f"▶ 播放中 {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
+            time.sleep(0.15)
+            st.rerun()
 
 
 def render_metrics_page():
