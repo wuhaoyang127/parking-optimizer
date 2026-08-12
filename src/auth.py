@@ -1,0 +1,118 @@
+"""Supabase 认证模块 — 替换本地 users.json"""
+
+import streamlit as st
+from supabase import create_client, Client
+
+SUPABASE_URL = "https://cxxoxbambqkpwpldsrnj.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_64MeU_WIVNWzcksKIUnWww_ywJtaEe9"
+
+# ---------- 惰性初始化 ----------
+_supabase: Client = None
+
+def get_supabase() -> Client:
+    global _supabase
+    if _supabase is None:
+        _supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    return _supabase
+
+
+# ---------- RPC 封装 ----------
+
+def _rpc(name: str, params: dict) -> dict:
+    """调用 Supabase RPC 并返回 dict"""
+    try:
+        res = get_supabase().rpc(name, params).execute()
+        # res.data 可能是单个 dict 或 list
+        data = res.data
+        if isinstance(data, list) and len(data) == 1:
+            return data[0]
+        if isinstance(data, dict):
+            return data
+        if data is None:
+            return {"success": False, "error": "无响应"}
+        return data
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def login(username: str, password: str) -> dict:
+    """登录，返回 {success, username, role, token} 或 {success:False, error}"""
+    return _rpc("login_user", {"p_username": username, "p_password": password})
+
+
+def register(username: str, password: str) -> dict:
+    return _rpc("register_user", {"p_username": username, "p_password": password})
+
+
+def validate_session(token: str) -> dict:
+    return _rpc("validate_session", {"p_token": token})
+
+
+def logout(token: str) -> dict:
+    return _rpc("logout_user", {"p_token": token})
+
+
+def list_users(token: str) -> list:
+    res = _rpc("list_users", {"p_token": token})
+    if isinstance(res, list):
+        return res
+    return []
+
+
+def update_user_role(token: str, username: str, role: str) -> dict:
+    return _rpc("update_user_role", {"p_token": token, "p_username": username, "p_role": role})
+
+
+def delete_user(token: str, username: str) -> dict:
+    return _rpc("delete_user", {"p_token": token, "p_username": username})
+
+
+def change_password(token: str, old_pw: str, new_pw: str) -> dict:
+    return _rpc("change_password", {"p_token": token, "p_old_password": old_pw, "p_new_password": new_pw})
+
+
+def reset_user_password(token: str, username: str, new_pw: str) -> dict:
+    return _rpc("reset_user_password", {"p_token": token, "p_username": username, "p_new_password": new_pw})
+
+
+def export_users(token: str) -> list:
+    res = _rpc("export_users", {"p_token": token})
+    if isinstance(res, list):
+        return res
+    return []
+
+
+def import_users(token: str, users: list) -> dict:
+    import json
+    return _rpc("import_users", {"p_token": token, "p_users_json": json.dumps(users)})
+
+
+# ---------- Session 持久化（URL query params）----------
+
+def set_session_token(token: str):
+    """把 session token 写入 URL，刷新不丢"""
+    st.query_params["token"] = token
+
+
+def get_session_token() -> str | None:
+    """从 URL 读取 session token"""
+    return st.query_params.get("token")
+
+
+def clear_session_token():
+    """清除 URL 中的 token"""
+    if "token" in st.query_params:
+        del st.query_params["token"]
+
+
+def restore_session() -> dict | None:
+    """页面加载时尝试恢复登录态，返回 {username, role, token} 或 None"""
+    token = get_session_token()
+    if not token:
+        return None
+    res = validate_session(token)
+    if res.get("success"):
+        return {"username": res["username"], "role": res["role"], "token": token}
+    else:
+        clear_session_token()
+        return None

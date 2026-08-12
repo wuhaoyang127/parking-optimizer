@@ -4,6 +4,13 @@ import sys, hashlib, json, math, base64
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+from auth import login as auth_login, register as auth_register, validate_session
+from auth import logout as auth_logout, list_users as auth_list_users
+from auth import update_user_role as auth_update_role, delete_user as auth_delete_user
+from auth import change_password as auth_change_pw, reset_user_password as auth_reset_pw
+from auth import export_users as auth_export_users, import_users as auth_import_users
+from auth import set_session_token, get_session_token, clear_session_token, restore_session
+
 import streamlit as st
 import pandas as pd
 import time
@@ -55,42 +62,8 @@ hr { margin: 0.5rem 0; border-color: var(--border); }
 </style>
 """
 
-# ==================== 权限系统 ====================
+# ==================== 权限系统（Supabase）====================
 ADMIN_USER = "wuhaoyang127"
-
-def _get_admin_pw():
-    try:
-        return st.secrets.get("admin_password", "Sa1248jkl@why050212")
-    except Exception:
-        return "Sa1248jkl@why050212"
-
-_USER_FILE = Path(__file__).parent / "configs" / "users.json"
-_USER_FILE.parent.mkdir(exist_ok=True)
-
-def _pwrite(path, text):
-    try: path.write_text(text, encoding="utf-8"); return True
-    except: return False
-
-def _pread(path):
-    try: return json.loads(path.read_text(encoding="utf-8"))
-    except: return {}
-
-def _prime():
-    if "all_users" not in st.session_state:
-        st.session_state.all_users = _pread(_USER_FILE) or {}
-        # 首次加载时保证 admin 存在
-        if ADMIN_USER not in st.session_state.all_users or st.session_state.all_users[ADMIN_USER].get("role") != "admin":
-            st.session_state.all_users[ADMIN_USER] = {
-                "password": st.session_state.all_users.get(ADMIN_USER, {}).get("password", hash_pw(_get_admin_pw())),
-                "role": "admin"}
-
-def load_users():
-    _prime()
-    return st.session_state.all_users
-
-def save_users(users):
-    st.session_state.all_users = users
-    _pwrite(_USER_FILE, json.dumps(users, indent=2, ensure_ascii=False))
 
 ROLES = {
     "admin":    {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -104,26 +77,31 @@ ROLES = {
 def hash_pw(pw): return hashlib.sha256(pw.encode()).hexdigest()
 
 def check_login():
+    """登录检查 — 从 URL token 恢复会话或显示登录/注册界面"""
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
-        st.session_state.role = None
+        st.session_state.role = None; st.session_state.token = None
 
-    # — P2: 登录失败限流 —
+    # 尝试从 URL 恢复会话（刷新后不退出）
+    if not st.session_state.logged_in and not st.session_state.token:
+        restored = restore_session()
+        if restored:
+            st.session_state.logged_in = True
+            st.session_state.username = restored["username"]
+            st.session_state.role = restored["role"]
+            st.session_state.token = restored["token"]
+
+    # P2: 登录失败限流
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
         st.session_state.login_blocked_until = 0.0
-    if time.time() < st.session_state.login_blocked_until:
-        wait = int(st.session_state.login_blocked_until - time.time()) + 1
 
     if not st.session_state.logged_in:
         st.markdown('<div style="text-align:center;padding:2rem 0 0.5rem"><div style="font-size:3rem">🚗</div>'
             '<h1 style="border:none;font-size:1.4rem!important">智能停车场优化系统</h1>'
             '<p style="color:#607D8B">车位分配 · 纵深移位 · 仿真对比</p></div>', unsafe_allow_html=True)
-        # — P3: 刷新提示 —
-        st.info("⚠️ 刷新页面后需要重新登录", icon="🔔")
         c1, c2, c3 = st.columns([1, 2.5, 1])
         with c2:
-            # — P2: 限流显示 —
             if time.time() < st.session_state.login_blocked_until:
                 wait = int(st.session_state.login_blocked_until - time.time()) + 1
                 st.error(f"⏳ 尝试次数过多，请 {wait} 秒后再试")
@@ -134,19 +112,20 @@ def check_login():
                 username = st.text_input("用户名", key="login_user").strip()
                 password = st.text_input("密码", type="password", key="login_pw").strip()
                 if st.button("登录", type="primary", use_container_width=True):
-                    ok = False
-                    users = load_users()
-                    if username in users and users[username]["password"] == hash_pw(password):
-                        st.session_state.logged_in = True; st.session_state.username = username
-                        st.session_state.role = users[username]["role"]
-                        st.session_state.login_fails = 0; ok = True
-                    if ok:
+                    res = auth_login(username, password)
+                    if res.get("success"):
+                        st.session_state.logged_in = True
+                        st.session_state.username = res["username"]
+                        st.session_state.role = res["role"]
+                        st.session_state.token = res["token"]
+                        st.session_state.login_fails = 0
+                        set_session_token(res["token"])
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1
                         if st.session_state.login_fails >= 3:
                             st.session_state.login_blocked_until = time.time() + 30
-                        st.error("用户名或密码错误")
+                        st.error(res.get("error", "用户名或密码错误"))
             with tab_register:
                 reg_user = st.text_input("新用户名", key="reg_user").strip()
                 reg_pw = st.text_input("密码", type="password", key="reg_pw").strip()
@@ -154,13 +133,12 @@ def check_login():
                 if st.button("注册", use_container_width=True):
                     if not reg_user or not reg_pw: st.error("请填写用户名和密码")
                     elif reg_pw != reg_pw2: st.error("两次密码不一致")
-                    elif reg_user in load_users(): st.error("用户名已存在")
                     else:
-                        users = load_users()
-                        users[reg_user] = {"password": hash_pw(reg_pw), "role": "viewer"}
-                        save_users(users)
-                        if reg_user in load_users(): st.success("注册成功！切换到登录标签页")
-                        else: st.error("存储失败，请重试")
+                        res = auth_register(reg_user, reg_pw)
+                        if res.get("success"):
+                            st.success("注册成功！切换到登录标签页")
+                        else:
+                            st.error(res.get("error", "注册失败"))
         st.stop()
 
 # ==================== 5种停车场布局 ====================
@@ -469,61 +447,61 @@ with st.sidebar:
         f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{st.session_state.username}</div>'
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>', unsafe_allow_html=True)
     if st.button("🚪 退出", use_container_width=True):
+        auth_logout(st.session_state.token)
+        clear_session_token()
         st.session_state.logged_in = False
-        st.stop()
+        st.session_state.token = None
+        st.rerun()
     # — P1: 修改密码 —
     with st.expander("🔑 修改密码"):
         old_pw = st.text_input("当前密码", type="password", key="chg_old")
         new_pw = st.text_input("新密码", type="password", key="chg_new")
         new_pw2 = st.text_input("确认新密码", type="password", key="chg_new2")
         if st.button("确认修改", use_container_width=True):
-            users = load_users()
-            uname = st.session_state.username
             if not old_pw or not new_pw: st.error("请填写完整")
             elif new_pw != new_pw2: st.error("两次密码不一致")
-            elif users[uname]["password"] != hash_pw(old_pw): st.error("当前密码错误")
             else:
-                users[uname]["password"] = hash_pw(new_pw)
-                save_users(users)
-                st.success("密码已修改！")
+                res = auth_change_pw(st.session_state.token, old_pw, new_pw)
+                if res.get("success"): st.success("密码已修改！")
+                else: st.error(res.get("error", "修改失败"))
     st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     if role["can_manage_users"]:
         with st.expander("🔧 用户管理"):
-            users = load_users()
+            users = auth_list_users(st.session_state.token)
             if len(users) <= 1: st.caption("暂无其他注册用户")
-            for u, info in users.items():
-                if u == ADMIN_USER: continue  # admin 单独显示
-                rl = ROLES.get(info["role"], {}).get("label", info["role"])
+            for u_info in users:
+                u = u_info.get("username", "")
+                ur = u_info.get("role", "viewer")
+                if u == ADMIN_USER: continue
+                rl = ROLES.get(ur, {}).get("label", ur)
                 c1, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5])
                 c1.write(f"**{u}**")
                 new_role = c2.selectbox("角色", ["viewer", "operator"],
-                    index=0 if info.get("role") == "viewer" else 1,
+                    index=0 if ur == "viewer" else 1,
                     key=f"role_{u}", label_visibility="collapsed")
-                if new_role != info["role"]:
-                    users[u]["role"] = new_role; save_users(users); st.rerun()
-                # — admin 可重置任何用户密码 —
+                if new_role != ur:
+                    auth_update_role(st.session_state.token, u, new_role); st.rerun()
                 if c3.button("🔑", key=f"rst_{u}", help="重置密码"):
                     st.session_state[f"rst_open_{u}"] = True
                 if c4.button("🗑", key=f"del_{u}"):
-                    del users[u]; save_users(users); st.rerun()
+                    auth_delete_user(st.session_state.token, u); st.rerun()
                 if st.session_state.get(f"rst_open_{u}"):
                     rp = st.text_input("新密码", type="password", key=f"rst_pw_{u}")
                     if st.button("确认重置", key=f"rst_ok_{u}"):
                         if rp:
-                            users[u]["password"] = hash_pw(rp)
-                            save_users(users)
+                            auth_reset_pw(st.session_state.token, u, rp)
                             st.session_state[f"rst_open_{u}"] = False
                             st.success(f"{u} 密码已重置！")
                             st.rerun()
             # admin 自身显示
-            admin_info = users.get(ADMIN_USER, {})
             st.divider()
             st.caption(f"👑 **{ADMIN_USER}** — 管理员（不可删除/不可降级）")
             # — 备份/恢复 —
-            st.divider(); st.caption("**💾 数据备份（Reboot 前下载，Reboot 后上传恢复）**")
+            st.divider(); st.caption("**💾 数据备份**")
             c_dl, c_up = st.columns(2)
             with c_dl:
-                st.download_button("📥 导出用户数据", json.dumps(users, indent=2, ensure_ascii=False),
+                export_data = auth_export_users(st.session_state.token)
+                st.download_button("📥 导出用户数据", json.dumps(export_data, indent=2, ensure_ascii=False),
                                    "users_backup.json", "application/json", use_container_width=True)
             with c_up:
                 uploaded = st.file_uploader("📤 导入用户数据", type=["json"], key="restore_users",
@@ -531,11 +509,10 @@ with st.sidebar:
                 if uploaded is not None:
                     try:
                         restored = json.loads(uploaded.read().decode("utf-8"))
-                        if isinstance(restored, dict):
-                            current = load_users()
-                            current.update(restored)
-                            save_users(current)
-                            st.success(f"已导入 {len(restored)} 个用户！")
+                        if isinstance(restored, list):
+                            res = auth_import_users(st.session_state.token, restored)
+                            if res.get("success"): st.success(f"已导入 {res.get('count', 0)} 个用户！")
+                            else: st.error(res.get("error", "导入失败"))
                             st.rerun()
                     except Exception:
                         st.error("文件格式错误")
