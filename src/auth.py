@@ -83,8 +83,7 @@ def export_users(token: str) -> list:
 
 
 def import_users(token: str, users: list) -> dict:
-    import json
-    return _rpc("import_users", {"p_token": token, "p_users_json": json.dumps(users)})
+    return _rpc("import_users", {"p_token": token, "p_users_json": users})
 
 
 # ---------- Session 持久化（URL query params）----------
