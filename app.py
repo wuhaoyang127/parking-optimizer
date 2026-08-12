@@ -63,8 +63,8 @@ section[data-testid="stSidebar"] { background: linear-gradient(180deg, #1a2332, 
 section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stCaption { color: rgba(255,255,255,.9)!important; }
 section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.85)!important;
-    font-size: 1rem!important; padding: .55rem .75rem!important; border-radius: 9px!important;
-    margin-bottom: 3px!important; }
+    font-size: 1.5rem!important; padding: .9rem 1.1rem!important; border-radius: 10px!important;
+    margin-bottom: 4px!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
     background: rgba(255,255,255,.08)!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] {
@@ -606,8 +606,16 @@ def render_layout_page():
         ta = sum(1 for s in spots if s.spot_type == SpotType.TANDEM)
         st.caption(f"{len(spots)} 车位 — {sa} 独立 + {ta} 纵深")
 
-    fig = draw_parking_layout(net, spots, height=520)
-    st.plotly_chart(fig, use_container_width=True)
+    if "layout_zoom" not in st.session_state: st.session_state.layout_zoom = 1.0
+    c_zoom, _ = st.columns([1, 5])
+    with c_zoom:
+        zoom = st.slider("🔍 缩放", 0.5, 3.0, st.session_state.layout_zoom, 0.1, key="layout_zoom_slider")
+    st.session_state.layout_zoom = zoom
+    adaptive = 520 / 400
+    scale = adaptive * zoom
+
+    fig = draw_parking_layout(net, spots, height=520, scale=scale)
+    st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
 def render_path_page():
@@ -720,27 +728,35 @@ def render_path_page():
             nd = net.nodes[highlight_path[-1]]
             local_center = (nd.x, nd.y)
 
+    # ── 缩放控制 ──
+    if "path_zoom" not in st.session_state: st.session_state.path_zoom = 1.0
+    zoom = st.slider("🔍 图缩放", 0.5, 3.0, st.session_state.path_zoom, 0.1, key="path_zoom_slider",
+                     label_visibility="collapsed", help="放大/缩小图中车位、道路、车辆")
+    st.session_state.path_zoom = zoom
+
     # ── 双窗口 ──
     if highlight_vehicle:
+        adaptive = 480 / 400; scale = adaptive * zoom
         col_left, col_right = st.columns(2)
         with col_left:
             st.caption("🌍 全局视图")
             fig_gl = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
-                                          highlight_path=highlight_path, height=480)
-            st.plotly_chart(fig_gl, use_container_width=True)
+                                          highlight_path=highlight_path, height=480, scale=scale)
+            st.plotly_chart(fig_gl, use_container_width=True, config={"scrollZoom": True})
         with col_right:
             st.caption(f"🔍 {highlight_vehicle} 周边")
             if local_center:
                 fig_lc = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
                                               highlight_path=highlight_path,
-                                              view_center=local_center, view_radius=18, height=480)
-                st.plotly_chart(fig_lc, use_container_width=True)
+                                              view_center=local_center, view_radius=18, height=480, scale=scale)
+                st.plotly_chart(fig_lc, use_container_width=True, config={"scrollZoom": True})
             else:
                 st.info("车辆尚未出现在画面中")
     else:
+        adaptive = 520 / 400; scale = adaptive * zoom
         st.caption("🌍 全局视图 — 选择一辆车查看双窗口回放")
-        fig = draw_parking_layout(net, spots, state, height=520)
-        st.plotly_chart(fig, use_container_width=True)
+        fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
+        st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
 def render_metrics_page():
