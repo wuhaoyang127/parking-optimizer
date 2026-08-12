@@ -23,7 +23,7 @@ from parking_opt.simulation.arrival import generate_demand
 from parking_opt.strategies.baselines import FCFS, NearestPath, RandomAssign
 from parking_opt.strategies.greedy import GreedyStrategy, DepartureOrderGreedy
 from parking_opt.evaluation.metrics import compute_metrics
-from viz import draw_parking_layout, draw_dual_view
+from viz import draw_parking_layout
 
 # ═══════════════════════════════════════════════════════════
 # 常量
