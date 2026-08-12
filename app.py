@@ -258,34 +258,58 @@ def replay_state(events_raw, t, spots, net):
 
 def interp_vehicle_pos(net, events_raw, vid, t):
     """计算车辆 vid 在时刻 t 的平滑插值位置 (x, y)"""
-    veh_ev = [e for e in events_raw if str(e.get("vehicle_id","")) == vid]
+    veh_ev = []
+    for e in events_raw:
+        if str(e.get("vehicle_id", "")) == str(vid):
+            veh_ev.append(e)
     veh_ev.sort(key=lambda e: e["time"])
+
     assigned_t, spot_id, entry_t, dep_start, dep_end, path = None, None, None, None, None, None
     for e in veh_ev:
         et = e["type"]
         if et == "parking_assigned":
-            assigned_t = e["time"]; spot_id = e.get("spot_id","")
-            try: path = st.session_state.sim_pe.shortest_path("ENTRY", spot_id)
-            except: path = ["ENTRY", spot_id]
-        elif et == "spot_entry": entry_t = e["time"]
-        elif et == "departure":
+            assigned_t = e["time"]; spot_id = e.get("spot_id", "")
+            if spot_id and "sim_pe" in st.session_state:
+                try:
+                    pe = st.session_state.sim_pe
+                    path = pe.shortest_path(pe.entry_id, spot_id)
+                except Exception:
+                    path = ["ENTRY", spot_id]
+        elif et == "spot_entry" and entry_t is None:
+            entry_t = e["time"]
+        elif et == "departure" and dep_start is None:
             dep_start = e["time"]
-            if not e.get("metadata",{}).get("had_blocking"): dep_end = e["time"]
-        elif et == "shift_end": dep_end = e["time"]
-    en = next((n for n in net.nodes.values() if n.node_type==NodeType.ENTRY), None)
+            if not e.get("metadata", {}).get("had_blocking"):
+                dep_end = e["time"]
+        elif et == "shift_end":
+            dep_end = e["time"]
+
+    en = next((n for n in net.nodes.values() if n.node_type == NodeType.ENTRY), None)
     ep = (en.x, en.y) if en else (0.0, 0.0)
-    if assigned_t is None or t < assigned_t: return ep
-    if entry_t is None or t < entry_t:
+
+    if assigned_t is None or t < assigned_t:
+        return ep
+
+    if entry_t is None:
+        entry_t = assigned_t + 3.0
+
+    if t < entry_t:
         if path and len(path) >= 2:
-            prog = (t - assigned_t) / max(entry_t - assigned_t, 0.1)
+            dur = max(entry_t - assigned_t, 0.5)
+            prog = min(max((t - assigned_t) / dur, 0.0), 1.0)
             return _interp_path(net, path, prog)
-        nd = net.nodes.get(spot_id); return (nd.x, nd.y) if nd else ep
+        nd = net.nodes.get(spot_id)
+        return (nd.x, nd.y) if nd else ep
+
     if dep_start is None or t < dep_start:
-        nd = net.nodes.get(spot_id); return (nd.x, nd.y) if nd else ep
+        nd = net.nodes.get(spot_id)
+        return (nd.x, nd.y) if nd else ep
+
     nd = net.nodes.get(spot_id)
     sp = (nd.x, nd.y) if nd else ep
-    prog = (t - dep_start) / max((dep_end or dep_start+1) - dep_start, 0.1)
-    return (sp[0] + (ep[0]-sp[0])*min(prog,1), sp[1] + (ep[1]-sp[1])*min(prog,1))
+    dur = max((dep_end or dep_start + 3.0) - dep_start, 0.5)
+    prog = min(max((t - dep_start) / dur, 0.0), 1.0)
+    return (sp[0] + (ep[0] - sp[0]) * prog, sp[1] + (ep[1] - sp[1]) * prog)
 
 def _interp_path(net, nodes, prog):
     segs, total = [], 0.0
