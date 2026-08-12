@@ -708,7 +708,7 @@ def render_layout_page():
 
 
 def render_path_page():
-    """页面4: 动态路径回放"""
+    """页面4: 车辆动态路径 — 20帧快照回放"""
     st.subheader("🚗 车辆动态路径")
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
@@ -719,82 +719,100 @@ def render_path_page():
     events = st.session_state.sim_events_raw
     max_time = max(e["time"] for e in events) if events else 30
 
-    # 初始化回放状态
     if "replay_time" not in st.session_state: st.session_state.replay_time = 0.0
-    if "replay_playing" not in st.session_state: st.session_state.replay_playing = False
-    if "replay_speed" not in st.session_state: st.session_state.replay_speed = 1.0
+    if "frame_index" not in st.session_state: st.session_state.frame_index = 0
+    if "frame_playing" not in st.session_state: st.session_state.frame_playing = False
     if "selected_vehicle" not in st.session_state: st.session_state.selected_vehicle = None
 
-    # 获取所有车辆 ID
     all_vehs = sorted(set(
         str(e.get("vehicle_id", "")) for e in events
         if str(e.get("vehicle_id", "")) and e.get("type") in ("vehicle_arrival", "parking_assigned", "spot_entry")
     ), key=lambda v: int(v.split("_")[-1]) if "_" in v else v)
 
-    # ── 控制栏 ──
-    ctl = st.container()
-    with ctl:
-        c0, c1, c2, c3, c4, c5, c6 = st.columns([2, 0.7, 0.7, 3, 0.7, 1, 1.5])
-        with c0:
-            st.selectbox("选择车辆", [""] + all_vehs, key="selected_vehicle",
-                         format_func=lambda v: f"🚙 {v}" if v else "— 选择车辆 —",
-                         label_visibility="collapsed")
-        with c1:
-            if st.button("⏮", help="起点", use_container_width=True):
-                st.session_state.replay_time = 0.0; st.session_state.replay_playing = False
-        with c2:
-            if st.button("◀", help="后退 1s", use_container_width=True):
-                st.session_state.replay_time = max(0, st.session_state.replay_time - 1)
-                st.session_state.replay_playing = False
-        with c3:
-            rt = st.slider("时间轴", 0.0, max_time, st.session_state.replay_time, 0.1,
-                           key="time_slider", label_visibility="collapsed")
-            if abs(rt - st.session_state.replay_time) > 0.01:
-                st.session_state.replay_time = rt
-                st.session_state.replay_playing = False
-        with c4:
-            if st.button("▶", help="前进 1s", use_container_width=True):
-                st.session_state.replay_time = min(max_time, st.session_state.replay_time + 1)
-                st.session_state.replay_playing = False
-        with c5:
-            if st.button("⏭", help="终点", use_container_width=True):
-                st.session_state.replay_time = max_time; st.session_state.replay_playing = False
-        with c6:
-            ply_lbl = "⏸ 暂停" if st.session_state.replay_playing else "▶ 播放"
-            if st.button(ply_lbl, use_container_width=True, type="primary" if st.session_state.replay_playing else "secondary"):
-                st.session_state.replay_playing = not st.session_state.replay_playing
-                if st.session_state.replay_playing:
-                    st.session_state._play_last_tick = 0  # 重置计时器
+    st.selectbox("选择车辆", [""] + all_vehs, key="selected_vehicle",
+                 format_func=lambda v: f"🚙 {v}" if v else "— 选择车辆 —")
 
-        c_speed = st.columns([1, 8])
-        with c_speed[0]:
-            speed = st.selectbox("速度", [1, 5, 10, 50, 100, 500, 1000, 5000, 10000], index=0, key="replay_speed",
-                                 label_visibility="collapsed",
-                                 format_func=lambda s: f"{s}x")
-        with c_speed[1]:
-            rt_display = st.session_state.replay_time
-            if rt_display >= 3600:
-                h, m, s_val = int(rt_display//3600), int((rt_display%3600)//60), rt_display%60
-                st.caption(f"⏰ {h}:{m:02d}:{s_val:04.1f} / {max_time:.0f}s")
-            else:
-                st.caption(f"⏰ {rt_display:.1f}s / {max_time:.0f}s")
+    hl_veh = st.session_state.selected_vehicle
+    if not hl_veh:
+        st.info("请选择一辆车")
+        return
 
-    # ── 图表（播放时fragment自动刷新）───
-    if st.session_state.replay_playing:
+    veh_ev = sorted([e for e in events if str(e.get("vehicle_id","")) == hl_veh], key=lambda e: e["time"])
+    t_start, t_end, spot_id = None, None, None
+    for e in veh_ev:
+        if e["type"] == "parking_assigned" and t_start is None:
+            t_start = e["time"]; spot_id = e.get("spot_id","")
+        elif e["type"] == "spot_entry" and t_start is not None and t_end is None:
+            t_end = e["time"]
 
-        @st.fragment(run_every=0.5)
-        def _playback():
-            st.session_state.replay_time += st.session_state.replay_speed * 0.5
-            if st.session_state.replay_time >= max_time:
-                st.session_state.replay_time = max_time
-                st.session_state.replay_playing = False
-            _draw_charts(net, spots, events, max_time)
-            rt = st.session_state.replay_time
-            st.caption(f"▶ 播放中 {rt:.1f}s / {max_time:.0f}s 速度{st.session_state.replay_speed}x")
+    if t_start is None:
+        st.warning("该车辆尚未被分配车位")
+        return
 
-        _playback()
-    else:
-        _draw_charts(net, spots, events, max_time)
+    if t_end is None or t_end <= t_start:
+        path = None
+        if "sim_pe" in st.session_state and spot_id:
+            try: path = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, spot_id)
+            except: pass
+        if path:
+            total = 0.0
+            for i in range(len(path)-1):
+                fn = net.nodes.get(path[i]); tn = net.nodes.get(path[i+1])
+                if fn and tn: total += math.hypot(tn.x-fn.x, tn.y-fn.y)
+            t_end = t_start + max(total * 0.5, 3.0)
+        else:
+            t_end = t_start + 3.0
+
+    N = 20
+    frames = [t_start + (t_end - t_start) * i / (N - 1) for i in range(N)]
+
+    st.caption(f"🅿️ 车位: **{spot_id}** | 行驶: {t_start:.1f}s → {t_end:.1f}s ({(t_end-t_start):.1f}s)")
+    c0, c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1, 3])
+    with c0:
+        if st.button("⏮", help="第1帧(起点)", use_container_width=True):
+            st.session_state.frame_index = 0; st.session_state.replay_time = frames[0]
+            st.session_state.frame_playing = False; st.rerun()
+    with c1:
+        if st.button("◀", help="上一帧", use_container_width=True):
+            st.session_state.frame_index = max(0, st.session_state.frame_index - 1)
+            st.session_state.replay_time = frames[st.session_state.frame_index]
+            st.session_state.frame_playing = False; st.rerun()
+    with c2:
+        ply = "⏸" if st.session_state.frame_playing else "▶"
+        if st.button(ply, help="自动播放/暂停", use_container_width=True,
+                     type="primary" if st.session_state.frame_playing else "secondary"):
+            st.session_state.frame_playing = not st.session_state.frame_playing
+            if st.session_state.frame_playing and st.session_state.frame_index >= N - 1:
+                st.session_state.frame_index = 0
+            st.session_state.replay_time = frames[st.session_state.frame_index]
+            st.rerun()
+    with c3:
+        if st.button("▶▶", help="下一帧", use_container_width=True):
+            st.session_state.frame_index = min(N - 1, st.session_state.frame_index + 1)
+            st.session_state.replay_time = frames[st.session_state.frame_index]
+            st.session_state.frame_playing = False; st.rerun()
+    with c4:
+        if st.button("⏭", help="第20帧(终点)", use_container_width=True):
+            st.session_state.frame_index = N - 1; st.session_state.replay_time = frames[-1]
+            st.session_state.frame_playing = False; st.rerun()
+    with c5:
+        st.progress((st.session_state.frame_index + 1) / N,
+                     f"帧 {st.session_state.frame_index+1}/{N} | t={frames[st.session_state.frame_index]:.1f}s")
+
+    if st.session_state.frame_playing:
+        if st.session_state.frame_index < N - 1:
+            time.sleep(0.3)
+            st.session_state.frame_index += 1
+            st.session_state.replay_time = frames[st.session_state.frame_index]
+            st.rerun()
+        else:
+            st.session_state.frame_playing = False
+            st.rerun()
+
+    if st.session_state.frame_index < len(frames):
+        st.session_state.replay_time = frames[st.session_state.frame_index]
+
+    _draw_charts(net, spots, events, max_time)
 
 
 def _draw_charts(net, spots, events, max_time):
