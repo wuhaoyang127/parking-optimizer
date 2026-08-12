@@ -827,20 +827,18 @@ def render_path_page():
         fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
-    # 自动播放（JS 定时器 + location.reload）
+    # 自动播放（st.fragment run_every — 原生稳定机制）
     if st.session_state.replay_playing:
-        st.session_state.replay_time += st.session_state.replay_speed * 0.4
-        if st.session_state.replay_time >= max_time:
-            st.session_state.replay_time = max_time
-            st.session_state.replay_playing = False
-        else:
+
+        @st.fragment(run_every=0.5)
+        def _auto_advance():
+            st.session_state.replay_time += st.session_state.replay_speed * 0.5
+            if st.session_state.replay_time >= max_time:
+                st.session_state.replay_time = max_time
+                st.session_state.replay_playing = False
             st.caption(f"▶ 播放中 {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
-            import streamlit.components.v1 as components
-            components.html("""
-            <script>
-            setTimeout(function(){window.location.reload();}, 450);
-            </script>
-            """, height=0)
+
+        _auto_advance()
 
 
 def render_metrics_page():
