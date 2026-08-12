@@ -750,95 +750,92 @@ def render_path_page():
 
         c_speed = st.columns([1, 8])
         with c_speed[0]:
-            speed = st.selectbox("速度", [0.5, 1.0, 2.0, 4.0], index=1, key="replay_speed",
+            speed = st.selectbox("速度", [1, 2, 5, 10, 20, 50, 100], index=0, key="replay_speed",
                                  label_visibility="collapsed",
                                  format_func=lambda s: f"{s}x")
         with c_speed[1]:
-            st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
-
-    # ── 当前时刻状态 ──
-    state = replay_state(events, st.session_state.replay_time, spots, net)
-
-    # ── 选中车辆：平滑插值 + 路径 + 局部跟踪 ──
-    highlight_path = None
-    local_center = None
-    highlight_vehicle = st.session_state.selected_vehicle
-
-    if highlight_vehicle:
-        # 获取该车辆路径
-        veh_events = [e for e in events if str(e.get("vehicle_id", "")) == highlight_vehicle]
-        veh_events.sort(key=lambda e: e["time"])
-        path_nodes = []
-        for e in veh_events:
-            if e["type"] == "parking_assigned":
-                sid = e.get("spot_id", "")
-                try: path_nodes = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, sid)
-                except: path_nodes = [st.session_state.sim_pe.entry_id, sid]
-                break
-        if path_nodes: highlight_path = path_nodes
-
-        # 平滑插值位置 → 局部图中心
-        ipos = interp_vehicle_pos(net, events, highlight_vehicle, st.session_state.replay_time)
-        local_center = ipos
-
-        # 注入平滑位置到 state
-        found = False
-        for dv in state["dv"]:
-            if str(dv.get("vid", "")) == highlight_vehicle:
-                dv["x"], dv["y"] = ipos[0], ipos[1]; found = True; break
-        if not found:
-            state["dv"].append({"vid": highlight_vehicle, "x": ipos[0], "y": ipos[1],
-                                "st": "行驶中", "target": highlight_path[-1] if highlight_path else "?"})
-
-    # 所有行驶车辆插值（全局视图流畅）
-    for dv in state["dv"]:
-        vid = str(dv.get("vid", ""))
-        if vid and vid != highlight_vehicle:
-            ipos = interp_vehicle_pos(net, events, vid, st.session_state.replay_time)
-            dv["x"], dv["y"] = ipos[0], ipos[1]
-
-    # ── 缩放控制 ──
-    if "path_zoom" not in st.session_state: st.session_state.path_zoom = 1.0
-    zoom = st.slider("🔍 图缩放", 0.5, 3.0, st.session_state.path_zoom, 0.1, key="path_zoom_slider",
-                     label_visibility="collapsed", help="放大/缩小图中车位、道路、车辆")
-    st.session_state.path_zoom = zoom
-
-    # ── 双窗口 ──
-    if highlight_vehicle:
-        adaptive = 480 / 400; scale = adaptive * zoom
-        col_left, col_right = st.columns(2)
-        with col_left:
-            st.caption("🌍 全局视图")
-            fig_gl = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
-                                          highlight_path=highlight_path, height=480, scale=scale)
-            st.plotly_chart(fig_gl, use_container_width=True, config={"scrollZoom": True})
-        with col_right:
-            st.caption(f"🔍 {highlight_vehicle} 周边")
-            if local_center:
-                fig_lc = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
-                                              highlight_path=highlight_path,
-                                              view_center=local_center, view_radius=18, height=480, scale=scale)
-                st.plotly_chart(fig_lc, use_container_width=True, config={"scrollZoom": True})
+            rt_display = st.session_state.replay_time
+            if rt_display >= 3600:
+                h, m, s_val = int(rt_display//3600), int((rt_display%3600)//60), rt_display%60
+                st.caption(f"⏰ {h}:{m:02d}:{s_val:04.1f} / {max_time:.0f}s")
             else:
-                st.info("车辆尚未出现在画面中")
-    else:
-        adaptive = 520 / 400; scale = adaptive * zoom
-        st.caption("🌍 全局视图 — 选择一辆车查看双窗口回放")
-        fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
-        st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+                st.caption(f"⏰ {rt_display:.1f}s / {max_time:.0f}s")
 
-    # 自动播放（st.fragment run_every — 原生稳定机制）
+    # ── 图表（播放时fragment自动刷新）───
     if st.session_state.replay_playing:
 
         @st.fragment(run_every=0.5)
-        def _auto_advance():
+        def _playback():
             st.session_state.replay_time += st.session_state.replay_speed * 0.5
             if st.session_state.replay_time >= max_time:
                 st.session_state.replay_time = max_time
                 st.session_state.replay_playing = False
-            st.caption(f"▶ 播放中 {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
+            _draw_charts(net, spots, events, max_time)
+            rt = st.session_state.replay_time
+            st.caption(f"▶ 播放中 {rt:.1f}s / {max_time:.0f}s 速度{st.session_state.replay_speed}x")
 
-        _auto_advance()
+        _playback()
+    else:
+        _draw_charts(net, spots, events, max_time)
+
+
+def _draw_charts(net, spots, events, max_time):
+    """绘制停车场图表（被静态和播放模式共用）"""
+    state = replay_state(events, st.session_state.replay_time, spots, net)
+    hl_path, hl_center, hl_veh = None, None, st.session_state.selected_vehicle
+
+    if hl_veh:
+        veh_ev = sorted([e for e in events if str(e.get("vehicle_id","")) == hl_veh], key=lambda e: e["time"])
+        pn = []
+        for e in veh_ev:
+            if e["type"] == "parking_assigned":
+                sid = e.get("spot_id","")
+                try: pn = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, sid)
+                except: pn = [st.session_state.sim_pe.entry_id, sid]
+                break
+        if pn: hl_path = pn
+
+        ipos = interp_vehicle_pos(net, events, hl_veh, st.session_state.replay_time)
+        hl_center = ipos
+        found = False
+        for dv in state["dv"]:
+            if str(dv.get("vid","")) == hl_veh: dv["x"],dv["y"]=ipos[0],ipos[1]; found=True; break
+        if not found:
+            state["dv"].append({"vid":hl_veh,"x":ipos[0],"y":ipos[1],"st":"行驶中","target":hl_path[-1] if hl_path else "?"})
+
+    for dv in state["dv"]:
+        vid = str(dv.get("vid",""))
+        if vid and vid != hl_veh:
+            ipos = interp_vehicle_pos(net, events, vid, st.session_state.replay_time)
+            dv["x"],dv["y"] = ipos[0],ipos[1]
+
+    if "path_zoom" not in st.session_state: st.session_state.path_zoom = 1.0
+    zoom = st.slider("🔍 图缩放", 0.5, 3.0, st.session_state.path_zoom, 0.1, key="path_zoom_slider",
+                     label_visibility="collapsed")
+    st.session_state.path_zoom = zoom
+
+    if hl_veh:
+        sc = (480/400)*zoom
+        c1,c2 = st.columns(2)
+        with c1:
+            st.caption("🌍 全局视图")
+            fig = draw_parking_layout(net, spots, state, highlight_vehicle=hl_veh,
+                                       highlight_path=hl_path, height=480, scale=sc)
+            st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+        with c2:
+            st.caption(f"🔍 {hl_veh} 周边")
+            if hl_center:
+                fig = draw_parking_layout(net, spots, state, highlight_vehicle=hl_veh,
+                                           highlight_path=hl_path,
+                                           view_center=hl_center, view_radius=18, height=480, scale=sc)
+                st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+            else:
+                st.info("车辆尚未出现在画面中")
+    else:
+        sc = (520/400)*zoom
+        st.caption("🌍 全局视图 — 选择一辆车查看双窗口回放")
+        fig = draw_parking_layout(net, spots, state, height=520, scale=sc)
+        st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
 def render_metrics_page():
