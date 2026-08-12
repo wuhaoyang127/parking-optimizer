@@ -62,7 +62,13 @@ h2 { font-size: 1.15rem!important; font-weight: 600!important; color: var(--prim
 section[data-testid="stSidebar"] { background: linear-gradient(180deg, #1a2332, #1e3a5f); }
 section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stCaption { color: rgba(255,255,255,.9)!important; }
-section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.85)!important; }
+section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.85)!important;
+    font-size: 1rem!important; padding: .55rem .75rem!important; border-radius: 9px!important;
+    margin-bottom: 3px!important; }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+    background: rgba(255,255,255,.08)!important; }
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] {
+    background: rgba(59,130,246,.25)!important; font-weight: 600!important; }
 section[data-testid="stSidebar"] .stButton>button { background: rgba(255,255,255,.12)!important;
     color: white!important; border: 1px solid rgba(255,255,255,.2)!important; border-radius: 8px!important; }
 .stButton>button[kind="primary"] { background: linear-gradient(135deg, #3b82f6, #2563eb)!important;
@@ -600,7 +606,7 @@ def render_layout_page():
         ta = sum(1 for s in spots if s.spot_type == SpotType.TANDEM)
         st.caption(f"{len(spots)} 车位 — {sa} 独立 + {ta} 纵深")
 
-    fig = draw_parking_layout(net, spots, height=480)
+    fig = draw_parking_layout(net, spots, height=520)
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -720,20 +726,20 @@ def render_path_page():
         with col_left:
             st.caption("🌍 全局视图")
             fig_gl = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
-                                          highlight_path=highlight_path, height=380)
+                                          highlight_path=highlight_path, height=480)
             st.plotly_chart(fig_gl, use_container_width=True)
         with col_right:
             st.caption(f"🔍 {highlight_vehicle} 周边")
             if local_center:
                 fig_lc = draw_parking_layout(net, spots, state, highlight_vehicle=highlight_vehicle,
                                               highlight_path=highlight_path,
-                                              view_center=local_center, view_radius=18, height=380)
+                                              view_center=local_center, view_radius=18, height=480)
                 st.plotly_chart(fig_lc, use_container_width=True)
             else:
                 st.info("车辆尚未出现在画面中")
     else:
         st.caption("🌍 全局视图 — 选择一辆车查看双窗口回放")
-        fig = draw_parking_layout(net, spots, state, height=450)
+        fig = draw_parking_layout(net, spots, state, height=520)
         st.plotly_chart(fig, use_container_width=True)
 
 
