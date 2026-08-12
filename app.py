@@ -256,6 +256,53 @@ def replay_state(events_raw, t, spots, net):
                     ss[inner.spot_id]["blocked"] = True
     return {"ss": ss, "dv": dv}
 
+def interp_vehicle_pos(net, events_raw, vid, t):
+    """计算车辆 vid 在时刻 t 的平滑插值位置 (x, y)"""
+    veh_ev = [e for e in events_raw if str(e.get("vehicle_id","")) == vid]
+    veh_ev.sort(key=lambda e: e["time"])
+    assigned_t, spot_id, entry_t, dep_start, dep_end, path = None, None, None, None, None, None
+    for e in veh_ev:
+        et = e["type"]
+        if et == "parking_assigned":
+            assigned_t = e["time"]; spot_id = e.get("spot_id","")
+            try: path = st.session_state.sim_pe.shortest_path("ENTRY", spot_id)
+            except: path = ["ENTRY", spot_id]
+        elif et == "spot_entry": entry_t = e["time"]
+        elif et == "departure":
+            dep_start = e["time"]
+            if not e.get("metadata",{}).get("had_blocking"): dep_end = e["time"]
+        elif et == "shift_end": dep_end = e["time"]
+    en = next((n for n in net.nodes.values() if n.node_type==NodeType.ENTRY), None)
+    ep = (en.x, en.y) if en else (0.0, 0.0)
+    if assigned_t is None or t < assigned_t: return ep
+    if entry_t is None or t < entry_t:
+        if path and len(path) >= 2:
+            prog = (t - assigned_t) / max(entry_t - assigned_t, 0.1)
+            return _interp_path(net, path, prog)
+        nd = net.nodes.get(spot_id); return (nd.x, nd.y) if nd else ep
+    if dep_start is None or t < dep_start:
+        nd = net.nodes.get(spot_id); return (nd.x, nd.y) if nd else ep
+    nd = net.nodes.get(spot_id)
+    sp = (nd.x, nd.y) if nd else ep
+    prog = (t - dep_start) / max((dep_end or dep_start+1) - dep_start, 0.1)
+    return (sp[0] + (ep[0]-sp[0])*min(prog,1), sp[1] + (ep[1]-sp[1])*min(prog,1))
+
+def _interp_path(net, nodes, prog):
+    segs, total = [], 0.0
+    for i in range(len(nodes)-1):
+        fn = net.nodes.get(nodes[i]); tn = net.nodes.get(nodes[i+1])
+        if fn and tn:
+            sl = max(math.hypot(tn.x-fn.x, tn.y-fn.y), 0.01)
+            segs.append((fn, tn, sl)); total += sl
+    if total == 0: return (0.0, 0.0)
+    target = prog * total; acc = 0.0
+    for fn, tn, sl in segs:
+        if acc + sl >= target:
+            sp = (target-acc)/sl
+            return (fn.x+(tn.x-fn.x)*sp, fn.y+(tn.y-fn.y)*sp)
+        acc += sl
+    l = segs[-1]; return (l[1].x, l[1].y)
+
 def build_layout_from_json(data):
     """从 JSON 数据构建 RoadNetwork + spots 列表"""
     net = RoadNetwork()
@@ -685,48 +732,53 @@ def render_path_page():
 
     # 自动播放
     if st.session_state.replay_playing:
-        st.session_state.replay_time += st.session_state.replay_speed * 0.3
+        st.session_state.replay_time += st.session_state.replay_speed * 0.15
         if st.session_state.replay_time >= max_time:
             st.session_state.replay_time = max_time
             st.session_state.replay_playing = False
-        time.sleep(0.08)
+        time.sleep(0.04)
         st.rerun()
 
     # ── 当前时刻状态 ──
     state = replay_state(events, st.session_state.replay_time, spots, net)
 
-    # ── 选中车辆的路径信息 ──
+    # ── 选中车辆：平滑插值 + 路径 + 局部跟踪 ──
     highlight_path = None
     local_center = None
     highlight_vehicle = st.session_state.selected_vehicle
 
     if highlight_vehicle:
-        # 获取该车辆的事件
+        # 获取该车辆路径
         veh_events = [e for e in events if str(e.get("vehicle_id", "")) == highlight_vehicle]
         veh_events.sort(key=lambda e: e["time"])
-        # 查找 assigned 事件获取路径
         path_nodes = []
         for e in veh_events:
             if e["type"] == "parking_assigned":
                 sid = e.get("spot_id", "")
-                try:
-                    path_nodes = st.session_state.sim_pe.shortest_path(
-                        st.session_state.sim_pe.entry_id, sid)
-                except:
-                    path_nodes = [st.session_state.sim_pe.entry_id, sid]
+                try: path_nodes = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, sid)
+                except: path_nodes = [st.session_state.sim_pe.entry_id, sid]
                 break
-        if path_nodes:
-            highlight_path = path_nodes
+        if path_nodes: highlight_path = path_nodes
 
-    # 计算局部视图中心（选中车辆当前位置）
-    if highlight_vehicle:
+        # 平滑插值位置 → 局部图中心
+        ipos = interp_vehicle_pos(net, events, highlight_vehicle, st.session_state.replay_time)
+        local_center = ipos
+
+        # 注入平滑位置到 state
+        found = False
         for dv in state["dv"]:
             if str(dv.get("vid", "")) == highlight_vehicle:
-                local_center = (dv["x"], dv["y"])
-                break
-        if local_center is None and highlight_path and highlight_path[-1] in net.nodes:
-            nd = net.nodes[highlight_path[-1]]
-            local_center = (nd.x, nd.y)
+                dv["x"], dv["y"] = ipos[0], ipos[1]; found = True; break
+        if not found:
+            state["dv"].append({"vid": highlight_vehicle, "x": ipos[0], "y": ipos[1],
+                                "st": "行驶中", "target": highlight_path[-1] if highlight_path else "?"})
+
+    # 所有行驶车辆插值（全局视图流畅）
+    for dv in state["dv"]:
+        vid = str(dv.get("vid", ""))
+        if vid and vid != highlight_vehicle:
+            ipos = interp_vehicle_pos(net, events, vid, st.session_state.replay_time)
+            dv["x"], dv["y"] = ipos[0], ipos[1]
 
     # ── 缩放控制 ──
     if "path_zoom" not in st.session_state: st.session_state.path_zoom = 1.0
