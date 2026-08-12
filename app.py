@@ -12,6 +12,7 @@ from auth import export_users as auth_export_users, import_users as auth_import_
 from auth import set_session_token, get_session_token, clear_session_token, restore_session
 
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -827,21 +828,14 @@ def render_path_page():
         fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
-    # 自动播放
+    # 自动播放（st_autorefresh 稳定触发，不依赖 st.rerun 循环）
     if st.session_state.replay_playing:
-        now = time.time()
-        last = st.session_state.get("_play_last_tick", now)
-        dt = now - last
-        st.session_state._play_last_tick = now
-        st.session_state.replay_time += st.session_state.replay_speed * dt
+        _ = st_autorefresh(interval=400, limit=500, key="play_refresh")
+        st.session_state.replay_time += st.session_state.replay_speed * 0.4
         if st.session_state.replay_time >= max_time:
             st.session_state.replay_time = max_time
             st.session_state.replay_playing = False
-            st.session_state._play_last_tick = 0
-        else:
-            st.caption(f"▶ 播放中 {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
-            time.sleep(0.15)
-            st.rerun()
+        st.caption(f"▶ 播放中 {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
 
 def render_metrics_page():
