@@ -754,15 +754,6 @@ def render_path_page():
         with c_speed[1]:
             st.caption(f"⏰ {st.session_state.replay_time:.1f}s / {max_time:.0f}s")
 
-    # 自动播放
-    if st.session_state.replay_playing:
-        st.session_state.replay_time += st.session_state.replay_speed * 0.15
-        if st.session_state.replay_time >= max_time:
-            st.session_state.replay_time = max_time
-            st.session_state.replay_playing = False
-        time.sleep(0.04)
-        st.rerun()
-
     # ── 当前时刻状态 ──
     state = replay_state(events, st.session_state.replay_time, spots, net)
 
@@ -833,6 +824,15 @@ def render_path_page():
         st.caption("🌍 全局视图 — 选择一辆车查看双窗口回放")
         fig = draw_parking_layout(net, spots, state, height=520, scale=scale)
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
+
+    # 自动播放（放在图表渲染之后，确保画面先更新再前进）
+    if st.session_state.replay_playing:
+        time.sleep(0.05)
+        st.session_state.replay_time += st.session_state.replay_speed * 0.15
+        if st.session_state.replay_time >= max_time:
+            st.session_state.replay_time = max_time
+            st.session_state.replay_playing = False
+        st.rerun()
 
 
 def render_metrics_page():
