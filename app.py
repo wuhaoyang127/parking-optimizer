@@ -750,7 +750,7 @@ def render_path_page():
 
         c_speed = st.columns([1, 8])
         with c_speed[0]:
-            speed = st.selectbox("速度", [1, 2, 5, 10, 20, 50, 100], index=0, key="replay_speed",
+            speed = st.selectbox("速度", [1, 5, 10, 50, 100, 500, 1000, 5000, 10000], index=0, key="replay_speed",
                                  label_visibility="collapsed",
                                  format_func=lambda s: f"{s}x")
         with c_speed[1]:
