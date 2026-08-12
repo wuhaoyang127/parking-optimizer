@@ -62,16 +62,22 @@ h2 { font-size: 1.15rem!important; font-weight: 600!important; color: var(--prim
 section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a, #1e3a5f); }
 section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stCaption { color: rgba(255,255,255,.9)!important; }
-section[data-testid="stSidebar"] .stRadio label { color: #e2e8f0!important;
+/* 侧边栏所有文字强制亮色 */
+section[data-testid="stSidebar"] div[data-testid="stMarkdown"] *,
+section[data-testid="stSidebar"] .stRadio * { color: #f1f5f9!important; }
+section[data-testid="stSidebar"] .stRadio label {
     font-size: 1.5rem!important; padding: .9rem 1.1rem!important; border-radius: 10px!important;
     margin-bottom: 4px!important; border-left: 3px solid transparent!important;
     transition: all 0.15s!important; }
-section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
+/* 悬停 */
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover,
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover * {
     background: rgba(255,255,255,.18)!important; color: #fff!important; }
-section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] {
+/* 选中 */
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"],
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] * {
     background: rgba(255,255,255,.22)!important; color: #0f172a!important;
-    font-weight: 700!important; border-left-color: #22d3ee!important;
-    box-shadow: 0 0 14px rgba(34,211,238,.25)!important; }
+    font-weight: 700!important; }
 section[data-testid="stSidebar"] .stButton>button { background: rgba(255,255,255,.08)!important;
     color: rgba(255,255,255,.9)!important; border: 1px solid rgba(255,255,255,.15)!important;
     border-radius: 9px!important; font-size: 1rem!important; padding: .55rem 1rem!important; }
