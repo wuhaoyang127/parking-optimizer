@@ -799,20 +799,20 @@ def render_path_page():
         st.progress((st.session_state.frame_index + 1) / N,
                      f"帧 {st.session_state.frame_index+1}/{N} | t={frames[st.session_state.frame_index]:.1f}s")
 
-    if st.session_state.frame_playing:
-        if st.session_state.frame_index < N - 1:
-            time.sleep(0.3)
-            st.session_state.frame_index += 1
-            st.session_state.replay_time = frames[st.session_state.frame_index]
-            st.rerun()
-        else:
-            st.session_state.frame_playing = False
-            st.rerun()
-
     if st.session_state.frame_index < len(frames):
         st.session_state.replay_time = frames[st.session_state.frame_index]
 
     _draw_charts(net, spots, events, max_time)
+
+    # 自动轮播（放在图表之后，确保先渲染再切帧）
+    if st.session_state.frame_playing:
+        if st.session_state.frame_index < N - 1:
+            time.sleep(0.4)
+            st.session_state.frame_index += 1
+            st.rerun()
+        else:
+            st.session_state.frame_playing = False
+            st.rerun()
 
 
 def _draw_charts(net, spots, events, max_time):
