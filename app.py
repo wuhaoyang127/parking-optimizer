@@ -260,56 +260,74 @@ def interp_vehicle_pos(net, events_raw, vid, t):
     """计算车辆 vid 在时刻 t 的平滑插值位置 (x, y)"""
     veh_ev = []
     for e in events_raw:
-        if str(e.get("vehicle_id", "")) == str(vid):
+        ev_vid = e.get("vehicle_id", "")
+        # 宽松匹配：支持 int/str 混合
+        if str(ev_vid) == str(vid) or ev_vid == vid:
             veh_ev.append(e)
     veh_ev.sort(key=lambda e: e["time"])
 
-    assigned_t, spot_id, entry_t, dep_start, dep_end, path = None, None, None, None, None, None
+    assigned_t, spot_id, entry_t = None, None, None
     for e in veh_ev:
         et = e["type"]
-        if et == "parking_assigned":
-            assigned_t = e["time"]; spot_id = e.get("spot_id", "")
-            if spot_id and "sim_pe" in st.session_state:
-                try:
-                    pe = st.session_state.sim_pe
-                    path = pe.shortest_path(pe.entry_id, spot_id)
-                except Exception:
-                    path = ["ENTRY", spot_id]
-        elif et == "spot_entry" and entry_t is None:
+        sid = e.get("spot_id", "")
+        # 查找任何分配/进入事件
+        if et in ("parking_assigned", "spot_entry") and assigned_t is None:
+            assigned_t = e["time"]
+            if sid: spot_id = sid
+        elif et == "spot_entry" and assigned_t is not None:
             entry_t = e["time"]
-        elif et == "departure" and dep_start is None:
-            dep_start = e["time"]
-            if not e.get("metadata", {}).get("had_blocking"):
-                dep_end = e["time"]
-        elif et == "shift_end":
-            dep_end = e["time"]
+            break
+        elif et == "departure" and assigned_t is not None:
+            break  # 后面不再需要
+
+    # 如果还是没找到分配事件，尝试从任意有 spot_id 的事件推断
+    if assigned_t is None:
+        for e in veh_ev:
+            sid = e.get("spot_id", "")
+            if sid:
+                assigned_t = e["time"]; spot_id = sid; break
 
     en = next((n for n in net.nodes.values() if n.node_type == NodeType.ENTRY), None)
     ep = (en.x, en.y) if en else (0.0, 0.0)
 
-    if assigned_t is None or t < assigned_t:
+    # 没找到任何分配 → 入口位置
+    if assigned_t is None or not spot_id:
         return ep
 
-    if entry_t is None:
-        entry_t = assigned_t + 3.0
+    # 还没到分配时间 → 入口
+    if t < assigned_t:
+        return ep
 
-    if t < entry_t:
-        if path and len(path) >= 2:
-            dur = max(entry_t - assigned_t, 0.5)
-            prog = min(max((t - assigned_t) / dur, 0.0), 1.0)
-            return _interp_path(net, path, prog)
-        nd = net.nodes.get(spot_id)
-        return (nd.x, nd.y) if nd else ep
+    # 获取路径
+    path = None
+    if "sim_pe" in st.session_state:
+        try:
+            pe = st.session_state.sim_pe
+            path = pe.shortest_path(pe.entry_id, spot_id)
+        except Exception:
+            path = None
+    if not path:
+        path = ["ENTRY", spot_id]
 
-    if dep_start is None or t < dep_start:
-        nd = net.nodes.get(spot_id)
-        return (nd.x, nd.y) if nd else ep
+    # 计算到达时间（如果没找到确切 entry 事件，估算）
+    if entry_t is None or entry_t <= assigned_t:
+        # 按路径长度估算：每单位距离 0.5 秒
+        total_dist = 0.0
+        for i in range(len(path) - 1):
+            fn = net.nodes.get(path[i]); tn = net.nodes.get(path[i + 1])
+            if fn and tn:
+                total_dist += math.hypot(tn.x - fn.x, tn.y - fn.y)
+        entry_t = assigned_t + max(total_dist * 0.5, 2.0)
 
+    # 行驶阶段
+    if t < entry_t and path and len(path) >= 2:
+        dur = max(entry_t - assigned_t, 0.5)
+        prog = min(max((t - assigned_t) / dur, 0.0), 1.0)
+        return _interp_path(net, path, prog)
+
+    # 已停入 → 返回车位位置
     nd = net.nodes.get(spot_id)
-    sp = (nd.x, nd.y) if nd else ep
-    dur = max((dep_end or dep_start + 3.0) - dep_start, 0.5)
-    prog = min(max((t - dep_start) / dur, 0.0), 1.0)
-    return (sp[0] + (ep[0] - sp[0]) * prog, sp[1] + (ep[1] - sp[1]) * prog)
+    return (nd.x, nd.y) if nd else ep
 
 def _interp_path(net, nodes, prog):
     segs, total = [], 0.0
