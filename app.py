@@ -59,18 +59,24 @@ h2 { font-size: 1.15rem!important; font-weight: 600!important; color: var(--prim
 .metric-card .lbl { font-size: .68rem; color: var(--muted); }
 .metric-card.warn { border-top-color: #f59e0b; } .metric-card.bad { border-top-color: #ef4444; }
 .metric-card.good { border-top-color: #22c55e; }
-section[data-testid="stSidebar"] { background: linear-gradient(180deg, #1a2332, #1e3a5f); }
+section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a, #1e3a5f); }
 section[data-testid="stSidebar"] h1, section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] .stCaption { color: rgba(255,255,255,.9)!important; }
-section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.85)!important;
+section[data-testid="stSidebar"] .stRadio label { color: rgba(255,255,255,.7)!important;
     font-size: 1.5rem!important; padding: .9rem 1.1rem!important; border-radius: 10px!important;
-    margin-bottom: 4px!important; }
+    margin-bottom: 4px!important; border-left: 3px solid transparent!important;
+    transition: all 0.15s!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label:hover {
-    background: rgba(255,255,255,.08)!important; }
+    background: rgba(255,255,255,.12)!important; color: rgba(255,255,255,.95)!important; }
 section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[data-selected="true"] {
-    background: rgba(59,130,246,.25)!important; font-weight: 600!important; }
-section[data-testid="stSidebar"] .stButton>button { background: rgba(255,255,255,.12)!important;
-    color: white!important; border: 1px solid rgba(255,255,255,.2)!important; border-radius: 8px!important; }
+    background: rgba(59,130,246,.35)!important; color: #fff!important;
+    font-weight: 700!important; border-left-color: #60a5fa!important;
+    box-shadow: 0 0 12px rgba(59,130,246,.2)!important; }
+section[data-testid="stSidebar"] .stButton>button { background: rgba(255,255,255,.1)!important;
+    color: rgba(255,255,255,.85)!important; border: 1px solid rgba(255,255,255,.15)!important;
+    border-radius: 8px!important; font-size: .85rem!important; }
+section[data-testid="stSidebar"] .stButton>button:hover { background: rgba(255,255,255,.18)!important;
+    border-color: rgba(255,255,255,.3)!important; }
 .stButton>button[kind="primary"] { background: linear-gradient(135deg, #3b82f6, #2563eb)!important;
     border: none!important; border-radius: 8px!important; font-weight: 600!important; color: white!important; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
