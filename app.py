@@ -504,18 +504,74 @@ with st.sidebar:
                 st.download_button("📥 导出用户数据", json.dumps(export_data, indent=2, ensure_ascii=False),
                                    "users_backup.json", "application/json", use_container_width=True)
             with c_up:
-                uploaded = st.file_uploader("📤 导入用户数据", type=["json"], key="restore_users",
-                                            label_visibility="collapsed")
-                if uploaded is not None:
-                    try:
-                        restored = json.loads(uploaded.read().decode("utf-8"))
-                        if isinstance(restored, list):
-                            res = auth_import_users(st.session_state.token, restored)
-                            if res.get("success"): st.success(f"已导入 {res.get('count', 0)} 个用户！")
-                            else: st.error(res.get("error", "导入失败"))
+                # 三态导入：idle → preview → done
+                if "import_state" not in st.session_state:
+                    st.session_state.import_state = "idle"
+                    st.session_state.import_data = None
+                    st.session_state.import_result = None
+
+                if st.session_state.import_state == "idle":
+                    uploaded = st.file_uploader("📤 导入用户数据", type=["json"], key="restore_users",
+                                                label_visibility="collapsed")
+                    if uploaded is not None:
+                        try:
+                            raw = json.loads(uploaded.read().decode("utf-8"))
+                            # 自动检测格式：dict(旧) 或 list(新)
+                            if isinstance(raw, dict):
+                                normalized = []
+                                for uname, info in raw.items():
+                                    normalized.append({
+                                        "username": uname,
+                                        "password_hash": info.get("password_hash", info.get("password", "")),
+                                        "role": info.get("role", "viewer")
+                                    })
+                            elif isinstance(raw, list):
+                                normalized = raw
+                            else:
+                                st.error("不支持的数据格式，需要 JSON 对象或数组")
+                                st.stop()
+                            if not normalized:
+                                st.error("未检测到任何用户数据")
+                                st.stop()
+                            st.session_state.import_data = normalized
+                            st.session_state.import_state = "preview"
                             st.rerun()
-                    except Exception:
-                        st.error("文件格式错误")
+                        except json.JSONDecodeError:
+                            st.error("文件不是有效的 JSON 格式")
+                        except Exception as e:
+                            st.error(f"文件解析失败: {e}")
+
+                elif st.session_state.import_state == "preview":
+                    data = st.session_state.import_data
+                    st.info(f"📋 检测到 **{len(data)}** 个用户，确认导入？")
+                    df_preview = pd.DataFrame(data)
+                    show_cols = [c for c in ["username", "role"] if c in df_preview.columns]
+                    st.dataframe(df_preview[show_cols], use_container_width=True, hide_index=True)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button("✅ 确认导入", use_container_width=True, type="primary"):
+                            res = auth_import_users(st.session_state.token, data)
+                            st.session_state.import_result = res
+                            st.session_state.import_state = "done"
+                            st.rerun()
+                    with c2:
+                        if st.button("❌ 取消", use_container_width=True):
+                            st.session_state.import_state = "idle"
+                            st.session_state.import_data = None
+                            st.rerun()
+
+                elif st.session_state.import_state == "done":
+                    res = st.session_state.import_result
+                    if res and res.get("success"):
+                        st.success(f"✅ 成功导入 {res.get('count', len(st.session_state.import_data))} 个用户！")
+                    else:
+                        err = res.get("error", "未知错误") if res else "无响应"
+                        st.error(f"导入失败: {err}")
+                    if st.button("完成", use_container_width=True):
+                        st.session_state.import_state = "idle"
+                        st.session_state.import_data = None
+                        st.session_state.import_result = None
+                        st.rerun()
         st.markdown("<hr style='border-color:rgba(255,255,255,0.15);margin:0.3rem 0;'>", unsafe_allow_html=True)
     st.markdown("### ⚙️ 仿真配置")
     disabled = not role["can_configure"]
