@@ -19,7 +19,7 @@ class CPSatBaseline:
     """
 
     name = "cpsat_oracle"
-    TIMEOUT = 20  # 秒
+    TIMEOUT = 10  # 秒
     MAX_WAIT = 1800  # 等待上限（秒），与引擎 SimulationEngine.MAX_WAIT_TIME 一致
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine):
