@@ -42,8 +42,10 @@ def generate_demand(total_vehicles: int = 150,
         # 停车时长
         parking_duration = random.uniform(duration_min, duration_max)
 
-        # 估计值 = 历史均值 (7200s = 2h)
-        estimated_duration = (duration_min + duration_max) / 2
+        # 预估时长 = 真实时长 × (1 ± 30% 误差)，模拟系统对停车时长的预估
+        # （在线策略可利用 estimated_duration 做时长感知分配，但无法读到真实 parking_duration）
+        error = random.uniform(-0.3, 0.3)
+        estimated_duration = parking_duration * (1 + error)
 
         vehicles.append(Vehicle(
             vehicle_id=vid,

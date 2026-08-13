@@ -21,8 +21,9 @@ from parking_opt.simulation.parking_lot import ParkingLot
 from parking_opt.simulation.engine import SimulationEngine
 from parking_opt.simulation.arrival import generate_demand
 from parking_opt.strategies.baselines import FCFS, NearestPath, RandomAssign
-from parking_opt.strategies.greedy import GreedyStrategy, DepartureOrderGreedy
+from parking_opt.strategies.greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
 from parking_opt.evaluation.metrics import compute_metrics
+from parking_opt.optimization.cpsat_baseline import CPSatBaseline
 from viz import draw_parking_layout
 
 # ═══════════════════════════════════════════════════════════
@@ -31,7 +32,8 @@ from viz import draw_parking_layout
 STRATEGY_LABELS = {
     "greedy": "贪心（主方法）", "fcfs": "先到先服务",
     "nearest": "最近路径", "random": "随机分配",
-    "departure_greedy": "离场贪心", "compare_all": "全部对比",
+    "departure_greedy": "离场贪心", "duration_greedy": "时长感知贪心",
+    "compare_all": "全部对比",
 }
 
 ADMIN_USER = "wuhaoyang127"
@@ -197,6 +199,10 @@ LAYOUT_BUILDERS.update({"linear":build_linear,"rectangle":build_rectangle,"lshap
 # 仿真 & 时间轴工具函数
 # ═══════════════════════════════════════════════════════════
 def run_single(net, spots, vehicles, strategy, seed):
+    # 重置车位状态，避免多次运行时复用污染（compare_all 循环会复用 spots）
+    for s in spots:
+        s.is_occupied = False
+        s.occupied_by = None
     pe = PathEngine(net); lot = ParkingLot(spots)
     engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed)
     t0 = time.time(); events = engine.run()
@@ -468,7 +474,8 @@ def render_settings(role):
 
             if strategy_name == "compare_all":
                 strats = {"greedy": GreedyStrategy(), "fcfs": FCFS(), "nearest": NearestPath(),
-                          "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy()}
+                          "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
+                          "duration_greedy": DurationAwareGreedy()}
                 all_m = []
                 for nm, stg in strats.items():
                     vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
@@ -476,7 +483,8 @@ def render_settings(role):
                 st.session_state.sim_all_metrics = all_m
             else:
                 smap = {"greedy": GreedyStrategy(), "fcfs": FCFS(), "nearest": NearestPath(),
-                        "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy()}
+                        "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
+                        "duration_greedy": DurationAwareGreedy()}
                 vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
                 metrics, events, lot = run_single(net, spots, vehs, smap[strategy_name], seed)
                 events_raw = [{"time": e.time, "type": e.event_type.value,
@@ -494,6 +502,19 @@ def render_settings(role):
             st.session_state.sim_seed = seed
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
+
+            # 计算理论最优（CP-SAT 离线全信息上界）
+            cpsat_rate = None
+            try:
+                cps_vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
+                cps_lot = ParkingLot(spots)
+                cps_res = CPSatBaseline(cps_lot, pe).solve(cps_vehs)
+                if cps_res is not None:
+                    cpsat_rate = len(cps_res) / len(cps_vehs)
+            except Exception:
+                cpsat_rate = None
+            st.session_state.sim_cpsat_rate = cpsat_rate
+
             st.session_state.sim_has_run = True
             # 重置回放状态
             st.session_state.replay_time = 0.0
@@ -901,6 +922,10 @@ def render_metrics_page():
         df.columns = ["策略","满足率","利用率","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
         best = max(all_m, key=lambda m: m["satisfaction_rate"])
         st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"],best["strategy"])}** 满足率 {best["satisfaction_rate"]:.1%}')
+        cpsat_rate = st.session_state.get("sim_cpsat_rate")
+        if cpsat_rate is not None:
+            gap = best["satisfaction_rate"] - cpsat_rate
+            st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，最佳策略距最优 {gap:.1%}')
 
         styled = df.style.format({"满足率":"{:.1%}","利用率":"{:.1%}","移位距离(m)":"{:.1f}",
                                    "行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
@@ -925,6 +950,10 @@ def render_metrics_page():
             with c6: _metric("移位距离", f"{m['shift_distance_m']:.0f}m")
             with c7: _metric("平均等待", f"{m['avg_wait_time_s']:.1f}s")
             with c8: _metric("运行耗时", f"{m['runtime_s']:.3f}s")
+            cpsat_rate = st.session_state.get("sim_cpsat_rate")
+            if cpsat_rate is not None:
+                gap = m["satisfaction_rate"] - cpsat_rate
+                st.markdown(f'> 🎯 理论最优（CP-SAT）满足率 **{cpsat_rate:.1%}**，当前策略距最优 {gap:.1%}')
             buffers = m.get('buffer_failed_count', 0)
             rejs = m.get('rejected_count', 0)
             if buffers or rejs:
