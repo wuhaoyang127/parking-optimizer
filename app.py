@@ -10,6 +10,7 @@ from auth import update_user_role as auth_update_role, delete_user as auth_delet
 from auth import change_password as auth_change_pw, reset_user_password as auth_reset_pw
 from auth import export_users as auth_export_users, import_users as auth_import_users
 from auth import set_session_token, get_session_token, clear_session_token, restore_session
+from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
 
 import streamlit as st
 import pandas as pd
@@ -398,6 +399,22 @@ def build_layout_from_json(data):
 # ═══════════════════════════════════════════════════════════
 # 认证 & 登录
 # ═══════════════════════════════════════════════════════════
+def _load_priority_preference():
+    """登录/恢复会话后，从 Supabase 加载用户的算法优先级设置"""
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        val = auth_get_pref(token, "algorithm_priority")
+        if val:
+            order = json.loads(val)
+            order = [n for n in order if n in PRIORITY_METRICS]
+            if order:
+                st.session_state.priority_order = order
+    except Exception:
+        pass
+
+
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
@@ -409,6 +426,7 @@ def check_login():
             st.session_state.username = restored["username"]
             st.session_state.role = restored["role"]
             st.session_state.token = restored["token"]
+            _load_priority_preference()
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
         st.session_state.login_blocked_until = 0.0
@@ -435,6 +453,7 @@ def check_login():
                         st.session_state.token = res["token"]
                         st.session_state.login_fails = 0
                         set_session_token(res["token"])
+                        _load_priority_preference()
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1
@@ -513,6 +532,16 @@ def render_settings(role):
         priority_order = DEFAULT_PRIORITY
         st.warning("至少保留一个指标，已恢复默认顺序")
     st.session_state.priority_order = priority_order
+
+    # 优先级变化时保存到 Supabase（登录用户，跨会话持久）
+    if st.session_state.get("priority_order_saved") != priority_order:
+        token = st.session_state.get("token")
+        if token:
+            try:
+                auth_set_pref(token, "algorithm_priority", json.dumps(priority_order))
+                st.session_state.priority_order_saved = priority_order
+            except Exception:
+                pass
 
     if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):

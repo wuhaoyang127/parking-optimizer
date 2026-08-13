@@ -87,6 +87,19 @@ def import_users(token: str, users: list) -> dict:
     return _rpc("import_users", {"p_token": token, "p_users_json": users})
 
 
+def get_preference(token: str, key: str) -> Optional[str]:
+    """读取用户偏好值，未设置返回 None"""
+    res = _rpc("get_preference", {"p_token": token, "p_key": key})
+    if isinstance(res, dict) and res.get("success"):
+        return res.get("value")
+    return None
+
+
+def set_preference(token: str, key: str, value: str) -> dict:
+    """写入用户偏好值"""
+    return _rpc("set_preference", {"p_token": token, "p_key": key, "p_value": value})
+
+
 # ---------- Session 持久化（URL query params）----------
 
 def set_session_token(token: str):
