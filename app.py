@@ -1067,17 +1067,18 @@ def render_metrics_page():
             return tuple(key)
         sorted_m = sorted(all_m, key=sort_key)
         best = sorted_m[0]
-        df = pd.DataFrame(sorted_m)[["strategy","satisfaction_rate","spatial_utilization","shift_count",
-                                     "shift_distance_m","total_drive_distance_m","rejected_count","runtime_s"]]
-        df.columns = ["策略","满足率","利用率","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
+        df = pd.DataFrame(sorted_m)[["strategy","satisfaction_rate","spatial_utilization","avg_wait_time_s",
+                                     "shift_count","shift_distance_m","total_drive_distance_m",
+                                     "rejected_count","runtime_s"]]
+        df.columns = ["策略","满足率","利用率","平均等待(s)","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
         st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"],best["strategy"])}** 满足率 {best["satisfaction_rate"]:.1%}')
         cpsat_rate = st.session_state.get("sim_cpsat_rate")
         if cpsat_rate is not None:
             gap = best["satisfaction_rate"] - cpsat_rate
             st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，最佳策略距最优 {gap:.1%}')
 
-        styled = df.style.format({"满足率":"{:.1%}","利用率":"{:.1%}","移位距离(m)":"{:.1f}",
-                                   "行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
+        styled = df.style.format({"满足率":"{:.1%}","利用率":"{:.1%}","平均等待(s)":"{:.1f}",
+                                   "移位距离(m)":"{:.1f}","行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
         st.dataframe(styled, use_container_width=True, hide_index=True)
         c1, c2 = st.columns(2)
         with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
