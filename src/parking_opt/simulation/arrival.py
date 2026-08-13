@@ -5,7 +5,7 @@ from ..domain.spot import Vehicle
 
 
 def generate_demand(total_vehicles: int = 150,
-                    sim_duration: float = 86400.0,
+                    sim_duration: float = 21600.0,
                     duration_min: float = 600.0,
                     duration_max: float = 7200.0,
                     peak_ratio: float = 0.7,
@@ -15,25 +15,27 @@ def generate_demand(total_vehicles: int = 150,
 
     参数:
         total_vehicles: 车辆总数
-        sim_duration: 仿真时长(s), 默认86400=24h
-        duration_min/max: 停车时长范围(s), 默认40min~6h
+        sim_duration: 仿真时长(s), 默认21600=6h（让车位更紧张，策略差异明显）
+        duration_min/max: 停车时长范围(s), 默认10min~2h
         peak_ratio: 高峰时段车辆占比
         seed: 随机种子
     """
     random.seed(seed)
 
     vehicles = []
+    # 高峰时间用仿真时长的比例（早高峰 35%，晚高峰 73%）
+    peak1 = sim_duration * 0.35
+    peak2 = sim_duration * 0.73
     for i in range(total_vehicles):
         vid = f"V{i+1:04d}"
 
         # 到达时间：双峰分布（高峰集中到达，制造短时拥堵）
         if random.random() < peak_ratio:
-            # 高峰时段 (8:00-9:00 或 17:00-18:00 附近)，集中到达
-            # 标准差 600s(10分钟)，让高峰车辆在约20分钟窗口内扎堆到达，形成排队等待
+            # 高峰时段集中到达，标准差 600s(10分钟)，形成排队等待
             if random.random() < 0.5:
-                arrival = random.gauss(8 * 3600 + 1800, 600)  # 早高峰集中
+                arrival = random.gauss(peak1, 600)  # 早高峰集中
             else:
-                arrival = random.gauss(17 * 3600 + 1800, 600)  # 晚高峰集中
+                arrival = random.gauss(peak2, 600)  # 晚高峰集中
         else:
             # 平峰均匀分布
             arrival = random.uniform(0, sim_duration)

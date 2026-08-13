@@ -75,17 +75,20 @@ class SimulationEngine:
             self.env.process(self._wait_timeout(vehicle))
             return
 
-        # 立即分配成功
-        yield from self._complete_assignment(vehicle, spot)
+        # 立即分配成功：同步占位，异步行驶入位
+        self._occupy(vehicle, spot)
+        self.env.process(self._drive_and_depart(vehicle, spot))
 
-    def _complete_assignment(self, vehicle: Vehicle, spot: Spot):
-        """完成分配：占位、行驶入位、调度离场"""
+    def _occupy(self, vehicle: Vehicle, spot: Spot):
+        """同步占用车位 + 记录分配事件（保证后续车不会再分到同一车位）"""
         self.parking_lot.assign(vehicle, spot)
-        drive_dist = self.path_engine.distance_to_spot(spot.node_id)
-        drive_time = drive_dist / self.CAR_SPEED
-
         self._log(self.env.now, EventType.PARKING_ASSIGNED, vehicle.vehicle_id,
                   spot.spot_id, self.strategy.name)
+
+    def _drive_and_depart(self, vehicle: Vehicle, spot: Spot):
+        """异步：行驶入位、调度离场"""
+        drive_dist = self.path_engine.distance_to_spot(spot.node_id)
+        drive_time = drive_dist / self.CAR_SPEED
         yield self.env.timeout(drive_time)
 
         self._log(self.env.now, EventType.SPOT_ENTRY, vehicle.vehicle_id,
@@ -119,7 +122,9 @@ class SimulationEngine:
                 self.waiting_queue.remove(vehicle)
                 vehicle.wait_end = self.env.now
                 self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
-                self.env.process(self._complete_assignment(vehicle, spot))
+                # 同步占位（避免循环内后续车重复分配到同一车位），异步行驶入位
+                self._occupy(vehicle, spot)
+                self.env.process(self._drive_and_depart(vehicle, spot))
 
     def _vehicle_departure(self, vehicle: Vehicle, dep_time: float):
         """车辆离场处理（含移位）"""
