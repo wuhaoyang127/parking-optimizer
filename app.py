@@ -245,6 +245,46 @@ def run_single(net, spots, vehicles, strategy, seed):
     m = compute_metrics(events, len(spots)); m["runtime_s"] = round(time.time()-t0, 3)
     m["strategy"] = strategy.name; return m, events, lot
 
+
+def _avg_metrics(metrics_list):
+    """对多个 metrics dict 取平均：数值字段求均值，非数值字段保留第一个（用于多 seed 统计）"""
+    if not metrics_list:
+        return None
+    first = metrics_list[0]
+    avg = dict(first)
+    for k, v in first.items():
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            vals = [m[k] for m in metrics_list if isinstance(m.get(k), (int, float))]
+            if vals:
+                avg[k] = round(sum(vals) / len(vals), 4)
+    return avg
+
+
+def _plot_radar(all_m):
+    """多维指标雷达图：每个指标归一化到 [0,1]，外圈=更好（min 指标反转）"""
+    dims = [("满足率", "satisfaction_rate", "max"), ("利用率", "spatial_utilization", "max"),
+            ("平均等待", "avg_wait_time_s", "min"), ("移位次数", "shift_count", "min"),
+            ("行驶距离", "total_drive_distance_m", "min")]
+    labels = [d[0] for d in dims]
+    norm = {}
+    for name, field, direction in dims:
+        vals = [m.get(field, 0) for m in all_m]
+        lo, hi = min(vals), max(vals)
+        norm[name] = [(0.5 if hi == lo else
+                       (1 - (v - lo) / (hi - lo) if direction == "min" else (v - lo) / (hi - lo)))
+                      for v in vals]
+    fig = go.Figure()
+    for m in all_m:
+        nm = STRATEGY_LABELS.get(m["strategy"], m["strategy"])
+        vals = [norm[d[0]][i] for i, d in enumerate(dims)]
+        fig.add_trace(go.Scatterpolar(r=vals + [vals[0]], theta=labels + [labels[0]],
+                                      name=nm, fill="toself", opacity=0.45))
+    fig.update_layout(height=420, margin=dict(l=50, r=50, t=50, b=50),
+                      legend=dict(orientation="h", yanchor="bottom", y=-0.15),
+                      polar=dict(radialaxis=dict(range=[0, 1], showticklabels=False)))
+    return fig
+
+
 def build_timeline(events, net, pe):
     vehicles_tl = {}; events_by_time = {}
     for e in events:
@@ -521,6 +561,8 @@ def render_settings(role):
     with c2:
         n_vehicles = st.slider("车辆数", 10, 200, 60, disabled=disabled)
         seed = st.number_input("随机种子", 0, 999, 42, disabled=disabled)
+        n_runs = st.slider("仿真次数（多种子取平均）", 1, 10, 3, disabled=disabled,
+                           help="随机系统单次结果波动大，多种子取平均更稳定；次数越多越准但越慢")
         strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
@@ -564,35 +606,43 @@ def render_settings(role):
             net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
             pe = PathEngine(net)
 
+            strategy_classes = {"greedy": GreedyStrategy, "fcfs": FCFS, "nearest": NearestPath,
+                                "random": RandomAssign, "departure_greedy": DepartureOrderGreedy,
+                                "duration_greedy": DurationAwareGreedy}
+
             if strategy_name == "compare_all":
-                strats = {"greedy": GreedyStrategy(), "fcfs": FCFS(), "nearest": NearestPath(),
-                          "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
-                          "duration_greedy": DurationAwareGreedy()}
                 all_m = []
-                main_metrics = None
                 main_events_raw = None
-                for nm, stg in strats.items():
-                    vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
-                    m, ev, _ = run_single(net, spots, vehs, stg, seed); all_m.append(m)
-                    # 主方法的事件日志，供「车辆动态路径」页展示
-                    if nm == "duration_greedy":
-                        main_metrics = m
-                        main_events_raw = [{"time": e.time, "type": e.event_type.value,
-                                            "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
-                                            "metadata": dict(e.metadata)} for e in ev]
+                for nm, cls in strategy_classes.items():
+                    seed_metrics = []
+                    for r in range(n_runs):
+                        s = seed + r
+                        vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
+                        m, ev, _ = run_single(net, spots, vehs, cls(), s)
+                        seed_metrics.append(m)
+                        # 主方法事件日志（取第一个种子），供「车辆动态路径」页展示
+                        if nm == "duration_greedy" and r == 0:
+                            main_events_raw = [{"time": e.time, "type": e.event_type.value,
+                                                "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
+                                                "metadata": dict(e.metadata)} for e in ev]
+                    all_m.append(_avg_metrics(seed_metrics))
                 st.session_state.sim_all_metrics = all_m
-                st.session_state.sim_metrics = main_metrics
+                st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
                 st.session_state.sim_events_raw = main_events_raw
             else:
-                smap = {"greedy": GreedyStrategy(), "fcfs": FCFS(), "nearest": NearestPath(),
-                        "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
-                        "duration_greedy": DurationAwareGreedy()}
-                vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
-                metrics, events, lot = run_single(net, spots, vehs, smap[strategy_name], seed)
-                events_raw = [{"time": e.time, "type": e.event_type.value,
-                               "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
-                               "metadata": dict(e.metadata)} for e in events]
-                st.session_state.sim_metrics = metrics
+                cls = strategy_classes[strategy_name]
+                seed_metrics = []
+                events_raw = None
+                for r in range(n_runs):
+                    s = seed + r
+                    vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
+                    m, ev, _ = run_single(net, spots, vehs, cls(), s)
+                    seed_metrics.append(m)
+                    if r == 0:
+                        events_raw = [{"time": e.time, "type": e.event_type.value,
+                                       "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
+                                       "metadata": dict(e.metadata)} for e in ev]
+                st.session_state.sim_metrics = _avg_metrics(seed_metrics)
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
 
@@ -602,6 +652,7 @@ def render_settings(role):
             st.session_state.sim_n_spots = n_spots
             st.session_state.sim_n_vehicles = n_vehicles
             st.session_state.sim_seed = seed
+            st.session_state.sim_n_runs = n_runs
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
 
@@ -1071,6 +1122,8 @@ def render_metrics_page():
     # 多策略对比
     if st.session_state.get("sim_all_metrics"):
         st.markdown("### 🏆 多策略对比")
+        n_runs = st.session_state.get("sim_n_runs", 1)
+        st.caption(f"基于 {n_runs} 次不同随机种子的平均值（降低随机波动）")
         all_m = st.session_state.sim_all_metrics
         # 按用户定义的优先级做字典序排序
         priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
@@ -1107,6 +1160,8 @@ def render_metrics_page():
         c1, c2 = st.columns(2)
         with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
         with c2: st.bar_chart(df.set_index("策略")["移位次数"], height=200)
+        st.markdown("#### 📡 多维指标雷达图（外圈=更好）")
+        st.plotly_chart(_plot_radar(all_m), use_container_width=True)
         st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
                            "parking_comparison.csv", "text/csv")
     else:

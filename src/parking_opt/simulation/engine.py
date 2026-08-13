@@ -28,6 +28,7 @@ class SimulationEngine:
         self.events: list[Event] = []
         self.shift_count = 0
         self.total_shift_dist = 0.0
+        self.waiting_queue: list[Vehicle] = []  # 排队等待中的车辆（短停车优先调度）
 
     def _log(self, time: float, event_type: EventType, vehicle_id: str = None,
              spot_id: str = None, strategy: str = None, **metadata):
@@ -64,27 +65,18 @@ class SimulationEngine:
             return
 
         if status == "waiting":
+            # 车位满：加入等待队列（短停车优先调度），并启动超时监视
             self._log(self.env.now, EventType.WAIT_START, vehicle.vehicle_id)
             vehicle.wait_start = self.env.now
-            # 排队等待：周期性重试，直到成功或超时
-            while True:
-                yield self.env.timeout(self.RETRY_INTERVAL)
-                result = self.strategy.assign(vehicle, self.env.now,
-                                              self.parking_lot, self.path_engine)
-                spot, status = result
-                if status == "assigned":
-                    break
-                if self.env.now - vehicle.wait_start >= self.MAX_WAIT_TIME:
-                    vehicle.wait_end = self.env.now
-                    self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
-                    vehicle.rejected = True
-                    self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
-                              reason="等待超时后仍无空闲车位，无法分配")
-                    return
-            vehicle.wait_end = self.env.now
-            self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
+            self.waiting_queue.append(vehicle)
+            self.env.process(self._wait_timeout(vehicle))
+            return
 
-        # 分配成功
+        # 立即分配成功
+        yield from self._complete_assignment(vehicle, spot)
+
+    def _complete_assignment(self, vehicle: Vehicle, spot: Spot):
+        """完成分配：占位、行驶入位、调度离场"""
         self.parking_lot.assign(vehicle, spot)
         drive_dist = self.path_engine.distance_to_spot(spot.node_id)
         drive_time = drive_dist / self.CAR_SPEED
@@ -100,6 +92,31 @@ class SimulationEngine:
         dep_time = self.env.now + vehicle.parking_duration
         self.env.process(self._vehicle_departure(vehicle, dep_time))
 
+    def _wait_timeout(self, vehicle: Vehicle):
+        """等待超时：从队列移除并拒绝"""
+        yield self.env.timeout(self.MAX_WAIT_TIME)
+        if vehicle in self.waiting_queue:
+            self.waiting_queue.remove(vehicle)
+            vehicle.wait_end = self.env.now
+            self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
+            vehicle.rejected = True
+            self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
+                      reason="等待超时后仍无空闲车位，无法分配")
+
+    def _dispatch_waiting(self):
+        """车位空出后，从等待队列按预估停车时长排序，短停车优先分配"""
+        if not self.waiting_queue:
+            return
+        self.waiting_queue.sort(key=lambda v: getattr(v, "estimated_duration", float("inf")))
+        for vehicle in list(self.waiting_queue):
+            spot, status = self.strategy.assign(vehicle, self.env.now,
+                                                self.parking_lot, self.path_engine)
+            if status == "assigned":
+                self.waiting_queue.remove(vehicle)
+                vehicle.wait_end = self.env.now
+                self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
+                self.env.process(self._complete_assignment(vehicle, spot))
+
     def _vehicle_departure(self, vehicle: Vehicle, dep_time: float):
         """车辆离场处理（含移位）"""
         yield self.env.timeout(dep_time - self.env.now)
@@ -112,6 +129,7 @@ class SimulationEngine:
             self.parking_lot.free(spot)
             self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
                       spot.spot_id, had_blocking=False)
+            self._dispatch_waiting()  # 车位空出，调度等待队列
             return
 
         # 有阻挡，执行移位
@@ -152,6 +170,8 @@ class SimulationEngine:
 
             self._log(self.env.now, EventType.SHIFT_END, blk_vid,
                       final_spot=target.spot_id)
+
+        self._dispatch_waiting()  # 离场（含移位）完成，调度等待队列
 
     def _find_innermost_available(self, spot: Spot) -> Spot | None:
         """找纵深组中最内侧的空闲车位（用于前移归位）"""
