@@ -41,13 +41,14 @@ STRATEGY_LABELS = {
 # 方向: "max"=越大越好, "min"=越小越好
 PRIORITY_METRICS = {
     "满足率": ("satisfaction_rate", "max", "尽可能多的车辆被分配到位"),
+    "利用率": ("spatial_utilization", "max", "提高车位时空利用率"),
     "移位次数": ("shift_count", "min", "减少纵深移位的次数"),
     "移位距离": ("shift_distance_m", "min", "减少移位产生的额外行驶成本"),
     "行驶距离": ("total_drive_distance_m", "min", "降低车辆整体行驶成本"),
     "运行耗时": ("runtime_s", "min", "保证算法实时可用"),
 }
 # 默认优先级顺序（从高到低）
-DEFAULT_PRIORITY = ["满足率", "移位次数", "移位距离", "行驶距离", "运行耗时"]
+DEFAULT_PRIORITY = ["满足率", "利用率", "移位次数", "移位距离", "行驶距离", "运行耗时"]
 
 ADMIN_USER = "wuhaoyang127"
 ROLES = {
@@ -409,6 +410,10 @@ def _load_priority_preference():
         if val:
             order = json.loads(val)
             order = [n for n in order if n in PRIORITY_METRICS]
+            # 补充缺失的指标（按默认顺序追加），兼容旧版本保存的配置
+            for n in DEFAULT_PRIORITY:
+                if n not in order:
+                    order.append(n)
             if order:
                 st.session_state.priority_order = order
     except Exception:
