@@ -22,7 +22,7 @@ class FCFS(BaseStrategy):
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
         # 选第一个可用的
         for spot in available:
             if spot.depth == 1:
@@ -37,7 +37,7 @@ class NearestPath(BaseStrategy):
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
         best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id))
         return (best, "assigned")
 
@@ -49,5 +49,5 @@ class RandomAssign(BaseStrategy):
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
         return (random.choice(available), "assigned")

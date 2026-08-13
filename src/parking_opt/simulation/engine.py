@@ -12,7 +12,8 @@ class SimulationEngine:
     """SimPy 停车仿真主循环"""
 
     CAR_SPEED = 1.39  # m/s (5 km/h)
-    MAX_WAIT_TIME = 300  # 最大等待秒数
+    MAX_WAIT_TIME = 1800  # 最大等待秒数（30分钟）
+    RETRY_INTERVAL = 60  # 排队等待时的重试间隔（秒）
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
                  vehicles: list[Vehicle], strategy, seed: int = 42):
@@ -65,18 +66,23 @@ class SimulationEngine:
         if status == "waiting":
             self._log(self.env.now, EventType.WAIT_START, vehicle.vehicle_id)
             vehicle.wait_start = self.env.now
-            yield self.env.timeout(self.MAX_WAIT_TIME)
-            # 重试
-            result = self.strategy.assign(vehicle, self.env.now,
-                                          self.parking_lot, self.path_engine)
-            spot, status = result
+            # 排队等待：周期性重试，直到成功或超时
+            while True:
+                yield self.env.timeout(self.RETRY_INTERVAL)
+                result = self.strategy.assign(vehicle, self.env.now,
+                                              self.parking_lot, self.path_engine)
+                spot, status = result
+                if status == "assigned":
+                    break
+                if self.env.now - vehicle.wait_start >= self.MAX_WAIT_TIME:
+                    vehicle.wait_end = self.env.now
+                    self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
+                    vehicle.rejected = True
+                    self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
+                              reason="等待超时后仍无空闲车位，无法分配")
+                    return
             vehicle.wait_end = self.env.now
             self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
-            if status != "assigned":
-                vehicle.rejected = True
-                self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
-                          reason="等待超时后仍无空闲车位，无法分配")
-                return
 
         # 分配成功
         self.parking_lot.assign(vehicle, spot)

@@ -15,7 +15,7 @@ class GreedyStrategy(BaseStrategy):
                path_engine) -> tuple[Spot | None, str]:
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
 
         # 按优先级分组
         group1 = []  # STANDALONE
@@ -45,7 +45,7 @@ class GreedyStrategy(BaseStrategy):
             best = min(group3, key=lambda s: self._inner_estimated_departure(s, parking_lot))
             return (best, "assigned")
 
-        return (None, "rejected")
+        return (None, "waiting")
 
     def _inner_estimated_departure(self, spot: Spot, parking_lot: ParkingLot) -> float:
         """返回该车位内侧阻挡车的预计离场时间"""
@@ -69,7 +69,7 @@ class DepartureOrderGreedy(BaseStrategy):
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
 
         # 选最近可用 (忽略阻挡风险)
         best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id))
@@ -94,7 +94,7 @@ class DurationAwareGreedy(BaseStrategy):
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
         if not available:
-            return (None, "rejected")
+            return (None, "waiting")
 
         standalone = [s for s in available if s.spot_type == SpotType.STANDALONE]
         depth1 = [s for s in available if s.spot_type == SpotType.TANDEM and s.depth == 1]
@@ -125,7 +125,7 @@ class DurationAwareGreedy(BaseStrategy):
                 best = min(depth1, key=lambda s: path_engine.distance_to_spot(s.node_id))
                 return (best, "assigned")
 
-        return (None, "rejected")
+        return (None, "waiting")
 
     def _inner_estimated_departure(self, spot, parking_lot) -> float:
         """返回该里层车位外侧阻挡车的预计离场时间（越早越好）"""
