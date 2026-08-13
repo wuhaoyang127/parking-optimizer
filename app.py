@@ -569,10 +569,20 @@ def render_settings(role):
                           "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
                           "duration_greedy": DurationAwareGreedy()}
                 all_m = []
+                main_metrics = None
+                main_events_raw = None
                 for nm, stg in strats.items():
                     vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
-                    m, _, _ = run_single(net, spots, vehs, stg, seed); all_m.append(m)
+                    m, ev, _ = run_single(net, spots, vehs, stg, seed); all_m.append(m)
+                    # 主方法的事件日志，供「车辆动态路径」页展示
+                    if nm == "duration_greedy":
+                        main_metrics = m
+                        main_events_raw = [{"time": e.time, "type": e.event_type.value,
+                                            "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
+                                            "metadata": dict(e.metadata)} for e in ev]
                 st.session_state.sim_all_metrics = all_m
+                st.session_state.sim_metrics = main_metrics
+                st.session_state.sim_events_raw = main_events_raw
             else:
                 smap = {"greedy": GreedyStrategy(), "fcfs": FCFS(), "nearest": NearestPath(),
                         "random": RandomAssign(), "departure_greedy": DepartureOrderGreedy(),
