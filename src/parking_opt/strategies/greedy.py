@@ -1,5 +1,5 @@
 from __future__ import annotations
-"""在线贪心策略：主方法"""
+"""贪心策略族：朴素贪心（基线）与时长感知贪心（主方法）"""
 
 from ..domain.spot import Spot, Vehicle, SpotType
 from ..simulation.parking_lot import ParkingLot
@@ -7,7 +7,7 @@ from .baselines import BaseStrategy
 
 
 class GreedyStrategy(BaseStrategy):
-    """在线贪心分配 + 动态缓冲位"""
+    """朴素在线贪心分配（基线）：不利用停车时长信息"""
 
     name = "greedy"
 

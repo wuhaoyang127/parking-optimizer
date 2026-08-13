@@ -30,9 +30,9 @@ from viz import draw_parking_layout
 # 常量
 # ═══════════════════════════════════════════════════════════
 STRATEGY_LABELS = {
-    "greedy": "贪心（主方法）", "fcfs": "先到先服务",
+    "greedy": "贪心（基线）", "fcfs": "先到先服务",
     "nearest": "最近路径", "random": "随机分配",
-    "departure_greedy": "离场贪心", "duration_greedy": "时长感知贪心",
+    "departure_greedy": "离场贪心", "duration_greedy": "时长感知贪心（主方法）",
     "compare_all": "全部对比",
 }
 
