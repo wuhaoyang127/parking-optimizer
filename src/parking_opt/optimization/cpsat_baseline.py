@@ -1,25 +1,26 @@
 from __future__ import annotations
-"""CP-SAT 离线全信息基准（区间调度 + 纵深离场顺序约束）"""
+"""CP-SAT 离线全信息基准（区间调度：允许排队等待 + 车位复用）"""
 
 from ortools.sat.python import cp_model
-from ..domain.spot import Vehicle, Spot
+from ..domain.spot import Vehicle
 from ..simulation.parking_lot import ParkingLot
 from ..routing.path_engine import PathEngine
 
 
 class CPSatBaseline:
-    """离线全信息精确优化基准（小规模）。
+    """离线全信息精确优化基准（满足率上界）。
 
-    假设：
-      - 已知每辆车的到达/离场时间（离线全信息，用 parking_duration 计算 departure_time）
-      - 车位可复用：同一车位可先后服务多辆时间不重叠的车
-      - 纵深约束：同组里层车离场时，外层车必须已离开（否则移位）
+    建模：用 CP-SAT 区间变量，每辆车有一个可选停车区间
+      - 停车开始时间可在 [到达时间, 到达时间 + 等待上限] 内后移（即允许排队等待）
+      - 停车时长为固定值 parking_duration
+      - 同一车位上的停车区间不重叠（车位复用）
 
-    输出：{vehicle_id: spot_id} 的可行分配，最大化满足率。
+    这给出「忽略移位代价、允许排队等待」的满足率上界，是真正的上界（≥ 任何在线策略）。
     """
 
     name = "cpsat_oracle"
-    TIMEOUT = 15  # 秒
+    TIMEOUT = 20  # 秒
+    MAX_WAIT = 1800  # 等待上限（秒），与引擎 SimulationEngine.MAX_WAIT_TIME 一致
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine):
         self.parking_lot = parking_lot
@@ -36,52 +37,32 @@ class CPSatBaseline:
 
         model = cp_model.CpModel()
 
-        # 决策变量: x[(v_idx, s_idx)] = 1 表示车辆v分配到车位s
+        # 决策变量：x[(v,s)] 是否分配；start[v] 停车开始时间（可等待）；interval 可选区间
         x = {}
-        for v_idx in range(n_vehicles):
+        start = {}
+        intervals = {}
+        for v_idx, v in enumerate(vehicles):
+            s_var = model.NewIntVar(int(v.arrival_time),
+                                    int(v.arrival_time) + self.MAX_WAIT,
+                                    f'start_{v_idx}')
+            start[v_idx] = s_var
+            dur = max(1, int(v.parking_duration))
             for s_idx in range(n_spots):
                 x[(v_idx, s_idx)] = model.NewBoolVar(f'x_{v_idx}_{s_idx}')
+                intervals[(v_idx, s_idx)] = model.NewOptionalIntervalVar(
+                    s_var, dur, s_var + dur, x[(v_idx, s_idx)], f'iv_{v_idx}_{s_idx}')
 
         # 约束1: 每辆车至多一个车位
         for v_idx in range(n_vehicles):
             model.Add(sum(x[(v_idx, s_idx)] for s_idx in range(n_spots)) <= 1)
 
-        # 约束2: 同一车位不能同时停两辆时间重叠的车
+        # 约束2: 同一车位上停车区间不重叠（车位复用）
         for s_idx in range(n_spots):
-            for v1_idx, v1 in enumerate(vehicles):
-                for v2_idx in range(v1_idx + 1, n_vehicles):
-                    v2 = vehicles[v2_idx]
-                    # 时间重叠判断: 任一辆车到达时另一辆还没走
-                    if v1.arrival_time < v2.departure_time and v2.arrival_time < v1.departure_time:
-                        model.Add(x[(v1_idx, s_idx)] + x[(v2_idx, s_idx)] <= 1)
+            model.AddNoOverlap([intervals[(v_idx, s_idx)] for v_idx in range(n_vehicles)])
 
-        # 约束3: 纵深离场顺序 —— 里层车离场时外层车必须已离开
-        for gid, group in self.parking_lot.stack_groups.items():
-            if len(group) < 2:
-                continue
-            for outer in group:
-                for inner in group:
-                    if inner.depth <= outer.depth:
-                        continue
-                    o_idx = spots.index(outer)
-                    i_idx = spots.index(inner)
-                    for v1_idx, v1 in enumerate(vehicles):
-                        for v2_idx, v2 in enumerate(vehicles):
-                            if v1_idx == v2_idx:
-                                continue
-                            # v2(里层) 离场时 v1(外层) 还没走，且 v2 到达时 v1 还在 → 移位
-                            if (v2.departure_time < v1.departure_time
-                                    and v2.arrival_time < v1.departure_time
-                                    and v1.arrival_time < v2.departure_time):
-                                model.Add(x[(v1_idx, o_idx)] + x[(v2_idx, i_idx)] <= 1)
-
-        # 目标: 最大化满足率
-        assigned = []
-        for v_idx in range(n_vehicles):
-            a = model.NewBoolVar(f'assigned_{v_idx}')
-            model.Add(a == sum(x[(v_idx, s_idx)] for s_idx in range(n_spots)))
-            assigned.append(a)
-        model.Maximize(sum(assigned))
+        # 目标: 最大化满足率（分配车辆数）
+        model.Maximize(sum(x[(v_idx, s_idx)]
+                           for v_idx in range(n_vehicles) for s_idx in range(n_spots)))
 
         solver = cp_model.CpSolver()
         solver.parameters.max_time_in_seconds = self.TIMEOUT
