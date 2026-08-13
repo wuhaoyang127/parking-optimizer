@@ -234,13 +234,13 @@ LAYOUT_BUILDERS.update({"linear":build_linear,"rectangle":build_rectangle,"lshap
 # ═══════════════════════════════════════════════════════════
 # 仿真 & 时间轴工具函数
 # ═══════════════════════════════════════════════════════════
-def run_single(net, spots, vehicles, strategy, seed):
+def run_single(net, spots, vehicles, strategy, seed, wait_policy="fifo"):
     # 重置车位状态，避免多次运行时复用污染（compare_all 循环会复用 spots）
     for s in spots:
         s.is_occupied = False
         s.occupied_by = None
     pe = PathEngine(net); lot = ParkingLot(spots)
-    engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed)
+    engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed, wait_policy=wait_policy)
     t0 = time.time(); events = engine.run()
     m = compute_metrics(events, len(spots)); m["runtime_s"] = round(time.time()-t0, 3)
     m["strategy"] = strategy.name; return m, events, lot
@@ -563,6 +563,9 @@ def render_settings(role):
         seed = st.number_input("随机种子", 0, 999, 42, disabled=disabled)
         n_runs = st.slider("仿真次数（多种子取平均）", 1, 10, 3, disabled=disabled,
                            help="随机系统单次结果波动大，多种子取平均更稳定；次数越多越准但越慢")
+        wait_policy = st.selectbox("等待调度策略", ["fifo", "shortest"],
+                                   format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
+                                   help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
         strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
@@ -618,7 +621,7 @@ def render_settings(role):
                     for r in range(n_runs):
                         s = seed + r
                         vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
-                        m, ev, _ = run_single(net, spots, vehs, cls(), s)
+                        m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy)
                         seed_metrics.append(m)
                         # 主方法事件日志（取第一个种子），供「车辆动态路径」页展示
                         if nm == "duration_greedy" and r == 0:
@@ -636,7 +639,7 @@ def render_settings(role):
                 for r in range(n_runs):
                     s = seed + r
                     vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
-                    m, ev, _ = run_single(net, spots, vehs, cls(), s)
+                    m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy)
                     seed_metrics.append(m)
                     if r == 0:
                         events_raw = [{"time": e.time, "type": e.event_type.value,

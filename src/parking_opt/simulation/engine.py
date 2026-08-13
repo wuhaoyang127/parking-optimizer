@@ -16,7 +16,8 @@ class SimulationEngine:
     RETRY_INTERVAL = 60  # 排队等待时的重试间隔（秒）
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
-                 vehicles: list[Vehicle], strategy, seed: int = 42):
+                 vehicles: list[Vehicle], strategy, seed: int = 42,
+                 wait_policy: str = "fifo"):
         self.env = simpy.Environment()
         self.parking_lot = parking_lot
         self.path_engine = path_engine
@@ -24,11 +25,13 @@ class SimulationEngine:
         self.strategy = strategy  # 策略对象 (需有 .assign(vehicle, time, parking_lot, path_engine) 方法)
         self.seed = seed
         random.seed(seed)
+        # 等待调度策略：fifo=先到先服务（默认，保留策略差异）；shortest=短停车优先（引擎优化强）
+        self.wait_policy = wait_policy
 
         self.events: list[Event] = []
         self.shift_count = 0
         self.total_shift_dist = 0.0
-        self.waiting_queue: list[Vehicle] = []  # 排队等待中的车辆（短停车优先调度）
+        self.waiting_queue: list[Vehicle] = []  # 排队等待中的车辆
 
     def _log(self, time: float, event_type: EventType, vehicle_id: str = None,
              spot_id: str = None, strategy: str = None, **metadata):
@@ -104,10 +107,11 @@ class SimulationEngine:
                       reason="等待超时后仍无空闲车位，无法分配")
 
     def _dispatch_waiting(self):
-        """车位空出后，从等待队列按预估停车时长排序，短停车优先分配"""
+        """车位空出后，从等待队列分配车辆；shortest 策略下短停车优先，否则 FIFO"""
         if not self.waiting_queue:
             return
-        self.waiting_queue.sort(key=lambda v: getattr(v, "estimated_duration", float("inf")))
+        if self.wait_policy == "shortest":
+            self.waiting_queue.sort(key=lambda v: getattr(v, "estimated_duration", float("inf")))
         for vehicle in list(self.waiting_queue):
             spot, status = self.strategy.assign(vehicle, self.env.now,
                                                 self.parking_lot, self.path_engine)
