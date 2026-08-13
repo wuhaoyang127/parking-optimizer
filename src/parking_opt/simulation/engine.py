@@ -165,6 +165,11 @@ class SimulationEngine:
             self.total_shift_dist += dist * 2
 
             yield self.env.timeout(travel_time)
+            # 外层车可能在移位行驶期间已自行离场（此时无阻挡，直接让里层车离场）
+            if blk_spot.occupied_by != blk_vid:
+                self.parking_lot.free(spot)
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
             self.parking_lot.move_vehicle(blk_spot, buffer)
 
             # 被阻挡车离场
