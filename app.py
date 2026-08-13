@@ -36,6 +36,18 @@ STRATEGY_LABELS = {
     "compare_all": "全部对比",
 }
 
+# 算法评估指标：显示名 -> (指标字段, 方向, 说明)
+# 方向: "max"=越大越好, "min"=越小越好
+PRIORITY_METRICS = {
+    "满足率": ("satisfaction_rate", "max", "尽可能多的车辆被分配到位"),
+    "移位次数": ("shift_count", "min", "减少纵深移位的次数"),
+    "移位距离": ("shift_distance_m", "min", "减少移位产生的额外行驶成本"),
+    "行驶距离": ("total_drive_distance_m", "min", "降低车辆整体行驶成本"),
+    "运行耗时": ("runtime_s", "min", "保证算法实时可用"),
+}
+# 默认优先级顺序（从高到低）
+DEFAULT_PRIORITY = ["满足率", "移位次数", "移位距离", "行驶距离", "运行耗时"]
+
 ADMIN_USER = "wuhaoyang127"
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
@@ -485,6 +497,22 @@ def render_settings(role):
 
 当停车场**所有车位均被占用（无空闲车位）**时，到达车辆无法分配，将被拒绝（计入「拒绝数」指标）。
 """)
+
+    # 算法评估优先级（可自主调整，字典序排序）
+    st.markdown("#### 🎯 算法评估优先级")
+    st.caption("勾选顺序即优先级（从上到下 = 从高到低）；取消勾选后按新顺序重新勾选即可调整")
+    priority_order = st.multiselect(
+        "评估指标排序",
+        options=list(PRIORITY_METRICS.keys()),
+        default=st.session_state.get("priority_order", DEFAULT_PRIORITY),
+        key="priority_order_sel",
+        format_func=lambda n: f"{n} {'↑越大越好' if PRIORITY_METRICS[n][1]=='max' else '↓越小越好'}",
+        disabled=disabled,
+    )
+    if not priority_order:
+        priority_order = DEFAULT_PRIORITY
+        st.warning("至少保留一个指标，已恢复默认顺序")
+    st.session_state.priority_order = priority_order
 
     if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):
@@ -955,15 +983,15 @@ def render_metrics_page():
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    # 算法筛选优先级说明
+    # 算法筛选优先级说明（动态，跟随用户在仿真设置页的调整）
     st.markdown("### 🎯 算法筛选优先级")
-    st.caption("系统按以下优先级从高到低评估并推荐算法")
+    st.caption("当前排序规则（字典序：先比第一项，相同再比下一项）")
+    priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
     prio = pd.DataFrame([
-        ["1", "满足率", "越高越好", "首要目标：尽可能多的车辆被分配到位"],
-        ["2", "移位次数", "越少越好", "满足率相同时，优先减少纵深移位的次数"],
-        ["3", "移位距离", "越短越好", "减少移位产生的额外行驶成本"],
-        ["4", "行驶距离", "越短越好", "降低车辆整体行驶成本"],
-        ["5", "运行耗时", "越短越好", "保证算法实时可用"],
+        [i + 1, name,
+         "越高越好" if PRIORITY_METRICS[name][1] == "max" else "越低越好",
+         PRIORITY_METRICS[name][2]]
+        for i, name in enumerate(priority_order)
     ], columns=["优先级", "评估指标", "方向", "说明"])
     st.dataframe(prio, use_container_width=True, hide_index=True)
     st.markdown("---")
@@ -972,13 +1000,22 @@ def render_metrics_page():
     if st.session_state.get("sim_all_metrics"):
         st.markdown("### 🏆 多策略对比")
         all_m = st.session_state.sim_all_metrics
-        df = pd.DataFrame(all_m)[["strategy","satisfaction_rate","spatial_utilization","shift_count",
-                                   "shift_distance_m","total_drive_distance_m","rejected_count","runtime_s"]]
+        # 按用户定义的优先级做字典序排序
+        priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
+        def sort_key(m):
+            key = []
+            for name in priority_order:
+                if name not in PRIORITY_METRICS:
+                    continue
+                field, direction, _ = PRIORITY_METRICS[name]
+                val = m.get(field, 0)
+                key.append(-val if direction == "max" else val)
+            return tuple(key)
+        sorted_m = sorted(all_m, key=sort_key)
+        best = sorted_m[0]
+        df = pd.DataFrame(sorted_m)[["strategy","satisfaction_rate","spatial_utilization","shift_count",
+                                     "shift_distance_m","total_drive_distance_m","rejected_count","runtime_s"]]
         df.columns = ["策略","满足率","利用率","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
-        # 按优先级推荐：满足率↑ → 移位次数↓ → 移位距离↓ → 行驶距离↓ → 耗时↓
-        best = min(all_m, key=lambda m: (-m["satisfaction_rate"], m["shift_count"],
-                                         m["shift_distance_m"], m["total_drive_distance_m"],
-                                         m["runtime_s"]))
         st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"],best["strategy"])}** 满足率 {best["satisfaction_rate"]:.1%}')
         cpsat_rate = st.session_state.get("sim_cpsat_rate")
         if cpsat_rate is not None:
