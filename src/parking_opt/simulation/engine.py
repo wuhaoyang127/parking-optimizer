@@ -59,7 +59,7 @@ class SimulationEngine:
         if status == "rejected":
             vehicle.rejected = True
             self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
-                      strategy=self.strategy.name)
+                      strategy=self.strategy.name, reason="停车场无空闲车位，无法分配")
             return
 
         if status == "waiting":
@@ -74,7 +74,8 @@ class SimulationEngine:
             self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
             if status != "assigned":
                 vehicle.rejected = True
-                self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id)
+                self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
+                          reason="等待超时后仍无空闲车位，无法分配")
                 return
 
         # 分配成功
@@ -109,13 +110,14 @@ class SimulationEngine:
 
         # 有阻挡，执行移位
         self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
-                  spot.spot_id, had_blocking=True, blocker_count=len(blockers))
+                  spot.spot_id, had_blocking=True, blocker_count=len(blockers),
+                  reason=f"被 {len(blockers)} 辆外侧车辆阻挡，需移位后离场")
 
         for blk_spot, blk_vid in blockers:
             buffer = self.parking_lot.select_buffer()
             if buffer is None:
                 self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
-                          blocked_vehicle=vehicle.vehicle_id)
+                          blocked_vehicle=vehicle.vehicle_id, reason="无可用缓冲位，无法移位")
                 continue
 
             # 移位
@@ -124,7 +126,8 @@ class SimulationEngine:
 
             self._log(self.env.now, EventType.SHIFT_START, blk_vid,
                       from_spot=blk_spot.spot_id, to_spot=buffer.spot_id,
-                      blocked_vehicle=vehicle.vehicle_id, distance=dist)
+                      blocked_vehicle=vehicle.vehicle_id, distance=dist,
+                      reason=f"为让行内层车辆 {vehicle.vehicle_id} 离场而临时移位")
             self.shift_count += 1
             self.total_shift_dist += dist * 2
 

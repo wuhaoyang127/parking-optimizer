@@ -798,7 +798,13 @@ def render_path_page():
             t_end = e["time"]
 
     if t_start is None:
-        st.warning("该车辆尚未被分配车位")
+        # 该车辆未分配到车位：展示拒绝理由
+        rej = [e for e in veh_ev if e.get("type") == "rejected"]
+        if rej:
+            reason = (rej[0].get("metadata", {}) or {}).get("reason", "停车场无空闲车位")
+            st.error(f"🚫 该车辆被拒绝：{reason}")
+        else:
+            st.warning("该车辆尚未被分配车位")
         return
 
     if t_end is None or t_end <= t_start:
@@ -819,6 +825,22 @@ def render_path_page():
     frames = [t_start + (t_end - t_start) * i / (N - 1) for i in range(N)]
 
     st.caption(f"🅿️ 车位: **{spot_id}** | 行驶: {t_start:.1f}s → {t_end:.1f}s ({(t_end-t_start):.1f}s)")
+
+    # 展示该车辆的拒绝/调整理由（因客观原因无法停最优车位、或需移位/离场）
+    notes = []
+    for e in veh_ev:
+        et = e.get("type", "")
+        meta = e.get("metadata", {}) or {}
+        reason = meta.get("reason", "")
+        if et == "rejected":
+            notes.append(f"🚫 **拒绝**：{reason or '停车场无空闲车位'}")
+        elif et == "departure" and meta.get("had_blocking"):
+            notes.append(f"🔄 **离场需移位**：{reason or '被外侧车辆阻挡'}")
+        elif et == "shift_start":
+            notes.append(f"🔄 **被临时移位**：{reason or '为让行内层车辆离场'}")
+    for n in notes:
+        st.warning(n)
+
     c0, c1, c2, c3, c4, c5 = st.columns([1, 1, 1, 1, 1, 3])
     with c0:
         if st.button("⏮", help="第1帧(起点)", use_container_width=True):
