@@ -955,6 +955,23 @@ def render_path_page():
         st.progress((st.session_state.frame_index + 1) / N,
                      f"帧 {st.session_state.frame_index+1}/{N} | t={frames[st.session_state.frame_index]:.1f}s")
 
+    # 时间轴拖拽（拖动后跳帧并暂停播放）
+    step = max((t_end - t_start) / 200.0, 0.001)
+    t_val = st.slider(
+        "拖拽时间轴",
+        min_value=float(t_start),
+        max_value=float(t_end),
+        value=float(frames[st.session_state.frame_index]),
+        step=step,
+        key="replay_timeline",
+        format="%.1f s",
+    )
+    new_idx = min(range(N), key=lambda i: abs(frames[i] - t_val))
+    if new_idx != st.session_state.frame_index:
+        st.session_state.frame_index = new_idx
+        st.session_state.replay_time = frames[new_idx]
+        st.session_state.frame_playing = False
+
     if st.session_state.frame_index < len(frames):
         st.session_state.replay_time = frames[st.session_state.frame_index]
 
@@ -965,6 +982,7 @@ def render_path_page():
         if st.session_state.frame_index < N - 1:
             time.sleep(0.4)
             st.session_state.frame_index += 1
+            st.session_state.replay_timeline = float(frames[st.session_state.frame_index])
             st.rerun()
         else:
             st.session_state.frame_playing = False
@@ -1077,8 +1095,14 @@ def render_metrics_page():
             gap = best["satisfaction_rate"] - cpsat_rate
             st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，最佳策略距最优 {gap:.1%}')
 
-        styled = df.style.format({"满足率":"{:.1%}","利用率":"{:.1%}","平均等待(s)":"{:.1f}",
-                                   "移位距离(m)":"{:.1f}","行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
+        def _highlight_best(row):
+            # 第一行（按优先级排序后的最优策略）标绿
+            return ['background-color: #d4edda' if row.name == 0 else '' for _ in row]
+
+        styled = (df.style
+                  .format({"满足率":"{:.1%}","利用率":"{:.1%}","平均等待(s)":"{:.1f}",
+                           "移位距离(m)":"{:.1f}","行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
+                  .apply(_highlight_best, axis=1))
         st.dataframe(styled, use_container_width=True, hide_index=True)
         c1, c2 = st.columns(2)
         with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
