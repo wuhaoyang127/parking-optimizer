@@ -466,6 +466,26 @@ def render_settings(role):
         strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
+    with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
+        st.markdown("""
+**分配逻辑 —— 贪心算法（找当前最小的）**
+
+每辆车到达时，系统从当前所有**空闲车位**中，按贪心原则选一个"当前代价最小"的车位：
+
+| 策略 | 贪心目标（找最小） |
+|------|------|
+| 时长感知贪心（主方法） | 独立车位优先；纵深车位按停车时长分内外层（短停→外层、长停→里层），同类选距离最近 |
+| 贪心（基线） | 独立车位 → 纵深外层 → 纵深里层，同类选距离最近 |
+| 最近路径 | 距离入口最近 |
+| 先到先服务 | 最先出现的空闲车位 |
+| 离场贪心 | 距离最近的空闲车位 |
+| 随机分配 | 随机空闲车位 |
+
+**拒绝规则**
+
+当停车场**所有车位均被占用（无空闲车位）**时，到达车辆无法分配，将被拒绝（计入「拒绝数」指标）。
+""")
+
     if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):
         with st.spinner("仿真运行中..."):
