@@ -913,6 +913,19 @@ def render_metrics_page():
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
+    # 算法筛选优先级说明
+    st.markdown("### 🎯 算法筛选优先级")
+    st.caption("系统按以下优先级从高到低评估并推荐算法")
+    prio = pd.DataFrame([
+        ["1", "满足率", "越高越好", "首要目标：尽可能多的车辆被分配到位"],
+        ["2", "移位次数", "越少越好", "满足率相同时，优先减少纵深移位的次数"],
+        ["3", "移位距离", "越短越好", "减少移位产生的额外行驶成本"],
+        ["4", "行驶距离", "越短越好", "降低车辆整体行驶成本"],
+        ["5", "运行耗时", "越短越好", "保证算法实时可用"],
+    ], columns=["优先级", "评估指标", "方向", "说明"])
+    st.dataframe(prio, use_container_width=True, hide_index=True)
+    st.markdown("---")
+
     # 多策略对比
     if st.session_state.get("sim_all_metrics"):
         st.markdown("### 🏆 多策略对比")
@@ -920,7 +933,10 @@ def render_metrics_page():
         df = pd.DataFrame(all_m)[["strategy","satisfaction_rate","spatial_utilization","shift_count",
                                    "shift_distance_m","total_drive_distance_m","rejected_count","runtime_s"]]
         df.columns = ["策略","满足率","利用率","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
-        best = max(all_m, key=lambda m: m["satisfaction_rate"])
+        # 按优先级推荐：满足率↑ → 移位次数↓ → 移位距离↓ → 行驶距离↓ → 耗时↓
+        best = min(all_m, key=lambda m: (-m["satisfaction_rate"], m["shift_count"],
+                                         m["shift_distance_m"], m["total_drive_distance_m"],
+                                         m["runtime_s"]))
         st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"],best["strategy"])}** 满足率 {best["satisfaction_rate"]:.1%}')
         cpsat_rate = st.session_state.get("sim_cpsat_rate")
         if cpsat_rate is not None:
