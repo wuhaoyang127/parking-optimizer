@@ -246,8 +246,13 @@ def run_single(net, spots, vehicles, strategy, seed, wait_policy="fifo"):
     m["strategy"] = strategy.name; return m, events, lot
 
 
+# 计数类指标（次数）：多种子取平均后四舍五入为整数，避免显示成小数
+COUNT_FIELDS = {"shift_count", "rejected_count", "buffer_failed_count"}
+
+
 def _avg_metrics(metrics_list):
-    """对多个 metrics dict 取平均：数值字段求均值，非数值字段保留第一个（用于多 seed 统计）"""
+    """对多个 metrics dict 取平均：数值字段求均值，非数值字段保留第一个（用于多 seed 统计）。
+    计数类字段（移位/拒绝/缓冲失败次数）取平均后四舍五入为整数。"""
     if not metrics_list:
         return None
     first = metrics_list[0]
@@ -256,7 +261,8 @@ def _avg_metrics(metrics_list):
         if isinstance(v, (int, float)) and not isinstance(v, bool):
             vals = [m[k] for m in metrics_list if isinstance(m.get(k), (int, float))]
             if vals:
-                avg[k] = round(sum(vals) / len(vals), 4)
+                mean = sum(vals) / len(vals)
+                avg[k] = int(mean + 0.5) if k in COUNT_FIELDS else round(mean, 4)
     return avg
 
 
