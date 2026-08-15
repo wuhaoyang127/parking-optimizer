@@ -1010,6 +1010,8 @@ def render_path_page():
                      f"帧 {st.session_state.frame_index+1}/{N} | t={frames[st.session_state.frame_index]:.1f}s")
 
     # 时间轴拖拽（拖动后跳帧并暂停播放）
+    # 在渲染滑杆之前同步到当前帧；不能在 widget 实例化后再修改其 key，否则会抛 StreamlitAPIException
+    st.session_state.replay_timeline = float(frames[st.session_state.frame_index])
     step = max((t_end - t_start) / 200.0, 0.001)
     t_val = st.slider(
         "拖拽时间轴",
@@ -1036,7 +1038,6 @@ def render_path_page():
         if st.session_state.frame_index < N - 1:
             time.sleep(0.4)
             st.session_state.frame_index += 1
-            st.session_state.replay_timeline = float(frames[st.session_state.frame_index])
             st.rerun()
         else:
             st.session_state.frame_playing = False
