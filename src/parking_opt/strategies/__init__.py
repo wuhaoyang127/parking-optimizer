@@ -1,8 +1,9 @@
-"""策略包：统一注册表 + 内置策略（融合算法示例在 fusion.py）。"""
+"""策略包：统一注册表 + 内置策略 + 融合算法示例。"""
 
 from .baselines import BaseStrategy, FCFS, NearestPath, RandomAssign
 from .greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
 from .registry import StrategyRegistry
+from .fusion import CompositeStrategy, PeakOffPeakFusion
 
 # 登记内置策略（新增算法在此追加一行登记即可）
 StrategyRegistry.register(FCFS)
@@ -11,9 +12,10 @@ StrategyRegistry.register(RandomAssign)
 StrategyRegistry.register(GreedyStrategy)
 StrategyRegistry.register(DepartureOrderGreedy)
 StrategyRegistry.register(DurationAwareGreedy)
+StrategyRegistry.register(PeakOffPeakFusion)
 
 __all__ = [
     "BaseStrategy", "FCFS", "NearestPath", "RandomAssign",
     "GreedyStrategy", "DepartureOrderGreedy", "DurationAwareGreedy",
-    "StrategyRegistry",
+    "CompositeStrategy", "PeakOffPeakFusion", "StrategyRegistry",
 ]

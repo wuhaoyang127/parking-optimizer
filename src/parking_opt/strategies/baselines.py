@@ -15,10 +15,12 @@ class BaseStrategy:
       - 构造函数接收与 PARAMS 中 key 同名的关键字参数（带默认值）；
       - 在 strategies/__init__.py 的注册表中登记后，网页会自动出现参数控件。
 
-    参数 type 支持：int / float / choice / bool。
+    参数 type 支持：int / float / choice / bool / strategy。
       - int/float：网页渲染为滑块或数字输入（用 min/max/step 控制）；
       - choice：网页渲染为下拉框，需提供 options=[(value, label), ...]；
-      - bool：网页渲染为开关。
+      - bool：网页渲染为开关；
+      - strategy：网页渲染为「已登记算法」下拉框（选项来自 StrategyRegistry），
+        用于融合算法选择子算法，default 为某个已登记算法 name。
     """
 
     name: str = "base"
