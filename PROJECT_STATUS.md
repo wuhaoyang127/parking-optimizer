@@ -1,20 +1,20 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 6
-last_updated: 2026-08-04
-current_stage: C
+status_version: 7
+last_updated: 2026-08-17
+current_stage: D
 stage_status: in_progress
-current_milestone: stage-c-c1-domain
+current_milestone: stage-d-algo-interface
 git_initialized: true
-current_branch: stage-c-implementation
+current_branch: stage-d-deliver
 last_verified_commit: null
-current_exec_plan: docs/plans/stage-b-specification.md
+current_exec_plan: null
 latest_handoff: null
-next_prompt: prompts/阶段验收与复核.md
+next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
-current_stage_blockers: [{"issue":"等待用户审查并批准阶段B的数学模型和工程设计"}]
+current_stage_blockers: []
 downstream_blockers: []
-ui_framework_preference: Streamlit（暂定，阶段 D0 复核）
+ui_framework_preference: Streamlit（已确认）
 deliverable_type: 向管理员推荐方案的Dashboard
 status_maintainer: 项目主线程或用户指定协调线程
 ---
@@ -29,14 +29,13 @@ status_maintainer: 项目主线程或用户指定协调线程
 
 ## 2. 当前状态快照
 
-- **当前阶段**：阶段 A 已完成，等待用户审查批准；
-- **验收状态**：`awaiting_review`；
-- **Git 状态**：已初始化，当前在 `stage-a-research` 分支；
-- **当前 ExecPlan**：`docs/plans/stage-a-research.md`；
-- **最近交接摘要**：`null`，首次执行，无前置阶段；
-- **当前阶段阻断项**：等待用户审查并批准最终路线决策（`docs/research/05_最终路线决策.md`）；
-- **当前唯一下一步**：用户批准后执行 `prompts/阶段验收与复核.md`，然后进入阶段B；
-- **禁止事项**：用户批准前不进入阶段B。
+- **当前阶段**：阶段 D（应用与交付），进行中；
+- **验收状态**：`in_progress`；
+- **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
+- **当前里程碑**：`stage-d-algo-interface`（算法接入接口与参数化改造）；
+- **当前阶段阻断项**：无；
+- **当前唯一下一步**：完成算法接入接口、参数可调与融合算法示例，见本对话执行计划；
+- **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
 
@@ -55,34 +54,28 @@ superseded
 `current_stage_blockers` 和 `downstream_blockers` 使用 **YAML 兼容的单行 JSON 数组**。
 不得改成脚本无法完整解析的缩进嵌套结构。
 
-## 3. 候选路线状态（阶段A已完成）
+## 3. 阶段进度总览
 
-阶段A最终推荐的路线是：
+- [x] **阶段 A（研究与路线决策）**：已完成并批准。
+- [x] **阶段 B（模型与工程设计）**：已完成并批准，核心定义已冻结。
+- [x] **阶段 C（核心实现与验证）**：已完成。领域模型、路网、路径引擎、离散事件仿真、基线/贪心/时长感知策略、指标计算、CP-SAT 离线基准均已实现并带测试。
+- [ ] **阶段 D（应用与交付）**：进行中。Streamlit 多页面 Dashboard 已可运行；当前聚焦「算法接入接口 + 参数可调 + 融合算法示例」。
 
-> **路网成本预处理 + 离散事件仿真 + CP-SAT小规模离线基准 + 带缓冲位的在线贪心策略（主方法）+ 确定性降级，辅以 Dijkstra-SA 作为对照基线。**
+阶段 A 最终推荐路线：
+
+> **路网成本预处理 + 离散事件仿真 + CP-SAT 小规模离线基准 + 带缓冲位的在线贪心策略（主方法）+ 确定性降级，辅以 Dijkstra-SA 作为对照基线。**
 
 详见 `docs/research/05_最终路线决策.md`。
 
-- [x] 已形成候选路线；
-- [x] 已完成文献核验（20条文献矩阵，部分待验证DOI）；
-- [x] 已完成候选算法决策矩阵（8条路线×13维度）；
-- [x] 已通过阶段 A 执行完成；
-- [ ] 已由用户批准最终路线。
-
 ## 4. 已完成并确认
 
-- [x] 确定 A、B、C、D 四阶段流程；
-- [x] 建立并整理 `AGENTS.md`；
-- [x] 建立 `.agent/PLANS.md`；
-- [x] 建立阶段提示词和验收提示词；
-- [x] 建立跨对话状态管理和阶段交接模板；
-- [x] 建立 Git、归档、隐私和 `.gitignore` 规则；
-- [x] 将两份原始 Word 纳入 `references/original/`；
-- [x] 增加可执行的启动包结构与一致性检查脚本；
-- [x] 自检脚本支持初始模式与 Git 项目模式，默认运行不修改仓库；
-- [x] 已完成阶段 A：原方案审查、文献调研、候选算法比较、最终路线决策；
-- [ ] 尚未开始阶段 B（数学模型与工程设计）；
-- [ ] 尚未开始核心代码。
+- [x] 四阶段流程、`AGENTS.md`、`.agent/PLANS.md`、阶段提示词与验收提示词；
+- [x] 跨对话状态管理、Git/归档/隐私规则、启动包自检脚本；
+- [x] 阶段 A：原方案审查、文献调研、候选算法比较、最终路线决策；
+- [x] 阶段 B：问题定义、数学模型、数据契约、架构与实验协议冻结；
+- [x] 阶段 C：领域模型、路网与路径引擎、SimPy 仿真引擎、需求生成、6 个策略（FCFS/最近/随机/离场贪心/朴素贪心/时长感知贪心）、指标计算、CP-SAT 离线基准；
+- [x] 阶段 C/D：排队等待机制（车位满排队 30min 上限）、多 seed 统计、算法优先级字典序推荐、CP-SAT 理论最优对照；
+- [x] 阶段 D：Streamlit 多页面 Dashboard（登录/仿真设置/系统设置/布局图/动态路径/指标分析）、Supabase 认证与偏好持久化、自定义布局 JSON 导入。
 
 ## 5. 已批准的项目级决定
 
@@ -97,27 +90,20 @@ superseded
 | 旧路线 | 可以否定，但必须说明仍符合立项目标 | 已确认 |
 | 交付方式 | 分阶段完成研究、模型、代码和展示 | 已确认 |
 | 真实车辆控制 | 不属于当前项目范围 | 已确认 |
+| 展示框架 | Streamlit | 已确认（原暂定，阶段 D 已采用） |
+| 主方法 | 时长感知贪心（DurationAwareGreedy），原贪心降为基线 | 已确认 |
 
 ## 6. 尚未冻结
 
-- 最终主算法和对照算法；
-- 阻挡、移位和缓冲位的精确定义；
-- 利用率最终口径；
-- 离线基准、在线策略和最终动态方法的具体形式；
-- 是否引入需求预测；
-- 决策周期、候选裁剪和运行时间限制；
-- 正式实验协议和统计方法；
-- 现实数据接口最小字段；
-- 最终展示框架。当前暂定优先考虑 Streamlit，阶段 D0 必须复核。
+- 融合算法的具体融合语义（时段切换/权重混合/概率选择等由接入方决定）；
+- 各算法参数的最优取值（本阶段目标是「可调」，不预设最优）；
+- 真实数据接口的最小字段（阶段 D 持续完善）。
 
 ## 7. 数据与结论边界
 
 ### 当前已有
 
-- 停车场平面图；
-- 车位坐标；
-- 道路连接；
-- 入口和出口数量。
+- 停车场平面图、车位坐标、道路连接、入口和出口数量。
 
 ### 当前缺少
 
@@ -140,15 +126,12 @@ superseded
 
 ## 8. 代码、测试与实验状态
 
-- 核心代码：未开始；
-- Python 环境和依赖：计划在阶段 C1 建立；
-- 单元测试：未建立；
-- 集成测试：未建立；
-- 正式实验协议：未冻结；
-- 可复现实验结果：暂无；
-- 启动包初始检查：`python scripts/validate_starter_package.py --initial`；
-- Git 初始化后的持续检查：`python scripts/validate_starter_package.py`；
-- 两种默认检查均只读；只有加 `--write-report` 才更新 JSON 报告。
+- 核心代码：已完成（`src/parking_opt/` 分层包）；
+- Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`）；
+- 正式实验协议：已冻结（阶段 B）；
+- 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
+- 备份存档：git tag `backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -157,28 +140,21 @@ superseded
 | `AGENTS.md` | 长期项目规则 | 有效 |
 | `PROJECT_STATUS.md` | 项目状态唯一入口 | 有效 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
-| `docs/research/05_最终路线决策.md` | 阶段A最终路线决策（权威路线文档） | 待批准 |
-| `docs/plans/stage-a-research.md` | 阶段A ExecPlan | 已完成 |
-| `docs/handoffs/TEMPLATE.md` | 阶段交接模板 | 有效 |
-| `prompts/阶段验收与复核.md` | 当前下一提示词 | 待执行 |
-| `prompts/B_数学模型与工程设计.md` | 阶段B提示词 | 待批准后执行 |
-| `scripts/validate_starter_package.py` | 启动包与项目状态一致性检查 | 有效 |
+| `app.py` | Streamlit 多页面 Dashboard 入口 | 有效，本阶段重点改造 |
+| `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效，本阶段改造 |
+| `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效，本阶段改造 |
+| `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 待新增 |
+| `src/parking_opt/strategies/fusion.py` | 融合算法示例 | 待新增 |
+| `docs/新算法接入说明.md` | 新算法接入步骤文档 | 待新增 |
+| `docs/布局导入格式说明.md` | 自定义布局 JSON 格式说明 | 有效 |
+| `docs/research/05_最终路线决策.md` | 阶段A最终路线决策（权威路线文档） | 已批准 |
 | `references/original/` | 两份原始材料，只读 | 已包含 |
-| `references/bibliography.bib` | 文献库（BibTeX） | 已创建 |
-| `docs/research/01-07` | 阶段A全部研究产出 | 已完成 |
 
 ## 10. 阻断项与风险
 
 ### 当前阶段阻断项
 
-无。阶段 A 可以开始。
-
-### 下游阶段阻断项
-
-- **进入阶段 B 前**：阶段 A 必须完成技术路线调研、比较、验收并由用户批准；
-- **进入阶段 C 前**：阶段 B 必须冻结纵深阻挡、移位、缓冲位、指标、数据契约和实验协议。
-
-这些下游阻断项是当前阶段要解决的问题，不阻止阶段 A 工作。
+无。
 
 ### 重要风险
 
@@ -186,29 +162,30 @@ superseded
 - 利用率与移位、等待和出库效率可能冲突；
 - 动态算法可能发生未来真值泄漏；
 - 约 100 个车位可能需要复杂度控制；
-- 旧方案与主算法必须在公平条件下比较。
+- 旧方案与主算法必须在公平条件下比较；
+- 算法接口与参数化改造需保持向后兼容，不得破坏现有测试。
 
 ## 11. 当前唯一下一步
 
-等待用户审查阶段A产出，重点审查 `docs/research/05_最终路线决策.md`。
+执行「算法接入接口 + 参数可调 + 融合算法示例」改造，步骤如下：
 
-批准后：
-1. 执行 `prompts/阶段验收与复核.md` 完成正式验收；
-2. 合并 `stage-a-research` → `main`，打标签 `stage-a-approved`；
-3. 创建 `stage-b-model` 分支；
-4. 执行 `prompts/B_数学模型与工程设计.md` 进入阶段B。
+1. 修复布局说明文档网页打不开；
+2. 定义参数声明规范（`PARAMS`）并参数化策略/引擎/需求；
+3. 建立统一 `StrategyRegistry` 注册表，替换硬编码字典；
+4. 提供融合算法示例 `PeakOffPeakFusion`；
+5. 网页端动态渲染参数控件 + 每策略 5 条运行历史对比；
+6. 新增 `docs/新算法接入说明.md`。
 
 ## 12. 预计后续需要用户确认
 
-- 是否允许临时缓冲位；
-- 是否能获取预计离场或预约信息；
-- 现实停车场允许哪些主动移位；
-- 最终应用偏管理推荐还是自动执行调度命令；
-- 阶段 D 是否继续采用暂定的 Streamlit 展示方案。
+- 融合算法的具体融合语义与比例参数范围；
+- 各算法参数最终默认值与取值范围；
+- 真实布局数据的接入与脱敏方式。
 
 ## 13. 最近重要变更
 
-- 2026-08-04：完成阶段A全部6个里程碑：原方案审查（否定ARIMA/RF）、20条文献矩阵、8路线决策矩阵、最终路线决策（贪心+缓冲位主方法，四层架构）、数据缺口与三级验证方案、阶段B输入清单
-- 2026-08-04：初始化Git，创建stage-a-research分支
-- 2026-08-04：废弃 `docs/候选算法路线.md` 的权威性，最终路线决策迁移至 `docs/research/05_最终路线决策.md`
-- 2026-07-13：自检脚本改为默认只读
+- 2026-08-17：打备份 tag `backup-before-algo-interface-20260817`，开始「算法接入接口 + 参数化」改造；
+- 2026-08-15：修复动态路径页时间轴滑杆崩溃、移位时序竞争、引擎车位重复分配等 bug；
+- 2026-08-13：新增等待调度策略可选（FIFO/短停车优先）、多 seed 统计、雷达图、策略回归测试；
+- 2026-08-12：时长感知贪心设为主方法，CP-SAT 理论最优接入指标页，算法优先级升级为 Supabase 跨会话持久化；
+- 2026-08-04：完成阶段 A 全部里程碑并批准路线。
