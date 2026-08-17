@@ -143,9 +143,9 @@ superseded
 | `app.py` | Streamlit 多页面 Dashboard 入口 | 有效，本阶段重点改造 |
 | `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效，本阶段改造 |
 | `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效，本阶段改造 |
-| `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 待新增 |
-| `src/parking_opt/strategies/fusion.py` | 融合算法示例 | 待新增 |
-| `docs/新算法接入说明.md` | 新算法接入步骤文档 | 待新增 |
+| `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 有效 |
+| `src/parking_opt/strategies/fusion.py` | 融合算法接口 + 示例 | 有效 |
+| `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
 | `docs/布局导入格式说明.md` | 自定义布局 JSON 格式说明 | 有效 |
 | `docs/research/05_最终路线决策.md` | 阶段A最终路线决策（权威路线文档） | 已批准 |
 | `references/original/` | 两份原始材料，只读 | 已包含 |
@@ -167,14 +167,16 @@ superseded
 
 ## 11. 当前唯一下一步
 
-执行「算法接入接口 + 参数可调 + 融合算法示例」改造，步骤如下：
+「算法接入接口 + 参数可调 + 融合算法示例」改造已完成，待用户验收：
 
-1. 修复布局说明文档网页打不开；
-2. 定义参数声明规范（`PARAMS`）并参数化策略/引擎/需求；
-3. 建立统一 `StrategyRegistry` 注册表，替换硬编码字典；
-4. 提供融合算法示例 `PeakOffPeakFusion`；
-5. 网页端动态渲染参数控件 + 每策略 5 条运行历史对比；
-6. 新增 `docs/新算法接入说明.md`。
+1. [x] 修复布局说明文档网页打不开；
+2. [x] 定义参数声明规范（`PARAMS`）并参数化策略/引擎/需求；
+3. [x] 建立统一 `StrategyRegistry` 注册表，替换硬编码字典；
+4. [x] 提供融合算法示例 `PeakOffPeakFusion`；
+5. [x] 网页端动态渲染参数控件 + 每策略 5 条运行历史对比；
+6. [x] 新增 `docs/新算法接入说明.md`。
+
+后续：用户验收后，可进入真实布局数据接入、更多融合算法接入等下一批任务。
 
 ## 12. 预计后续需要用户确认
 
@@ -184,7 +186,8 @@ superseded
 
 ## 13. 最近重要变更
 
-- 2026-08-17：打备份 tag `backup-before-algo-interface-20260817`，开始「算法接入接口 + 参数化」改造；
+- 2026-08-17：完成「算法接入接口 + 参数化」改造：PARAMS 参数声明规范、StrategyRegistry 统一注册表、策略/引擎/需求参数全暴露、融合算法示例 PeakOffPeakFusion、网页参数控件动态渲染 + 每策略 5 条调参历史、新算法接入说明文档；
+- 2026-08-17：打备份 tag `backup-before-algo-interface-20260817`；
 - 2026-08-15：修复动态路径页时间轴滑杆崩溃、移位时序竞争、引擎车位重复分配等 bug；
 - 2026-08-13：新增等待调度策略可选（FIFO/短停车优先）、多 seed 统计、雷达图、策略回归测试；
 - 2026-08-12：时长感知贪心设为主方法，CP-SAT 理论最优接入指标页，算法优先级升级为 Supabase 跨会话持久化；
