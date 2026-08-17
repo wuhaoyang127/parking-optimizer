@@ -11,6 +11,7 @@ from auth import change_password as auth_change_pw, reset_user_password as auth_
 from auth import export_users as auth_export_users, import_users as auth_import_users
 from auth import set_session_token, get_session_token, clear_session_token, restore_session
 from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
+from auth import check_supabase_health
 
 import streamlit as st
 import pandas as pd
@@ -1395,6 +1396,88 @@ def _metric(label, value, variant=""):
                 unsafe_allow_html=True)
 
 
+def render_status_page():
+    """页面: 系统状态与预警 —— 主动探测 Supabase 后端可用性"""
+    st.subheader("🚨 系统状态与预警")
+    st.caption("主动探测 Supabase 后端是否在线、API key 是否有效")
+
+    if "health_check" not in st.session_state:
+        st.session_state.health_check = None
+
+    if st.button("🔄 立即重新探测"):
+        st.session_state.health_check = None
+        st.rerun()
+
+    if st.session_state.health_check is None:
+        with st.spinner("探测中..."):
+            st.session_state.health_check = check_supabase_health()
+
+    h = st.session_state.health_check
+    status = h.get("status", "error")
+    if status == "ok":
+        st.success(f"✅ {h.get('message')}")
+    elif status == "warn":
+        st.warning(f"⚠️ {h.get('message')}")
+    else:
+        st.error(f"🚫 {h.get('message')}")
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        _metric("后端在线", "✅ 是" if h.get("online") else "❌ 否",
+                "good" if h.get("online") else "bad")
+    with c2:
+        _metric("API key 有效", "✅ 是" if h.get("api_key_valid") else "❌ 否",
+                "good" if h.get("api_key_valid") else "bad")
+    with c3:
+        lat = h.get("latency_ms")
+        _metric("响应耗时", f"{lat}ms" if lat is not None else "—")
+
+    st.caption(f"探测时间：{h.get('checked_at')}")
+
+    st.markdown("""
+**说明**
+- 本页主动探测 `auth.py` 中配置的 Supabase 后端（URL 与 anon key）是否可用。
+- 后端在线但 API key 失效 → key 已过期或权限变更，需到 Supabase 控制台检查。
+- 无法连接 → 项目可能已暂停（免费项目 7 天无活动会自动暂停）或已过期。
+""")
+
+
+def render_algo_import_page():
+    """页面: 新算法接入 —— 上传算法描述文件，供 AI 后台接入"""
+    st.subheader("🧩 新算法接入")
+    st.markdown("""
+上传你的算法描述文件（**文字说明 / 代码示例 / 伪代码**，支持 `.md` / `.txt` / `.py` / `.json`），
+文件会保存到仓库 `pending_algorithms/` 目录。
+
+> 上传后，请回到 **Deep Code 对话** 中说一句「接入算法」，AI 会读取文件、编写代码、复检并接入，
+> 最后跑仿真比较，选出最优算法。
+""")
+
+    pending_dir = Path(__file__).parent / "pending_algorithms"
+    pending_dir.mkdir(parents=True, exist_ok=True)
+
+    uploaded = st.file_uploader("📤 上传算法文件", type=["md", "txt", "py", "json"],
+                                key="algo_upload")
+    if uploaded is not None:
+        try:
+            content = uploaded.read().decode("utf-8", errors="replace")
+            target = pending_dir / uploaded.name
+            target.write_text(content, encoding="utf-8")
+            st.success(f"✅ 已保存 `{uploaded.name}` 到 pending_algorithms/")
+            st.info("请回到 Deep Code 对话，说「接入算法」，AI 会读取并接入。")
+        except Exception as e:
+            st.error(f"保存失败: {e}")
+
+    files = sorted(p for p in pending_dir.glob("*") if p.is_file()) if pending_dir.exists() else []
+    if files:
+        st.divider()
+        st.caption("**已上传的算法文件：**")
+        for f in files:
+            st.write(f"📄 `{f.name}`（{f.stat().st_size} 字节）")
+    else:
+        st.caption("暂无已上传的算法文件")
+
+
 # ═══════════════════════════════════════════════════════════
 # 主入口
 # ═══════════════════════════════════════════════════════════
@@ -1438,6 +1521,8 @@ with st.sidebar:
         "🅿️ 停车场布局图",
         "🚗 动态路径",
         "📊 指标分析",
+        "🧩 新算法接入",
+        "🚨 系统状态",
     ]
     if "page" not in st.session_state:
         st.session_state.page = pages[0]
@@ -1460,3 +1545,7 @@ elif page == pages[3]:
     render_path_page()
 elif page == pages[4]:
     render_metrics_page()
+elif page == pages[5]:
+    render_algo_import_page()
+elif page == pages[6]:
+    render_status_page()
