@@ -21,8 +21,7 @@ from parking_opt.routing.path_engine import PathEngine
 from parking_opt.simulation.parking_lot import ParkingLot
 from parking_opt.simulation.engine import SimulationEngine
 from parking_opt.simulation.arrival import generate_demand
-from parking_opt.strategies.baselines import FCFS, NearestPath, RandomAssign
-from parking_opt.strategies.greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
+from parking_opt.strategies import StrategyRegistry
 from parking_opt.evaluation.metrics import compute_metrics
 from parking_opt.optimization.cpsat_baseline import CPSatBaseline
 from viz import draw_parking_layout
@@ -30,12 +29,9 @@ from viz import draw_parking_layout
 # ═══════════════════════════════════════════════════════════
 # 常量
 # ═══════════════════════════════════════════════════════════
-STRATEGY_LABELS = {
-    "greedy": "贪心（基线）", "fcfs": "先到先服务",
-    "nearest": "最近路径", "random": "随机分配",
-    "departure_greedy": "离场贪心", "duration_greedy": "时长感知贪心（主方法）",
-    "compare_all": "全部对比",
-}
+# 策略显示名：从注册表动态生成（新算法在 strategies/__init__.py 登记后自动出现）
+STRATEGY_LABELS = {name: cls.label for name, cls in StrategyRegistry.all().items()}
+STRATEGY_LABELS["compare_all"] = "全部对比"
 
 # 算法评估指标：显示名 -> (指标字段, 方向, 说明)
 # 方向: "max"=越大越好, "min"=越小越好
@@ -69,7 +65,10 @@ STRATEGY_DESC = {
     "random": "**随机分配**\n\n"
               "从当前空闲车位中随机选一个（基线对照用）。",
     "compare_all": "**全部对比**\n\n"
-                   "同时运行以上所有策略，按你设定的优先级排序并推荐最优策略。",
+                   "同时运行以上所有策略（默认参数），按你设定的优先级排序并推荐最优策略。",
+    "peak_offpeak_fusion": "**高峰贪心+低谷最近（融合示例）**\n\n"
+                           "按当前占用率判断高峰/低谷：占用率高于阈值用高峰算法（默认时长感知贪心），"
+                           "否则用低谷算法（默认最近路径）。阈值即「融合比例」，可在下方参数区调节。",
 }
 
 ADMIN_USER = "wuhaoyang127"
@@ -256,13 +255,15 @@ LAYOUT_BUILDERS.update({"linear":build_linear,"rectangle":build_rectangle,"lshap
 # ═══════════════════════════════════════════════════════════
 # 仿真 & 时间轴工具函数
 # ═══════════════════════════════════════════════════════════
-def run_single(net, spots, vehicles, strategy, seed, wait_policy="fifo"):
+def run_single(net, spots, vehicles, strategy, seed, wait_policy="fifo",
+               car_speed=1.39, max_wait_time=1800):
     # 重置车位状态，避免多次运行时复用污染（compare_all 循环会复用 spots）
     for s in spots:
         s.is_occupied = False
         s.occupied_by = None
     pe = PathEngine(net); lot = ParkingLot(spots)
-    engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed, wait_policy=wait_policy)
+    engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed, wait_policy=wait_policy,
+                              car_speed=car_speed, max_wait_time=max_wait_time)
     t0 = time.time(); events = engine.run()
     m = compute_metrics(events, len(spots)); m["runtime_s"] = round(time.time()-t0, 3)
     m["strategy"] = strategy.name; return m, events, lot
@@ -571,6 +572,82 @@ def check_login():
 # ═══════════════════════════════════════════════════════════
 # 页面渲染函数
 # ═══════════════════════════════════════════════════════════
+# 环境参数（引擎 + 需求生成）声明：与策略参数一样，网页渲染为可调控件
+ENV_PARAM_SPECS = [
+    {"key": "car_speed", "label": "车速(m/s)", "type": "float",
+     "min": 0.5, "max": 5.0, "step": 0.1, "default": 1.39,
+     "help": "车辆行驶速度，影响行驶/移位时间"},
+    {"key": "max_wait_time", "label": "排队等待上限(秒)", "type": "int",
+     "min": 60, "max": 7200, "step": 60, "default": 1800,
+     "help": "车位满时车辆排队等待的最长时间"},
+    {"key": "sim_duration", "label": "仿真时长(秒)", "type": "int",
+     "min": 3600, "max": 86400, "step": 600, "default": 21600,
+     "help": "仿真总时长（默认6小时）"},
+    {"key": "duration_min", "label": "停车时长下限(秒)", "type": "int",
+     "min": 60, "max": 7200, "step": 60, "default": 600,
+     "help": "车辆停车时长范围下限"},
+    {"key": "duration_max", "label": "停车时长上限(秒)", "type": "int",
+     "min": 600, "max": 14400, "step": 300, "default": 7200,
+     "help": "车辆停车时长范围上限"},
+    {"key": "peak_ratio", "label": "高峰车辆占比", "type": "float",
+     "min": 0.0, "max": 1.0, "step": 0.05, "default": 0.7,
+     "help": "高峰时段到达的车辆占比"},
+    {"key": "error_ratio", "label": "时长预估误差(±)", "type": "float",
+     "min": 0.0, "max": 0.9, "step": 0.05, "default": 0.3,
+     "help": "预估停车时长相较真实时长的误差比例"},
+]
+
+
+def _render_param_widget(p, prefix, disabled):
+    """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。"""
+    key = p["key"]
+    label = p.get("label", key)
+    help_text = p.get("help")
+    ptype = p.get("type", "float")
+    default = p.get("default")
+    wkey = f"{prefix}_{key}"
+    if ptype == "int":
+        return st.slider(label, int(p.get("min", 0)), int(p.get("max", 100)),
+                         int(default if default is not None else p.get("min", 0)),
+                         int(p.get("step", 1)), key=wkey, disabled=disabled, help=help_text)
+    if ptype == "float":
+        return st.slider(label, float(p.get("min", 0.0)), float(p.get("max", 1.0)),
+                         float(default if default is not None else p.get("min", 0.0)),
+                         float(p.get("step", 0.1)), key=wkey, disabled=disabled, help=help_text)
+    if ptype == "choice":
+        options = p.get("options", [])
+        opts = [o[0] for o in options] if options else []
+        fmt = {o[0]: o[1] for o in options} if options else {}
+        idx = opts.index(default) if default in opts else 0
+        return st.selectbox(label, opts, index=idx, format_func=lambda v: fmt.get(v, v),
+                            key=wkey, disabled=disabled, help=help_text)
+    if ptype == "bool":
+        return st.checkbox(label, bool(default), key=wkey, disabled=disabled, help=help_text)
+    if ptype == "strategy":
+        names = list(StrategyRegistry.all().keys())
+        fmt = {n: StrategyRegistry.get(n).label for n in names}
+        idx = names.index(default) if default in names else 0
+        return st.selectbox(label, names, index=idx, format_func=lambda v: fmt.get(v, v),
+                            key=wkey, disabled=disabled, help=help_text)
+    return None
+
+
+def render_strategy_params(strategy_name, disabled=False):
+    """渲染某策略的全部参数控件，返回 {key: value}。"""
+    params = {}
+    for p in StrategyRegistry.specs(strategy_name):
+        params[p["key"]] = _render_param_widget(p, f"sp_{strategy_name}", disabled)
+    return params
+
+
+def render_env_params(disabled=False):
+    """渲染环境参数（引擎 + 需求）控件，返回 {key: value}。"""
+    params = {}
+    for p in ENV_PARAM_SPECS:
+        params[p["key"]] = _render_param_widget(p, "env", disabled)
+    return params
+
+
 def render_settings(role):
     """页面1: 仿真设置"""
     st.subheader("⚙️ 仿真参数配置")
@@ -598,12 +675,29 @@ def render_settings(role):
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
-        st.markdown(STRATEGY_DESC.get(strategy_name, "**未选择策略**"))
+        st.markdown(STRATEGY_DESC.get(strategy_name, "**该算法暂无详细说明**"))
         st.markdown("""
 **等待与拒绝规则**
 
-当停车场**所有车位均被占用**时，到达车辆不会立即被拒，而是**排队等待**（每 60 秒重试一次分配）；若等待超过 **30 分钟**仍无空闲车位，才判定为拒绝（计入「拒绝数」指标，等待时长计入「平均等待时间」）。
+当停车场**所有车位均被占用**时，到达车辆不会立即被拒，而是**排队等待**；若等待超过下方「排队等待上限」仍无空闲车位，才判定为拒绝（计入「拒绝数」指标，等待时长计入「平均等待时间」）。
 """)
+
+    # 策略可调参数（按 PARAMS 声明动态渲染）
+    if strategy_name != "compare_all" and StrategyRegistry.specs(strategy_name):
+        st.markdown("#### 🎛️ 算法参数（可调）")
+        strat_params = render_strategy_params(strategy_name, disabled)
+    else:
+        strat_params = {}
+
+    # 环境参数（引擎 + 需求，可调）
+    with st.expander("🌐 环境参数（车速/等待/需求，可调）"):
+        env_params = render_env_params(disabled)
+
+    # 停车时长上下限校验：下限不应大于上限
+    if env_params["duration_min"] > env_params["duration_max"]:
+        st.warning("⚠️ 停车时长下限大于上限，已自动交换")
+        env_params["duration_min"], env_params["duration_max"] = \
+            env_params["duration_max"], env_params["duration_min"]
 
     # 算法评估优先级（可自主调整，字典序排序）
     st.markdown("#### 🎯 算法评估优先级")
@@ -637,19 +731,25 @@ def render_settings(role):
             net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
             pe = PathEngine(net)
 
-            strategy_classes = {"greedy": GreedyStrategy, "fcfs": FCFS, "nearest": NearestPath,
-                                "random": RandomAssign, "departure_greedy": DepartureOrderGreedy,
-                                "duration_greedy": DurationAwareGreedy}
+            # 需求生成 / 引擎公共参数
+            demand_kwargs = dict(total_vehicles=n_vehicles,
+                                 sim_duration=env_params["sim_duration"],
+                                 duration_min=env_params["duration_min"],
+                                 duration_max=env_params["duration_max"],
+                                 peak_ratio=env_params["peak_ratio"],
+                                 error_ratio=env_params["error_ratio"])
+            eng_kwargs = dict(car_speed=env_params["car_speed"],
+                              max_wait_time=env_params["max_wait_time"])
 
             if strategy_name == "compare_all":
                 all_m = []
                 main_events_raw = None
-                for nm, cls in strategy_classes.items():
+                for nm, cls in StrategyRegistry.all().items():
                     seed_metrics = []
                     for r in range(n_runs):
                         s = seed + r
-                        vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
-                        m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy)
+                        vehs = generate_demand(seed=s, **demand_kwargs)
+                        m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
                         seed_metrics.append(m)
                         # 主方法事件日志（取第一个种子），供「车辆动态路径」页展示
                         if nm == "duration_greedy" and r == 0:
@@ -661,21 +761,36 @@ def render_settings(role):
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
                 st.session_state.sim_events_raw = main_events_raw
             else:
-                cls = strategy_classes[strategy_name]
                 seed_metrics = []
                 events_raw = None
                 for r in range(n_runs):
                     s = seed + r
-                    vehs = generate_demand(total_vehicles=n_vehicles, seed=s)
-                    m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy)
+                    vehs = generate_demand(seed=s, **demand_kwargs)
+                    # 每次新建策略实例（避免有状态策略跨 run 污染）
+                    strategy = StrategyRegistry.create(strategy_name, **strat_params)
+                    m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
                     seed_metrics.append(m)
                     if r == 0:
                         events_raw = [{"time": e.time, "type": e.event_type.value,
                                        "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                        "metadata": dict(e.metadata)} for e in ev]
-                st.session_state.sim_metrics = _avg_metrics(seed_metrics)
+                avg_m = _avg_metrics(seed_metrics)
+                st.session_state.sim_metrics = avg_m
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
+
+                # 记录运行历史（每策略最多保留 5 条，超出删除最旧）
+                history = st.session_state.setdefault("run_history", {})
+                rec = {
+                    "params": strat_params,
+                    "env": env_params,
+                    "metrics": avg_m,
+                    "time": time.strftime("%H:%M:%S"),
+                }
+                history.setdefault(strategy_name, []).append(rec)
+                if len(history[strategy_name]) > 5:
+                    history[strategy_name] = history[strategy_name][-5:]
+                st.session_state.run_history = history
 
             st.session_state.sim_net = net
             st.session_state.sim_spots = spots
@@ -690,7 +805,7 @@ def render_settings(role):
             # 计算理论最优（CP-SAT 离线全信息上界）
             cpsat_rate = None
             try:
-                cps_vehs = generate_demand(total_vehicles=n_vehicles, seed=seed)
+                cps_vehs = generate_demand(seed=seed, **demand_kwargs)
                 cps_lot = ParkingLot(spots)
                 cps_res = CPSatBaseline(cps_lot, pe).solve(cps_vehs)
                 if cps_res is not None:
@@ -704,8 +819,8 @@ def render_settings(role):
             st.session_state.replay_time = 0.0
             st.session_state.replay_playing = False
             st.session_state.selected_vehicle = None
-            # 跳到布局图页面
-            st.session_state.page = "🅿️ 停车场布局图"
+            # 跳到指标分析页面（调参后直接看结果）
+            st.session_state.page = "📊 指标分析"
         st.rerun()
 
 
@@ -1234,6 +1349,44 @@ def render_metrics_page():
                 st.warning(f"⚠️ 降级: {buffers} 缓冲失败, {rejs} 拒绝")
             st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
                                f"parking_{m.get('strategy','result')}.csv", "text/csv")
+
+    # ── 参数调优历史（每策略最近 5 次）──
+    history = st.session_state.get("run_history", {})
+    if history:
+        st.markdown("---")
+        st.markdown("### 🧪 参数调优历史（每策略最近5次）")
+        strat_names = list(history.keys())
+        sel = st.selectbox("选择策略查看调参历史", strat_names,
+                           format_func=lambda n: STRATEGY_LABELS.get(n, n))
+        records = history.get(sel, [])
+        if records:
+            rows = []
+            for i, rec in enumerate(records):
+                m = rec.get("metrics", {})
+                params_str = ", ".join(f"{k}={v}" for k, v in rec.get("params", {}).items()) or "默认"
+                rows.append({
+                    "序号": f"#{i + 1}",
+                    "时间": rec.get("time", ""),
+                    "参数": params_str,
+                    "满足率": m.get("satisfaction_rate"),
+                    "利用率": m.get("spatial_utilization"),
+                    "移位次数": m.get("shift_count"),
+                    "移位距离(m)": m.get("shift_distance_m"),
+                    "平均等待(s)": m.get("avg_wait_time_s"),
+                    "拒绝数": m.get("rejected_count"),
+                })
+            hdf = pd.DataFrame(rows)
+            st.dataframe(hdf.style.format({
+                "满足率": "{:.1%}", "利用率": "{:.1%}",
+                "移位距离(m)": "{:.1f}", "平均等待(s)": "{:.1f}",
+            }), use_container_width=True, hide_index=True)
+            if len(records) > 1:
+                st.bar_chart(hdf.set_index("序号")["满足率"], height=200)
+        else:
+            st.info("该策略暂无运行历史")
+        if st.button("🗑 清空全部历史", key="clear_history"):
+            st.session_state.run_history = {}
+            st.rerun()
 
 
 def _metric(label, value, variant=""):
