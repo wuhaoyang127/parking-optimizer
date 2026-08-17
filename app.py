@@ -75,11 +75,14 @@ STRATEGY_DESC = {
 ADMIN_USER = "wuhaoyang127"
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
-              "can_export": True, "can_debug": True, "label": "管理员"},
+              "can_export": True, "can_debug": True, "can_manage_data": True,
+              "can_import_algo": True, "label": "管理员"},
     "operator": {"can_configure": True, "can_manage_users": False, "can_run_simulation": True,
-                 "can_export": True, "can_debug": True, "label": "操作员"},
+                 "can_export": True, "can_debug": True, "can_manage_data": False,
+                 "can_import_algo": False, "label": "操作员"},
     "viewer": {"can_configure": False, "can_manage_users": False, "can_run_simulation": True,
-               "can_export": False, "can_debug": False, "label": "访客"},
+               "can_export": False, "can_debug": False, "can_manage_data": False,
+               "can_import_algo": False, "label": "访客"},
 }
 LAYOUT_BUILDERS = {}
 LAYOUTS = {"linear": "线形", "rectangle": "矩形", "lshape": "L形", "triangle": "三角形", "circle": "环形"}
@@ -861,18 +864,24 @@ def render_system(role):
 
     # ── 数据备份 ──
     with tab2:
-        c_dl, c_up = st.columns(2)
-        with c_dl:
-            export_data = auth_export_users(st.session_state.token)
-            st.download_button("📥 导出用户数据",
-                json.dumps(export_data, indent=2, ensure_ascii=False),
-                "users_backup.json", "application/json", use_container_width=True)
-        with c_up:
-            _render_import_users()
+        if not role["can_manage_data"]:
+            st.info("仅管理员可进行数据备份")
+        else:
+            c_dl, c_up = st.columns(2)
+            with c_dl:
+                export_data = auth_export_users(st.session_state.token)
+                st.download_button("📥 导出用户数据",
+                    json.dumps(export_data, indent=2, ensure_ascii=False),
+                    "users_backup.json", "application/json", use_container_width=True)
+            with c_up:
+                _render_import_users()
 
     # ── 导入布局 ──
     with tab3:
-        _render_import_layout()
+        if not role["can_manage_data"]:
+            st.info("仅管理员可导入布局")
+        else:
+            _render_import_layout()
 
 
 def _render_import_users():
@@ -1396,9 +1405,12 @@ def _metric(label, value, variant=""):
                 unsafe_allow_html=True)
 
 
-def render_status_page():
+def render_status_page(role):
     """页面: 系统状态与预警 —— 主动探测 Supabase 后端可用性"""
     st.subheader("🚨 系统状态与预警")
+    if not role["can_debug"]:
+        st.info("仅管理员和操作员可查看系统状态")
+        return
     st.caption("主动探测 Supabase 后端是否在线、API key 是否有效")
 
     if "health_check" not in st.session_state:
@@ -1442,9 +1454,12 @@ def render_status_page():
 """)
 
 
-def render_algo_import_page():
+def render_algo_import_page(role):
     """页面: 新算法接入 —— 上传算法描述文件，供 AI 后台接入"""
     st.subheader("🧩 新算法接入")
+    if not role["can_import_algo"]:
+        st.info("仅管理员可接入新算法")
+        return
     st.markdown("""
 上传你的算法描述文件（**文字说明 / 代码示例 / 伪代码**，支持 `.md` / `.txt` / `.py` / `.json`），
 文件会保存到仓库 `pending_algorithms/` 目录。
@@ -1546,6 +1561,6 @@ elif page == pages[3]:
 elif page == pages[4]:
     render_metrics_page()
 elif page == pages[5]:
-    render_algo_import_page()
+    render_algo_import_page(role)
 elif page == pages[6]:
-    render_status_page()
+    render_status_page(role)
