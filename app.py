@@ -84,6 +84,28 @@ ROLES = {
 LAYOUT_BUILDERS = {}
 LAYOUTS = {"linear": "线形", "rectangle": "矩形", "lshape": "L形", "triangle": "三角形", "circle": "环形"}
 
+# 自定义布局 JSON 的最简示例（供「导入布局」页下载参考）
+EXAMPLE_LAYOUT = {
+    "name": "我的停车场",
+    "nodes": [
+        {"id": "ENTRY", "type": "entry", "x": 0, "y": 0},
+        {"id": "R1", "type": "road", "x": 5, "y": 0},
+        {"id": "S01", "type": "spot", "x": 8, "y": 3, "spot_type": "standalone"},
+        {"id": "T1-1", "type": "spot", "x": 8, "y": -3, "spot_type": "tandem", "group": "T1", "depth": 1},
+        {"id": "T1-2", "type": "spot", "x": 11, "y": -3, "spot_type": "tandem", "group": "T1", "depth": 2},
+    ],
+    "edges": [
+        {"from": "ENTRY", "to": "R1", "distance": 5},
+        {"from": "R1", "to": "S01", "distance": 3},
+        {"from": "S01", "to": "R1", "distance": 3},
+        {"from": "R1", "to": "T1-1", "distance": 3},
+        {"from": "T1-1", "to": "T1-2", "distance": 3},
+        {"from": "T1-2", "to": "T1-1", "distance": 3},
+        {"from": "T1-1", "to": "R1", "distance": 3},
+        {"from": "R1", "to": "ENTRY", "distance": 5},
+    ],
+}
+
 GLOBAL_CSS = """
 <style>
 :root { --primary: #1a2332; --accent: #3b82f6; --bg: #f1f5f9; --card: #fff; --text: #1e293b;
@@ -794,12 +816,25 @@ def _render_import_users():
             st.session_state.import_usr_state = "idle"; st.rerun()
 
 
+def _load_layout_doc() -> str:
+    """读取布局导入格式说明文档内容（网页内嵌展示，避免相对链接打不开）"""
+    doc_path = Path(__file__).parent / "docs" / "布局导入格式说明.md"
+    try:
+        return doc_path.read_text(encoding="utf-8")
+    except Exception:
+        return "说明文档加载失败，请查看 `docs/布局导入格式说明.md`"
+
+
 def _render_import_layout():
     """导入自定义停车场布局"""
     if "custom_layouts" not in st.session_state:
         st.session_state.custom_layouts = {}
 
-    st.caption("上传 JSON 文件定义停车场布局，格式参见 [布局导入说明](docs/布局导入格式说明.md)")
+    with st.expander("📖 布局导入格式说明", expanded=False):
+        st.markdown(_load_layout_doc())
+        st.download_button("📥 下载示例布局 JSON",
+                           json.dumps(EXAMPLE_LAYOUT, indent=2, ensure_ascii=False),
+                           "example_layout.json", "application/json")
 
     uploaded = st.file_uploader("📤 上传布局 JSON", type=["json"], key="import_layout")
     if uploaded is not None:
