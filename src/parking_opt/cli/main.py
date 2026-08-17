@@ -10,18 +10,8 @@ from ..routing.path_engine import PathEngine
 from ..simulation.parking_lot import ParkingLot
 from ..simulation.engine import SimulationEngine
 from ..simulation.arrival import generate_demand
-from ..strategies.baselines import FCFS, NearestPath, RandomAssign
-from ..strategies.greedy import GreedyStrategy, DepartureOrderGreedy
+from ..strategies import StrategyRegistry
 from ..evaluation.metrics import compute_metrics
-
-
-STRATEGIES = {
-    "greedy": GreedyStrategy,
-    "fcfs": FCFS,
-    "nearest": NearestPath,
-    "random": RandomAssign,
-    "departure_greedy": DepartureOrderGreedy,
-}
 
 
 def build_test_network(n_spots: int = 20, tandem_ratio: float = 0.3) -> RoadNetwork:
@@ -87,7 +77,7 @@ def main():
     parser = argparse.ArgumentParser(description="智能停车场仿真")
     parser.add_argument("--network", type=str, help="路网JSON文件路径")
     parser.add_argument("--strategy", type=str, default="greedy",
-                        choices=list(STRATEGIES.keys()))
+                        choices=list(StrategyRegistry.all().keys()))
     parser.add_argument("--vehicles", type=int, default=150)
     parser.add_argument("--spots", type=int, default=20, help="测试路网车位数")
     parser.add_argument("--tandem-ratio", type=float, default=0.3)
@@ -109,7 +99,7 @@ def main():
     vehicles = generate_demand(total_vehicles=args.vehicles, seed=args.seed)
 
     # 策略
-    strategy = STRATEGIES[args.strategy]()
+    strategy = StrategyRegistry.create(args.strategy)
 
     # 仿真
     engine = SimulationEngine(parking_lot, path_engine, vehicles, strategy, args.seed)

@@ -19,12 +19,15 @@ class CPSatBaseline:
     """
 
     name = "cpsat_oracle"
-    TIMEOUT = 10  # 秒
-    MAX_WAIT = 1800  # 等待上限（秒），与引擎 SimulationEngine.MAX_WAIT_TIME 一致
+    TIMEOUT = 10  # 秒（默认值）
+    MAX_WAIT = 1800  # 等待上限（秒，默认值），与引擎 SimulationEngine.MAX_WAIT_TIME 一致
 
-    def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine):
+    def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
+                 timeout: float = 10, max_wait: float = 1800):
         self.parking_lot = parking_lot
         self.path_engine = path_engine
+        self.timeout = timeout
+        self.max_wait = max_wait
 
     def solve(self, vehicles: list[Vehicle]) -> dict[str, str] | None:
         """返回 {vehicle_id: spot_id} 最优分配，或 None（超规模/无解）"""
@@ -43,7 +46,7 @@ class CPSatBaseline:
         intervals = {}
         for v_idx, v in enumerate(vehicles):
             s_var = model.NewIntVar(int(v.arrival_time),
-                                    int(v.arrival_time) + self.MAX_WAIT,
+                                    int(v.arrival_time) + int(self.max_wait),
                                     f'start_{v_idx}')
             start[v_idx] = s_var
             dur = max(1, int(v.parking_duration))
@@ -65,7 +68,7 @@ class CPSatBaseline:
                            for v_idx in range(n_vehicles) for s_idx in range(n_spots)))
 
         solver = cp_model.CpSolver()
-        solver.parameters.max_time_in_seconds = self.TIMEOUT
+        solver.parameters.max_time_in_seconds = self.timeout
         status = solver.Solve(model)
 
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):

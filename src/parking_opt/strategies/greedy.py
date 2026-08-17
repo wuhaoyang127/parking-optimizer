@@ -12,6 +12,7 @@ class GreedyStrategy(BaseStrategy):
     """朴素在线贪心分配（基线）：不利用停车时长信息"""
 
     name = "greedy"
+    label = "贪心（基线）"
 
     def assign(self, vehicle: Vehicle, time: float, parking_lot: ParkingLot,
                path_engine) -> tuple[Spot | None, str]:
@@ -67,6 +68,7 @@ class DepartureOrderGreedy(BaseStrategy):
     """离场顺序贪心基线：最近可用，若选depth>1则选内侧最早离场的"""
 
     name = "departure_greedy"
+    label = "离场贪心"
 
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
@@ -90,11 +92,23 @@ class DurationAwareGreedy(BaseStrategy):
     """
 
     name = "duration_greedy"
+    label = "时长感知贪心（主方法）"
 
     DEFAULT_THRESHOLD = 3600.0  # 自适应前的默认阈值（1小时）
     WARMUP = 10  # 自适应所需的最少样本数
 
-    def __init__(self):
+    PARAMS = [
+        {"key": "threshold", "label": "时长阈值(秒)", "type": "float",
+         "min": 600.0, "max": 7200.0, "step": 300.0, "default": 3600.0,
+         "help": "停车时长低于该值优先分外层车位；样本不足时作为固定阈值"},
+        {"key": "warmup", "label": "自适应样本数", "type": "int",
+         "min": 1, "max": 100, "step": 1, "default": 10,
+         "help": "累计多少辆车的预估时长后，改用中位数自适应阈值"},
+    ]
+
+    def __init__(self, threshold: float = 3600.0, warmup: int = 10):
+        self.threshold = threshold
+        self.warmup = warmup
         self._seen_durations = []
 
     def assign(self, vehicle, time, parking_lot, path_engine):
@@ -137,9 +151,9 @@ class DurationAwareGreedy(BaseStrategy):
 
     def _adaptive_threshold(self) -> float:
         """自适应阈值：已见车辆预估时长的中位数（样本足够时），否则用默认值"""
-        if len(self._seen_durations) >= self.WARMUP:
+        if len(self._seen_durations) >= self.warmup:
             return statistics.median(self._seen_durations)
-        return self.DEFAULT_THRESHOLD
+        return self.threshold
 
     def _inner_estimated_departure(self, spot, parking_lot) -> float:
         """返回该里层车位外侧阻挡车的预计离场时间（越早越好）"""

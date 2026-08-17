@@ -11,13 +11,14 @@ from ..routing.path_engine import PathEngine
 class SimulationEngine:
     """SimPy 停车仿真主循环"""
 
-    CAR_SPEED = 1.39  # m/s (5 km/h)
-    MAX_WAIT_TIME = 1800  # 最大等待秒数（30分钟）
+    CAR_SPEED = 1.39  # m/s (5 km/h)，默认值，可被构造参数覆盖
+    MAX_WAIT_TIME = 1800  # 最大等待秒数（30分钟），默认值
     RETRY_INTERVAL = 60  # 排队等待时的重试间隔（秒）
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
                  vehicles: list[Vehicle], strategy, seed: int = 42,
-                 wait_policy: str = "fifo"):
+                 wait_policy: str = "fifo", car_speed: float = 1.39,
+                 max_wait_time: float = 1800):
         self.env = simpy.Environment()
         self.parking_lot = parking_lot
         self.path_engine = path_engine
@@ -27,6 +28,8 @@ class SimulationEngine:
         random.seed(seed)
         # 等待调度策略：fifo=先到先服务（默认，保留策略差异）；shortest=短停车优先（引擎优化强）
         self.wait_policy = wait_policy
+        self.car_speed = car_speed  # 车速（m/s）
+        self.max_wait_time = max_wait_time  # 排队等待上限（秒）
 
         self.events: list[Event] = []
         self.shift_count = 0
@@ -88,7 +91,7 @@ class SimulationEngine:
     def _drive_and_depart(self, vehicle: Vehicle, spot: Spot):
         """异步：行驶入位、调度离场"""
         drive_dist = self.path_engine.distance_to_spot(spot.node_id)
-        drive_time = drive_dist / self.CAR_SPEED
+        drive_time = drive_dist / self.car_speed
         yield self.env.timeout(drive_time)
 
         self._log(self.env.now, EventType.SPOT_ENTRY, vehicle.vehicle_id,
@@ -100,7 +103,7 @@ class SimulationEngine:
 
     def _wait_timeout(self, vehicle: Vehicle):
         """等待超时：从队列移除并拒绝"""
-        yield self.env.timeout(self.MAX_WAIT_TIME)
+        yield self.env.timeout(self.max_wait_time)
         if vehicle in self.waiting_queue:
             self.waiting_queue.remove(vehicle)
             vehicle.wait_end = self.env.now
@@ -155,7 +158,7 @@ class SimulationEngine:
 
             # 移位
             dist = self.path_engine.shortest_distance(blk_spot.node_id, buffer.node_id)
-            travel_time = dist / self.CAR_SPEED
+            travel_time = dist / self.car_speed
 
             self._log(self.env.now, EventType.SHIFT_START, blk_vid,
                       from_spot=blk_spot.spot_id, to_spot=buffer.spot_id,

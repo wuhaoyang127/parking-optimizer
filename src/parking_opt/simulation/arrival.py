@@ -9,6 +9,7 @@ def generate_demand(total_vehicles: int = 150,
                     duration_min: float = 600.0,
                     duration_max: float = 7200.0,
                     peak_ratio: float = 0.7,
+                    error_ratio: float = 0.3,
                     seed: int = 42) -> list[Vehicle]:
     """
     生成仿真车辆需求（双峰到达分布）
@@ -18,6 +19,7 @@ def generate_demand(total_vehicles: int = 150,
         sim_duration: 仿真时长(s), 默认21600=6h（让车位更紧张，策略差异明显）
         duration_min/max: 停车时长范围(s), 默认10min~2h
         peak_ratio: 高峰时段车辆占比
+        error_ratio: 预估时长相对真实时长的误差上限（±比例）
         seed: 随机种子
     """
     random.seed(seed)
@@ -45,9 +47,9 @@ def generate_demand(total_vehicles: int = 150,
         # 停车时长
         parking_duration = random.uniform(duration_min, duration_max)
 
-        # 预估时长 = 真实时长 × (1 ± 30% 误差)，模拟系统对停车时长的预估
+        # 预估时长 = 真实时长 × (1 ± error_ratio)，模拟系统对停车时长的预估
         # （在线策略可利用 estimated_duration 做时长感知分配，但无法读到真实 parking_duration）
-        error = random.uniform(-0.3, 0.3)
+        error = random.uniform(-error_ratio, error_ratio)
         estimated_duration = parking_duration * (1 + error)
 
         vehicles.append(Vehicle(
