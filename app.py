@@ -541,6 +541,21 @@ def _load_priority_preference():
         pass
 
 
+def _load_run_history():
+    """登录/恢复会话后，从 Supabase 加载用户的调参历史（每策略最近5次）"""
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        val = auth_get_pref(token, "run_history")
+        if val:
+            history = json.loads(val)
+            if isinstance(history, dict):
+                st.session_state.run_history = history
+    except Exception:
+        pass
+
+
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
@@ -553,6 +568,7 @@ def check_login():
             st.session_state.role = restored["role"]
             st.session_state.token = restored["token"]
             _load_priority_preference()
+            _load_run_history()
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
         st.session_state.login_blocked_until = 0.0
@@ -580,6 +596,7 @@ def check_login():
                         st.session_state.login_fails = 0
                         set_session_token(res["token"])
                         _load_priority_preference()
+                        _load_run_history()
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1
@@ -821,6 +838,14 @@ def render_settings(role):
                 if len(history[strategy_name]) > 5:
                     history[strategy_name] = history[strategy_name][-5:]
                 st.session_state.run_history = history
+
+                # 持久化到 Supabase（登录用户跨会话保留调参历史）
+                token = st.session_state.get("token")
+                if token:
+                    try:
+                        auth_set_pref(token, "run_history", json.dumps(history))
+                    except Exception:
+                        pass
 
             st.session_state.sim_net = net
             st.session_state.sim_spots = spots
