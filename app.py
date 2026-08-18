@@ -27,6 +27,7 @@ try:
     from auth import list_feedbacks as auth_list_feedbacks
     from auth import update_feedback_status as auth_update_feedback_status
     from auth import reply_feedback as auth_reply_feedback
+    from auth import delete_feedback as auth_delete_feedback
 except ImportError:
     def _fb_unavailable(*_a, **_k):
         return {"success": False, "error": "反馈功能未加载：后端代码未同步，请重新部署应用"}
@@ -36,6 +37,7 @@ except ImportError:
     auth_list_feedbacks = lambda *_a, **_k: []
     auth_update_feedback_status = _fb_unavailable
     auth_reply_feedback = _fb_unavailable
+    auth_delete_feedback = _fb_unavailable
 
 import streamlit as st
 import pandas as pd
@@ -1592,13 +1594,48 @@ def _render_my_feedbacks():
         st.divider()
 
 
+def _feedback_to_csv(items):
+    """把反馈列表转为 UTF-8 BOM 的 CSV 字节（Excel 可直接打开中文）"""
+    import csv
+    import io
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["标题", "类型", "提交人", "角色", "状态", "内容", "回复", "时间"])
+    for f in items:
+        w.writerow([f.get("title", ""), f.get("category", ""), f.get("username", ""),
+                    f.get("role", ""), f.get("status", ""), f.get("content", ""),
+                    f.get("reply", ""), f.get("created_at", "")])
+    return buf.getvalue().encode("utf-8-sig")
+
+
 def _render_admin_feedbacks():
-    """管理员查看全部反馈、标记状态、回复"""
+    """管理员查看全部反馈、筛选、标记状态、回复、删除、导出"""
     items = auth_list_feedbacks(st.session_state.token)
     if not items:
         st.caption("暂无反馈")
         return
-    for f in items:
+
+    # 筛选 + 导出
+    c_f1, c_f2, c_f3 = st.columns([1, 1, 1.4])
+    with c_f1:
+        status_filter = st.selectbox("状态筛选", ["全部", "待处理", "已处理"], key="fb_status_filter")
+    with c_f2:
+        cat_filter = st.selectbox("类型筛选", ["全部", "通用", "仿真"], key="fb_cat_filter")
+    with c_f3:
+        st.download_button("📥 导出反馈 CSV", _feedback_to_csv(items),
+                           "feedback.csv", "text/csv", use_container_width=True)
+
+    status_map = {"待处理": "pending", "已处理": "resolved"}
+    cat_map = {"通用": "general", "仿真": "simulation"}
+    filtered = [f for f in items
+                if (status_filter == "全部" or f.get("status") == status_map[status_filter])
+                and (cat_filter == "全部" or f.get("category") == cat_map[cat_filter])]
+
+    if not filtered:
+        st.caption("无符合条件的反馈")
+        return
+
+    for f in filtered:
         fid = str(f.get("id", ""))
         cat = "仿真" if f.get("category") == "simulation" else "通用"
         status = f.get("status", "pending")
@@ -1611,7 +1648,7 @@ def _render_admin_feedbacks():
         if f.get("reply"):
             st.info(f"💬 已回复：{f['reply']}")
 
-        c1, c2 = st.columns([1, 3])
+        c1, c2, c3 = st.columns([1, 1, 3])
         with c1:
             if status == "pending":
                 if st.button("标记已处理", key=f"fb_done_{fid}"):
@@ -1622,6 +1659,10 @@ def _render_admin_feedbacks():
                     auth_update_feedback_status(st.session_state.token, fid, "pending")
                     st.rerun()
         with c2:
+            if st.button("🗑 删除", key=f"fb_del_{fid}"):
+                auth_delete_feedback(st.session_state.token, fid)
+                st.rerun()
+        with c3:
             reply = st.text_area("回复", key=f"fb_reply_{fid}", placeholder="输入回复...")
             if st.button("提交回复", key=f"fb_reply_btn_{fid}"):
                 if reply.strip():

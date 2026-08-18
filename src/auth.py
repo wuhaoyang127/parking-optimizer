@@ -210,3 +210,7 @@ def update_feedback_status(token: str, feedback_id: str, status: str) -> dict:
 def reply_feedback(token: str, feedback_id: str, reply: str) -> dict:
     return _rpc("reply_feedback", {"p_token": token, "p_id": feedback_id,
                                    "p_reply": reply})
+
+
+def delete_feedback(token: str, feedback_id: str) -> dict:
+    return _rpc("delete_feedback", {"p_token": token, "p_id": feedback_id})

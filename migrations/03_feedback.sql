@@ -127,3 +127,24 @@ BEGIN
   RETURN json_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. 删除反馈（仅管理员）
+CREATE OR REPLACE FUNCTION public.delete_feedback(
+  p_token TEXT,
+  p_id UUID
+) RETURNS JSON AS $$
+DECLARE
+  v_role TEXT;
+BEGIN
+  SELECT role INTO v_role FROM public.users
+  WHERE session_token = p_token AND session_expires > NOW();
+
+  IF v_role IS NULL OR v_role != 'admin' THEN
+    RETURN json_build_object('success', false, 'error', '权限不足');
+  END IF;
+
+  DELETE FROM public.feedback WHERE id = p_id;
+
+  RETURN json_build_object('success', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
