@@ -1140,12 +1140,40 @@ def render_path_page():
     if "frame_playing" not in st.session_state: st.session_state.frame_playing = False
     if "selected_vehicle" not in st.session_state: st.session_state.selected_vehicle = None
 
-    all_vehs = sorted(set(
-        str(e.get("vehicle_id", "")) for e in events
-        if str(e.get("vehicle_id", "")) and e.get("type") in ("vehicle_arrival", "parking_assigned", "spot_entry")
-    ), key=lambda v: int(v.split("_")[-1]) if "_" in v else v)
+    # 建立车辆 → 到达时间 映射
+    arrival_map = {}
+    for e in events:
+        if e.get("type") == "vehicle_arrival":
+            vid = str(e.get("vehicle_id", ""))
+            if vid:
+                arrival_map[vid] = e.get("time", 0.0)
 
-    st.selectbox("选择车辆", [""] + all_vehs, key="selected_vehicle",
+    all_vehs = sorted(arrival_map.keys(),
+                      key=lambda v: int(v.split("_")[-1]) if "_" in v else v)
+
+    if all_vehs:
+        t_min = min(arrival_map.values())
+        t_max = max(arrival_map.values())
+        if t_max <= t_min:
+            t_max = t_min + 1.0
+        # 先选到达时间区间，再在该区间内选车
+        t_range = st.slider(
+            "① 到达时间区间",
+            min_value=float(t_min), max_value=float(t_max),
+            value=(float(t_min), float(t_max)),
+            step=max((t_max - t_min) / 100.0, 1.0),
+            format_func=lambda s: f"{int(s)//3600}时{int(s)%3600//60:02d}分",
+        )
+        lo, hi = t_range
+        filtered_vehs = [v for v in all_vehs if lo <= arrival_map[v] <= hi]
+    else:
+        filtered_vehs = all_vehs
+
+    # 若已选车辆被时间区间过滤掉，则重置
+    if st.session_state.get("selected_vehicle") and st.session_state.selected_vehicle not in filtered_vehs:
+        st.session_state.selected_vehicle = None
+
+    st.selectbox("② 选择车辆", [""] + filtered_vehs, key="selected_vehicle",
                  format_func=lambda v: f"🚙 {v}" if v else "— 选择车辆 —")
 
     hl_veh = st.session_state.selected_vehicle
