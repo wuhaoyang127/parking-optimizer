@@ -4,15 +4,19 @@ version = "0.1.0"
 description = "智能停车场车位分配与纵深移位优化"
 requires-python = ">=3.11"
 dependencies = [
+    "streamlit>=1.33",
     "networkx>=3.0",
     "simpy>=4.0",
     "ortools>=9.7",
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "plotly>=5.0",
+    "supabase>=2.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
-    "streamlit>=1.28",
 ]
 
 [build-system]

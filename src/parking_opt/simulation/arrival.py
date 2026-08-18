@@ -2,14 +2,16 @@
 
 import random
 from ..domain.spot import Vehicle
+from .defaults import (SIM_DURATION, DURATION_MIN, DURATION_MAX,
+                       PEAK_RATIO, ERROR_RATIO)
 
 
 def generate_demand(total_vehicles: int = 150,
-                    sim_duration: float = 21600.0,
-                    duration_min: float = 600.0,
-                    duration_max: float = 7200.0,
-                    peak_ratio: float = 0.7,
-                    error_ratio: float = 0.3,
+                    sim_duration: float = SIM_DURATION,
+                    duration_min: float = DURATION_MIN,
+                    duration_max: float = DURATION_MAX,
+                    peak_ratio: float = PEAK_RATIO,
+                    error_ratio: float = ERROR_RATIO,
                     seed: int = 42) -> list[Vehicle]:
     """
     生成仿真车辆需求（双峰到达分布）

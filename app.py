@@ -48,6 +48,8 @@ from parking_opt.routing.path_engine import PathEngine
 from parking_opt.simulation.parking_lot import ParkingLot
 from parking_opt.simulation.engine import SimulationEngine
 from parking_opt.simulation.arrival import generate_demand
+from parking_opt.simulation.defaults import (CAR_SPEED, MAX_WAIT_TIME, SIM_DURATION,
+                                             DURATION_MIN, DURATION_MAX, PEAK_RATIO, ERROR_RATIO)
 from parking_opt.strategies import StrategyRegistry
 from parking_opt.evaluation.metrics import compute_metrics
 from parking_opt.optimization.cpsat_baseline import CPSatBaseline
@@ -622,25 +624,25 @@ def check_login():
 # 环境参数（引擎 + 需求生成）声明：与策略参数一样，网页渲染为可调控件
 ENV_PARAM_SPECS = [
     {"key": "car_speed", "label": "车速(m/s)", "type": "float",
-     "min": 0.5, "max": 5.0, "step": 0.1, "default": 1.39,
+     "min": 0.5, "max": 5.0, "step": 0.1, "default": CAR_SPEED,
      "help": "车辆行驶速度，影响行驶/移位时间"},
     {"key": "max_wait_time", "label": "排队等待上限(秒)", "type": "int",
-     "min": 60, "max": 7200, "step": 60, "default": 1800,
+     "min": 60, "max": 7200, "step": 60, "default": MAX_WAIT_TIME,
      "help": "车位满时车辆排队等待的最长时间"},
     {"key": "sim_duration", "label": "仿真时长(秒)", "type": "int",
-     "min": 3600, "max": 86400, "step": 600, "default": 21600,
+     "min": 3600, "max": 86400, "step": 600, "default": int(SIM_DURATION),
      "help": "仿真总时长（默认6小时）"},
     {"key": "duration_min", "label": "停车时长下限(秒)", "type": "int",
-     "min": 60, "max": 7200, "step": 60, "default": 600,
+     "min": 60, "max": 7200, "step": 60, "default": int(DURATION_MIN),
      "help": "车辆停车时长范围下限"},
     {"key": "duration_max", "label": "停车时长上限(秒)", "type": "int",
-     "min": 600, "max": 14400, "step": 300, "default": 7200,
+     "min": 600, "max": 14400, "step": 300, "default": int(DURATION_MAX),
      "help": "车辆停车时长范围上限"},
     {"key": "peak_ratio", "label": "高峰车辆占比", "type": "float",
-     "min": 0.0, "max": 1.0, "step": 0.05, "default": 0.7,
+     "min": 0.0, "max": 1.0, "step": 0.05, "default": PEAK_RATIO,
      "help": "高峰时段到达的车辆占比"},
     {"key": "error_ratio", "label": "时长预估误差(±)", "type": "float",
-     "min": 0.0, "max": 0.9, "step": 0.05, "default": 0.3,
+     "min": 0.0, "max": 0.9, "step": 0.05, "default": ERROR_RATIO,
      "help": "预估停车时长相较真实时长的误差比例"},
 ]
 

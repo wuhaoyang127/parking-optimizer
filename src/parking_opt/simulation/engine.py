@@ -6,19 +6,20 @@ import simpy
 from .parking_lot import ParkingLot
 from ..domain.spot import Vehicle, Spot, Event, EventType
 from ..routing.path_engine import PathEngine
+from .defaults import CAR_SPEED as DEFAULT_CAR_SPEED, MAX_WAIT_TIME as DEFAULT_MAX_WAIT
 
 
 class SimulationEngine:
     """SimPy 停车仿真主循环"""
 
-    CAR_SPEED = 1.39  # m/s (5 km/h)，默认值，可被构造参数覆盖
-    MAX_WAIT_TIME = 1800  # 最大等待秒数（30分钟），默认值
+    CAR_SPEED = DEFAULT_CAR_SPEED  # m/s (5 km/h)，默认值，可被构造参数覆盖
+    MAX_WAIT_TIME = DEFAULT_MAX_WAIT  # 最大等待秒数（30分钟），默认值
     RETRY_INTERVAL = 60  # 排队等待时的重试间隔（秒）
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
                  vehicles: list[Vehicle], strategy, seed: int = 42,
-                 wait_policy: str = "fifo", car_speed: float = 1.39,
-                 max_wait_time: float = 1800):
+                 wait_policy: str = "fifo", car_speed: float = DEFAULT_CAR_SPEED,
+                 max_wait_time: float = DEFAULT_MAX_WAIT):
         self.env = simpy.Environment()
         self.parking_lot = parking_lot
         self.path_engine = path_engine
