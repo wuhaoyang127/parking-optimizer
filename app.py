@@ -793,7 +793,12 @@ def render_settings(role):
             if strategy_name == "compare_all":
                 all_m = []
                 main_events_raw = None
-                for nm, cls in StrategyRegistry.all().items():
+                all_strategies = list(StrategyRegistry.all().items())
+                total = len(all_strategies)
+                prog = st.progress(0.0, text="准备运行全部策略对比...")
+                for i, (nm, cls) in enumerate(all_strategies):
+                    prog.progress((i + 1) / total,
+                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均）")
                     seed_metrics = []
                     for r in range(n_runs):
                         s = seed + r
@@ -806,6 +811,7 @@ def render_settings(role):
                                                 "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                                 "metadata": dict(e.metadata)} for e in ev]
                     all_m.append(_avg_metrics(seed_metrics))
+                prog.empty()
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
                 st.session_state.sim_events_raw = main_events_raw
@@ -861,16 +867,17 @@ def render_settings(role):
             st.session_state.sim_strategy_params = strat_params
             st.session_state.sim_env_params = env_params
 
-            # 计算理论最优（CP-SAT 离线全信息上界）
+            # 计算理论最优（CP-SAT 离线全信息上界，最多约 10 秒）
             cpsat_rate = None
-            try:
-                cps_vehs = generate_demand(seed=seed, **demand_kwargs)
-                cps_lot = ParkingLot(spots)
-                cps_res = CPSatBaseline(cps_lot, pe).solve(cps_vehs)
-                if cps_res is not None:
-                    cpsat_rate = len(cps_res) / len(cps_vehs)
-            except Exception:
-                cpsat_rate = None
+            with st.spinner("计算 CP-SAT 理论最优（最多约 10 秒）..."):
+                try:
+                    cps_vehs = generate_demand(seed=seed, **demand_kwargs)
+                    cps_lot = ParkingLot(spots)
+                    cps_res = CPSatBaseline(cps_lot, pe).solve(cps_vehs)
+                    if cps_res is not None:
+                        cpsat_rate = len(cps_res) / len(cps_vehs)
+                except Exception:
+                    cpsat_rate = None
             st.session_state.sim_cpsat_rate = cpsat_rate
 
             st.session_state.sim_has_run = True
