@@ -215,7 +215,11 @@ BEGIN
     RETURN json_build_object('success', false, 'error', '权限不足');
   END IF;
 
-  RETURN (SELECT json_agg(row_to_json(users)) FROM public.users);
+  -- 导出时排除 session_token / session_expires（登录凭证），避免备份文件泄露后被冒用登录
+  RETURN (SELECT json_agg(json_build_object(
+    'id', id, 'username', username, 'password_hash', password_hash,
+    'role', role, 'created_at', created_at
+  )) FROM public.users);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
