@@ -11,12 +11,31 @@ from auth import change_password as auth_change_pw, reset_user_password as auth_
 from auth import export_users as auth_export_users, import_users as auth_import_users
 from auth import set_session_token, get_session_token, clear_session_token, restore_session
 from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
-from auth import check_supabase_health
-from auth import submit_feedback as auth_submit_feedback
-from auth import list_my_feedbacks as auth_list_my_feedbacks
-from auth import list_feedbacks as auth_list_feedbacks
-from auth import update_feedback_status as auth_update_feedback_status
-from auth import reply_feedback as auth_reply_feedback
+# 以下新增函数做容错导入：若部署缓存导致 auth.py 未同步到最新，
+# 用 stub 降级，避免整个 app 因单个函数缺失而崩溃（登录等核心功能不受影响）。
+try:
+    from auth import check_supabase_health
+except ImportError:
+    def check_supabase_health():
+        return {"online": False, "api_key_valid": False, "status": "error",
+                "message": "功能未加载：后端代码未同步，请在 Streamlit Cloud 重新部署",
+                "latency_ms": None, "checked_at": ""}
+
+try:
+    from auth import submit_feedback as auth_submit_feedback
+    from auth import list_my_feedbacks as auth_list_my_feedbacks
+    from auth import list_feedbacks as auth_list_feedbacks
+    from auth import update_feedback_status as auth_update_feedback_status
+    from auth import reply_feedback as auth_reply_feedback
+except ImportError:
+    def _fb_unavailable(*_a, **_k):
+        return {"success": False, "error": "反馈功能未加载：后端代码未同步，请重新部署应用"}
+
+    auth_submit_feedback = _fb_unavailable
+    auth_list_my_feedbacks = lambda *_a, **_k: []
+    auth_list_feedbacks = lambda *_a, **_k: []
+    auth_update_feedback_status = _fb_unavailable
+    auth_reply_feedback = _fb_unavailable
 
 import streamlit as st
 import pandas as pd
