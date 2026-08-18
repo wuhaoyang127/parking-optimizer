@@ -1669,7 +1669,30 @@ def _render_admin_feedbacks():
         st.caption("无符合条件的反馈")
         return
 
-    for f in filtered:
+    # 分页（每页 10 条）
+    PAGE_SIZE = 10
+    total_pages = max(1, (len(filtered) + PAGE_SIZE - 1) // PAGE_SIZE)
+    if "fb_page" not in st.session_state:
+        st.session_state.fb_page = 0
+    if st.session_state.fb_page >= total_pages:
+        st.session_state.fb_page = 0
+    start = st.session_state.fb_page * PAGE_SIZE
+    page_items = filtered[start:start + PAGE_SIZE]
+
+    # 分页控件
+    c_pg1, c_pg2, c_pg3 = st.columns([1, 2, 1])
+    with c_pg1:
+        if st.button("← 上一页", disabled=st.session_state.fb_page == 0, key="fb_prev"):
+            st.session_state.fb_page -= 1
+            st.rerun()
+    with c_pg2:
+        st.caption(f"第 {st.session_state.fb_page + 1} / {total_pages} 页，共 {len(filtered)} 条")
+    with c_pg3:
+        if st.button("下一页 →", disabled=st.session_state.fb_page >= total_pages - 1, key="fb_next"):
+            st.session_state.fb_page += 1
+            st.rerun()
+
+    for f in page_items:
         fid = str(f.get("id", ""))
         cat = "仿真" if f.get("category") == "simulation" else "通用"
         status = f.get("status", "pending")
