@@ -12,6 +12,11 @@ from auth import export_users as auth_export_users, import_users as auth_import_
 from auth import set_session_token, get_session_token, clear_session_token, restore_session
 from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
 from auth import check_supabase_health
+from auth import submit_feedback as auth_submit_feedback
+from auth import list_my_feedbacks as auth_list_my_feedbacks
+from auth import list_feedbacks as auth_list_feedbacks
+from auth import update_feedback_status as auth_update_feedback_status
+from auth import reply_feedback as auth_reply_feedback
 
 import streamlit as st
 import pandas as pd
@@ -805,6 +810,8 @@ def render_settings(role):
             st.session_state.sim_n_runs = n_runs
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
+            st.session_state.sim_strategy_params = strat_params
+            st.session_state.sim_env_params = env_params
 
             # 计算理论最优（CP-SAT 离线全信息上界）
             cpsat_rate = None
@@ -1493,6 +1500,117 @@ def render_algo_import_page(role):
         st.caption("暂无已上传的算法文件")
 
 
+def render_feedback_page(role):
+    """页面: 用户反馈 —— 意见箱 + 仿真结果反馈"""
+    st.subheader("💬 反馈")
+    is_admin = role.get("can_manage_users", False)
+
+    with st.expander("📝 提交反馈", expanded=True):
+        _render_submit_feedback()
+
+    with st.expander("📋 我的反馈", expanded=False):
+        _render_my_feedbacks()
+
+    if is_admin:
+        st.divider()
+        st.markdown("### 🗂 全部反馈（管理员）")
+        _render_admin_feedbacks()
+
+
+def _render_submit_feedback():
+    """提交反馈表单（所有登录用户）"""
+    category = st.radio("反馈类型", ["general", "simulation"],
+                        format_func=lambda x: "通用意见" if x == "general" else "仿真结果反馈",
+                        horizontal=True)
+    title = st.text_input("标题", placeholder="一句话概括你的反馈")
+    content = st.text_area("内容", placeholder="详细描述你的意见 / 问题 / 建议...")
+
+    related_run = None
+    if category == "simulation":
+        if st.session_state.get("sim_has_run"):
+            sn = st.session_state.get("sim_strategy_name", "")
+            strat_params = st.session_state.get("sim_strategy_params", {})
+            env_params = st.session_state.get("sim_env_params", {})
+            st.caption(f"将关联最近一次仿真：策略「{STRATEGY_LABELS.get(sn, sn)}」")
+            related_run = json.dumps({"strategy": sn, "params": strat_params, "env": env_params},
+                                     ensure_ascii=False)
+        else:
+            st.info("当前尚未运行仿真，反馈将以通用形式提交")
+            category = "general"
+
+    if st.session_state.get("fb_submitted"):
+        st.success("✅ 反馈已提交！")
+        st.session_state.fb_submitted = False
+
+    if st.button("提交反馈", type="primary"):
+        if not title.strip() or not content.strip():
+            st.error("请填写标题和内容")
+        else:
+            res = auth_submit_feedback(st.session_state.token, category, title.strip(),
+                                       content.strip(), related_run)
+            if res.get("success"):
+                st.session_state.fb_submitted = True
+                st.rerun()
+            else:
+                st.error(res.get("error", "提交失败"))
+
+
+def _render_my_feedbacks():
+    """展示当前用户自己提交的反馈及管理员回复"""
+    items = auth_list_my_feedbacks(st.session_state.token)
+    if not items:
+        st.caption("暂无反馈记录")
+        return
+    for f in items:
+        cat = "仿真" if f.get("category") == "simulation" else "通用"
+        status = f.get("status", "pending")
+        icon = "✅" if status == "resolved" else "⏳"
+        st.markdown(f"**{f.get('title', '')}**  `[{cat}]` {icon} `{status}`")
+        st.caption(f"提交时间：{f.get('created_at', '')}")
+        st.write(f.get("content", ""))
+        if f.get("reply"):
+            st.info(f"💬 管理员回复：{f['reply']}")
+        st.divider()
+
+
+def _render_admin_feedbacks():
+    """管理员查看全部反馈、标记状态、回复"""
+    items = auth_list_feedbacks(st.session_state.token)
+    if not items:
+        st.caption("暂无反馈")
+        return
+    for f in items:
+        fid = str(f.get("id", ""))
+        cat = "仿真" if f.get("category") == "simulation" else "通用"
+        status = f.get("status", "pending")
+        st.markdown(f"**{f.get('title', '')}**  `[{cat}]` — {f.get('username', '')}({f.get('role', '')})")
+        st.caption(f"时间：{f.get('created_at', '')} | 状态：{status}")
+        if f.get("related_run"):
+            with st.expander("关联仿真信息"):
+                st.code(f.get("related_run"))
+        st.write(f.get("content", ""))
+        if f.get("reply"):
+            st.info(f"💬 已回复：{f['reply']}")
+
+        c1, c2 = st.columns([1, 3])
+        with c1:
+            if status == "pending":
+                if st.button("标记已处理", key=f"fb_done_{fid}"):
+                    auth_update_feedback_status(st.session_state.token, fid, "resolved")
+                    st.rerun()
+            else:
+                if st.button("标记未处理", key=f"fb_undo_{fid}"):
+                    auth_update_feedback_status(st.session_state.token, fid, "pending")
+                    st.rerun()
+        with c2:
+            reply = st.text_area("回复", key=f"fb_reply_{fid}", placeholder="输入回复...")
+            if st.button("提交回复", key=f"fb_reply_btn_{fid}"):
+                if reply.strip():
+                    auth_reply_feedback(st.session_state.token, fid, reply.strip())
+                    st.rerun()
+        st.divider()
+
+
 # ═══════════════════════════════════════════════════════════
 # 主入口
 # ═══════════════════════════════════════════════════════════
@@ -1538,6 +1656,7 @@ with st.sidebar:
         "📊 指标分析",
         "🧩 新算法接入",
         "🚨 系统状态",
+        "💬 反馈",
     ]
     if "page" not in st.session_state:
         st.session_state.page = pages[0]
@@ -1564,3 +1683,5 @@ elif page == pages[5]:
     render_algo_import_page(role)
 elif page == pages[6]:
     render_status_page(role)
+elif page == pages[7]:
+    render_feedback_page(role)

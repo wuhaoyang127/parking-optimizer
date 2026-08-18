@@ -170,3 +170,41 @@ def check_supabase_health() -> dict:
             result["status"] = "warn"
             result["message"] = f"探测异常：{err[:120]}"
     return result
+
+
+# ---------- 用户反馈（意见箱 + 仿真结果反馈）----------
+
+def _normalize_list(res) -> list:
+    """把 RPC 返回值归一化为 list（处理 _rpc 对单元素 list 的误判）。"""
+    if isinstance(res, list):
+        return res
+    if isinstance(res, dict):
+        if res.get("success") is False:
+            return []
+        return [res]
+    return []
+
+
+def submit_feedback(token: str, category: str, title: str, content: str,
+                    related_run: str = None) -> dict:
+    return _rpc("submit_feedback", {"p_token": token, "p_category": category,
+                                    "p_title": title, "p_content": content,
+                                    "p_related_run": related_run})
+
+
+def list_my_feedbacks(token: str) -> list:
+    return _normalize_list(_rpc("list_my_feedbacks", {"p_token": token}))
+
+
+def list_feedbacks(token: str) -> list:
+    return _normalize_list(_rpc("list_feedbacks", {"p_token": token}))
+
+
+def update_feedback_status(token: str, feedback_id: str, status: str) -> dict:
+    return _rpc("update_feedback_status", {"p_token": token, "p_id": feedback_id,
+                                           "p_status": status})
+
+
+def reply_feedback(token: str, feedback_id: str, reply: str) -> dict:
+    return _rpc("reply_feedback", {"p_token": token, "p_id": feedback_id,
+                                   "p_reply": reply})
