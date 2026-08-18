@@ -101,6 +101,8 @@ STRATEGY_DESC = {
 }
 
 ADMIN_USER = "wuhaoyang127"
+LOGIN_MAX_FAILS = 3       # 连续登录失败多少次后临时锁定
+LOGIN_LOCK_SECONDS = 30   # 临时锁定时长（秒）
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
               "can_export": True, "can_debug": True, "can_manage_data": True,
@@ -602,8 +604,8 @@ def check_login():
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1
-                        if st.session_state.login_fails >= 3:
-                            st.session_state.login_blocked_until = time.time() + 30
+                        if st.session_state.login_fails >= LOGIN_MAX_FAILS:
+                            st.session_state.login_blocked_until = time.time() + LOGIN_LOCK_SECONDS
                         st.error(res.get("error", "用户名或密码错误"))
             with tab_register:
                 reg_user = st.text_input("新用户名", key="reg_user").strip()

@@ -55,7 +55,7 @@ BEGIN
 
   UPDATE public.users
   SET session_token = v_token,
-      session_expires = NOW() + INTERVAL '7 days'
+      session_expires = NOW() + INTERVAL '7 days'  -- 会话有效期：如需调整，改这里的 INTERVAL
   WHERE id = v_user.id;
 
   RETURN json_build_object(
