@@ -1,10 +1,10 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 7
-last_updated: 2026-08-17
+status_version: 8
+last_updated: 2026-08-18
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-algo-interface
+current_milestone: stage-d-ui-refactor
 git_initialized: true
 current_branch: stage-d-deliver
 last_verified_commit: null
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-algo-interface`（算法接入接口与参数化改造）；
+- **当前里程碑**：`stage-d-ui-refactor`（UI 拆分重构 + 交付体验优化，9 项已验收）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：完成算法接入接口、参数可调与融合算法示例，见本对话执行计划；
+- **当前唯一下一步**：本轮 9 项已验收，待 Streamlit Cloud 重新部署后生效；
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -59,7 +59,7 @@ superseded
 - [x] **阶段 A（研究与路线决策）**：已完成并批准。
 - [x] **阶段 B（模型与工程设计）**：已完成并批准，核心定义已冻结。
 - [x] **阶段 C（核心实现与验证）**：已完成。领域模型、路网、路径引擎、离散事件仿真、基线/贪心/时长感知策略、指标计算、CP-SAT 离线基准均已实现并带测试。
-- [ ] **阶段 D（应用与交付）**：进行中。Streamlit 多页面 Dashboard 已可运行；当前聚焦「算法接入接口 + 参数可调 + 融合算法示例」。
+- [ ] **阶段 D（应用与交付）**：进行中。Streamlit 多页面 Dashboard 已可运行；已完成「算法接入接口 + 参数化」与「UI 拆分重构 + 交付体验优化」并验收通过。
 
 阶段 A 最终推荐路线：
 
@@ -76,6 +76,7 @@ superseded
 - [x] 阶段 C：领域模型、路网与路径引擎、SimPy 仿真引擎、需求生成、6 个策略（FCFS/最近/随机/离场贪心/朴素贪心/时长感知贪心）、指标计算、CP-SAT 离线基准；
 - [x] 阶段 C/D：排队等待机制（车位满排队 30min 上限）、多 seed 统计、算法优先级字典序推荐、CP-SAT 理论最优对照；
 - [x] 阶段 D：Streamlit 多页面 Dashboard（登录/仿真设置/系统设置/布局图/动态路径/指标分析）、Supabase 认证与偏好持久化、自定义布局 JSON 导入。
+- [x] 阶段 D：UI 拆分重构（app.py 1827→90 行瘦入口、src/auth·viz·ui 模块化）+ 8 项交付体验优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿并已验收。
 
 ## 5. 已批准的项目级决定
 
@@ -131,7 +132,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-ui-refactor-20260818`（2026-08-18）；更早 `backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -140,9 +141,12 @@ superseded
 | `AGENTS.md` | 长期项目规则 | 有效 |
 | `PROJECT_STATUS.md` | 项目状态唯一入口 | 有效 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
-| `app.py` | Streamlit 多页面 Dashboard 入口 | 有效，本阶段重点改造 |
-| `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效，本阶段改造 |
-| `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效，本阶段改造 |
+| `app.py` | Streamlit 多页面 Dashboard 瘦入口（~90 行） | 有效，本轮已完成拆分 |
+| `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好） | 有效 |
+| `src/viz.py` | Plotly 绘图（trace 已合并提速） | 有效 |
+| `src/ui/` | 常量/布局构建器/仿真工具 + 8 页面函数 | 有效 |
+| `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效 |
+| `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效 |
 | `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 有效 |
 | `src/parking_opt/strategies/fusion.py` | 融合算法接口 + 示例 | 有效 |
 | `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
@@ -167,16 +171,19 @@ superseded
 
 ## 11. 当前唯一下一步
 
-「算法接入接口 + 参数可调 + 融合算法示例」改造已完成，待用户验收：
+「算法接入接口 + 参数可调 + 融合算法示例」已完成；本轮「UI 拆分重构 + 交付体验优化」9 项改动已验收（2026-08-18 用户确认），测试通过（pytest 24 passed、全角色×全页面 25 场景 0 异常），待 Streamlit Cloud 重新部署后生效：
 
-1. [x] 修复布局说明文档网页打不开；
-2. [x] 定义参数声明规范（`PARAMS`）并参数化策略/引擎/需求；
-3. [x] 建立统一 `StrategyRegistry` 注册表，替换硬编码字典；
-4. [x] 提供融合算法示例 `PeakOffPeakFusion`；
-5. [x] 网页端动态渲染参数控件 + 每策略 5 条运行历史对比；
-6. [x] 新增 `docs/新算法接入说明.md`。
+1. [x] 数据备份导出排除登录凭证（session_token/password_hash 脱敏）；
+2. [x] 布局图道路边/车辆 trace 合并（85 边 88 trace → 5 trace）提速；
+3. [x] compare_all 加进度条 + CP-SAT 运行提示；
+4. [x] 反馈管理区分页（每页 10 条）；
+5. [x] 动态路径页按车辆编号分段选车（V0001~V0020）；
+6. [x] 登录限流收敛常量 LOGIN_MAX_FAILS / LOGIN_LOCK_SECONDS；
+7. [x] app.py 拆分（1827 行 → 90 行瘦入口）+ src/ui 模块化；
+8. [x] 算法说明收敛到策略类 DESCRIPTION 属性；
+9. [x] 系统状态页 use_container_width 废弃预警检测。
 
-后续：用户验收后，可进入真实布局数据接入、更多融合算法接入等下一批任务。
+后续：部署生效后，可进入真实布局数据接入、更多融合算法接入等下一批任务。
 
 ## 12. 预计后续需要用户确认
 
@@ -186,6 +193,8 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-18：完成「UI 拆分重构 + 交付体验优化」8 项优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/app.py 拆分 1827→90 行/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿，已验收；
+- 2026-08-18：打备份 tag `backup-before-ui-refactor-20260818`；
 - 2026-08-17：完成「算法接入接口 + 参数化」改造：PARAMS 参数声明规范、StrategyRegistry 统一注册表、策略/引擎/需求参数全暴露、融合算法示例 PeakOffPeakFusion、网页参数控件动态渲染 + 每策略 5 条调参历史、新算法接入说明文档；
 - 2026-08-17：打备份 tag `backup-before-algo-interface-20260817`；
 - 2026-08-15：修复动态路径页时间轴滑杆崩溃、移位时序竞争、引擎车位重复分配等 bug；
