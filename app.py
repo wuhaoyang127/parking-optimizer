@@ -4,12 +4,12 @@ import sys, hashlib, json, math, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from auth import login as auth_login, register as auth_register, validate_session
+from auth import login as auth_login, register as auth_register
 from auth import logout as auth_logout, list_users as auth_list_users
 from auth import update_user_role as auth_update_role, delete_user as auth_delete_user
 from auth import change_password as auth_change_pw, reset_user_password as auth_reset_pw
 from auth import export_users as auth_export_users, import_users as auth_import_users
-from auth import set_session_token, get_session_token, clear_session_token, restore_session
+from auth import set_session_token, clear_session_token, restore_session
 from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
 # 以下新增函数做容错导入：若部署缓存导致 auth.py 未同步到最新，
 # 用 stub 降级，避免整个 app 因单个函数缺失而崩溃（登录等核心功能不受影响）。

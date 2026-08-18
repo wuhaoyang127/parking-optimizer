@@ -251,7 +251,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
 -- 初始化管理员账号
+-- 注意：请勿在代码中提交真实密码。首次部署前把下方占位符改成你的初始密码；
+-- 已运行的系统不会受影响（ON CONFLICT DO NOTHING 不会覆盖现有密码）。
 -- ============================================
 INSERT INTO public.users (username, password_hash, role)
-VALUES ('wuhaoyang127', encode(sha256('Sa1248jkl@why050212'::bytea), 'hex'), 'admin')
+VALUES ('wuhaoyang127', encode(sha256('CHANGE_ME_ADMIN_PASSWORD'::bytea), 'hex'), 'admin')
 ON CONFLICT (username) DO NOTHING;

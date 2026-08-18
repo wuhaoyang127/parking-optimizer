@@ -1,11 +1,14 @@
 """Supabase 认证模块 — 替换本地 users.json"""
 
+import os
 from typing import Optional
 import streamlit as st
 from supabase import create_client, Client
 
-SUPABASE_URL = "https://cxxoxbambqkpwpldsrnj.supabase.co"
-SUPABASE_ANON_KEY = "sb_publishable_64MeU_WIVNWzcksKIUnWww_ywJtaEe9"
+# Supabase 连接配置：优先读环境变量（生产部署用 Streamlit secrets / 环境变量注入），
+# 未设置时回退到默认值（本地开发）。
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://cxxoxbambqkpwpldsrnj.supabase.co")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "sb_publishable_64MeU_WIVNWzcksKIUnWww_ywJtaEe9")
 
 # ---------- 惰性初始化 ----------
 _supabase: Client = None
@@ -19,16 +22,15 @@ def get_supabase() -> Client:
 
 # ---------- RPC 封装 ----------
 
-def _rpc(name: str, params: dict) -> dict:
-    """调用 Supabase RPC 并返回 dict"""
+def _rpc(name: str, params: dict):
+    """调用 Supabase RPC 并原样返回 data（list 或 dict，不做类型改写）。
+
+    注意：json_agg 返回的 list 即使只有一个元素也保持 list，
+    避免调用方无法区分「单条记录的 dict」和「单元素列表」。
+    """
     try:
         res = get_supabase().rpc(name, params).execute()
-        # res.data 可能是单个 dict 或 list
         data = res.data
-        if isinstance(data, list) and len(data) == 1:
-            return data[0]
-        if isinstance(data, dict):
-            return data
         if data is None:
             return {"success": False, "error": "无响应"}
         return data
