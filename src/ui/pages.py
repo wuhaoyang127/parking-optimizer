@@ -28,7 +28,7 @@ def render_settings(role):
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
-        st.markdown(STRATEGY_DESC.get(strategy_name, "**该算法暂无详细说明**"))
+        st.markdown(strategy_description(strategy_name))
         st.markdown("""
 **等待与拒绝规则**
 

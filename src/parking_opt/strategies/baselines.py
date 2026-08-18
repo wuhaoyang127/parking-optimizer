@@ -26,6 +26,7 @@ class BaseStrategy:
     name: str = "base"
     label: str = "基础策略"
     PARAMS: list = []  # 可调参数声明，见类文档字符串
+    DESCRIPTION: str = ""  # 算法说明（Markdown），网页仿真设置页自动展示
 
     def assign(self, vehicle: Vehicle, time: float, parking_lot: ParkingLot,
                path_engine) -> tuple[Spot | None, str]:
@@ -36,6 +37,7 @@ class FCFS(BaseStrategy):
     """先到先服务：最近可用独立或depth=1车位"""
     name = "fcfs"
     label = "先到先服务"
+    DESCRIPTION = "**先到先服务**\n\n按车位出现的顺序，选第一个可用的空闲车位。"
 
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
@@ -52,6 +54,7 @@ class NearestPath(BaseStrategy):
     """最近路径分配：选距离入口最近的车位"""
     name = "nearest"
     label = "最近路径"
+    DESCRIPTION = "**最近路径**\n\n选距离入口最近的空闲车位，不考虑纵深阻挡风险。"
 
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
@@ -65,6 +68,7 @@ class RandomAssign(BaseStrategy):
     """随机分配"""
     name = "random"
     label = "随机分配"
+    DESCRIPTION = "**随机分配**\n\n从当前空闲车位中随机选一个（基线对照用）。"
 
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()

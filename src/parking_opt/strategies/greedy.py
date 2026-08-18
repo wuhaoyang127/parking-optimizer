@@ -13,6 +13,8 @@ class GreedyStrategy(BaseStrategy):
 
     name = "greedy"
     label = "贪心（基线）"
+    DESCRIPTION = ("**贪心（基线）**\n\n按固定优先级选车位：独立车位 → 纵深外层 → 纵深里层，"
+                   "同类车位中选距离入口最近的。不利用停车时长信息。")
 
     def assign(self, vehicle: Vehicle, time: float, parking_lot: ParkingLot,
                path_engine) -> tuple[Spot | None, str]:
@@ -69,6 +71,7 @@ class DepartureOrderGreedy(BaseStrategy):
 
     name = "departure_greedy"
     label = "离场贪心"
+    DESCRIPTION = "**离场贪心**\n\n选距离最近的空闲车位，忽略纵深阻挡风险（基线对照用）。"
 
     def assign(self, vehicle, time, parking_lot, path_engine):
         available = parking_lot.get_available_spots()
@@ -93,6 +96,9 @@ class DurationAwareGreedy(BaseStrategy):
 
     name = "duration_greedy"
     label = "时长感知贪心（主方法）"
+    DESCRIPTION = ("**时长感知贪心（主方法）**\n\n独立车位优先；纵深车位按**预估停车时长**分内外层——"
+                   "短停（<2小时）优先放外层、长停优先放里层，让外层车先走、里层车后走，从而减少移位。"
+                   "同类车位中选距离最近、阻挡风险最小的。")
 
     DEFAULT_THRESHOLD = 3600.0  # 自适应前的默认阈值（1小时）
     WARMUP = 10  # 自适应所需的最少样本数

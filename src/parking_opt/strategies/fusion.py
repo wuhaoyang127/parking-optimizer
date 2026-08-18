@@ -35,6 +35,8 @@ class PeakOffPeakFusion(CompositeStrategy):
 
     name = "peak_offpeak_fusion"
     label = "高峰贪心+低谷最近（融合示例）"
+    DESCRIPTION = ("**高峰贪心+低谷最近（融合示例）**\n\n按当前占用率判断高峰/低谷：占用率高于阈值用高峰算法"
+                   "（默认时长感知贪心），否则用低谷算法（默认最近路径）。阈值即「融合比例」，可在下方参数区调节。")
 
     PARAMS = [
         {"key": "peak_strategy", "label": "高峰算法", "type": "strategy",
