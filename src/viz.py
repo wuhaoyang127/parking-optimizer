@@ -47,17 +47,27 @@ def draw_parking_layout(
     ss = state.get("ss", {}) if state else {}
     dv = state.get("dv", []) if state else []
 
-    # 1. 道路网络
+    # 1. 道路网络（主路/支路各合并成一个 trace，避免几百条边生成几百个 trace 导致卡顿）
+    main_x, main_y, spur_x, spur_y = [], [], [], []
     for edge in net.edges:
         fn = net.nodes.get(edge.from_node)
         tn = net.nodes.get(edge.to_node)
         if not fn or not tn: continue
         is_spur = fn.node_type == NodeType.PARKING_SPOT or tn.node_type == NodeType.PARKING_SPOT
-        dash = "dot" if is_spur else "solid"
-        w = _s("road_spur" if is_spur else "road_main", s)
+        xs = spur_x if is_spur else main_x
+        ys = spur_y if is_spur else main_y
+        xs.extend([fn.x, tn.x, None])  # None 用于断开不同边之间的连线
+        ys.extend([fn.y, tn.y, None])
+    if main_x:
         fig.add_trace(go.Scatter(
-            x=[fn.x, tn.x], y=[fn.y, tn.y], mode="lines",
-            line=dict(color=ROAD_COLOR_SPUR if is_spur else ROAD_COLOR_MAIN, width=w, dash=dash),
+            x=main_x, y=main_y, mode="lines",
+            line=dict(color=ROAD_COLOR_MAIN, width=_s("road_main", s)),
+            showlegend=False, hoverinfo="none",
+        ))
+    if spur_x:
+        fig.add_trace(go.Scatter(
+            x=spur_x, y=spur_y, mode="lines",
+            line=dict(color=ROAD_COLOR_SPUR, width=_s("road_spur", s), dash="dot"),
             showlegend=False, hoverinfo="none",
         ))
 
@@ -95,23 +105,29 @@ def draw_parking_layout(
             hovertext="停车场入口", hoverinfo="text", showlegend=False,
         ))
 
-    # 4. 行驶中的车辆
+    # 4. 行驶中的车辆（普通车辆合并成一个 trace，高亮车辆单独一个 trace 保留描边）
+    normal, hl = [], []
     for v in dv:
-        vid = str(v.get("vid","")); is_hl = vid == highlight_vehicle
+        (hl if str(v.get("vid", "")) == highlight_vehicle else normal).append(v)
+    for group, is_hl in ((normal, False), (hl, True)):
+        if not group:
+            continue
+        vx = [v["x"] for v in group]
+        vy = [v["y"] for v in group]
+        vtext = [f"▶ {v.get('vid','')}" if is_hl else str(v.get('vid','')) for v in group]
+        vhover = [f"车辆 {v.get('vid','')} | {v.get('st','行驶中')} | → {v.get('target','?')}" for v in group]
         fig.add_trace(go.Scatter(
-            x=[v["x"]], y=[v["y"]], mode="markers+text",
+            x=vx, y=vy, mode="markers+text",
             marker=dict(
                 color=HIGHLIGHT_VEHICLE if is_hl else VEHICLE_COLOR,
                 size=_s("veh_hl" if is_hl else "veh", s),
                 symbol="circle",
                 line=dict(width=2*s, color="white") if is_hl else None,
             ),
-            text=[f"▶ {vid}" if is_hl else vid],
-            textposition="top center",
-            textfont=dict(size=max(_s("veh_text",s),6),
+            text=vtext, textposition="top center",
+            textfont=dict(size=max(_s("veh_text", s), 6),
                           color=HIGHLIGHT_VEHICLE if is_hl else "#333"),
-            hovertext=f"车辆 {vid} | {v.get('st','行驶中')} | → {v.get('target','?')}",
-            hoverinfo="text", showlegend=False,
+            hovertext=vhover, hoverinfo="text", showlegend=False,
         ))
 
     # 5. 高亮路径
