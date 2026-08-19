@@ -309,7 +309,7 @@ def _render_import_users():
 
 def _load_layout_doc() -> str:
     """读取布局导入格式说明文档内容（网页内嵌展示，避免相对链接打不开）"""
-    doc_path = Path(__file__).parent / "docs" / "布局导入格式说明.md"
+    doc_path = Path(__file__).resolve().parents[2] / "docs" / "布局导入格式说明.md"
     try:
         return doc_path.read_text(encoding="utf-8")
     except Exception:
@@ -882,7 +882,7 @@ def render_algo_import_page(role):
 > 最后跑仿真比较，选出最优算法。
 """)
 
-    pending_dir = Path(__file__).parent / "pending_algorithms"
+    pending_dir = Path(__file__).resolve().parents[2] / "pending_algorithms"
     pending_dir.mkdir(parents=True, exist_ok=True)
 
     uploaded = st.file_uploader("📤 上传算法文件", type=["md", "txt", "py", "json"],
