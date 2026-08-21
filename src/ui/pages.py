@@ -7,26 +7,6 @@ def render_settings(role):
     disabled = not role["can_configure"]
     if disabled: st.caption("⚠️ 当前角色仅可查看，不可修改参数")
 
-    c1, c2 = st.columns(2)
-    with c1:
-        layout_keys = list(LAYOUTS.keys()) + list(LAYOUT_BUILDERS.keys() - set(LAYOUTS.keys()))
-        layout_labels = {**LAYOUTS, **{k: k for k in LAYOUT_BUILDERS if k not in LAYOUTS}}
-        layout = st.selectbox("停车场布局", layout_keys,
-                              format_func=lambda x: layout_labels.get(x, x),
-                              disabled=disabled)
-        n_spots = st.slider("车位数", 5, 50, 15, disabled=disabled)
-        tandem_ratio = st.slider("纵深比例", 0.0, 1.0, 0.5, 0.1, disabled=disabled)
-    with c2:
-        n_vehicles = st.slider("车辆数", 10, 200, 60, disabled=disabled)
-        seed = st.number_input("随机种子", 0, 999, 42, disabled=disabled)
-        n_runs = st.slider("仿真次数（多种子取平均）", 1, 10, 3, disabled=disabled,
-                           help="随机系统单次结果波动大，多种子取平均更稳定；次数越多越准但越慢")
-        wait_policy = st.selectbox("等待调度策略", ["fifo", "shortest"],
-                                   format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
-                                   help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
-        strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
-                                     format_func=lambda x: STRATEGY_LABELS[x])
-
     # 需求数据源：自动生成（种子）或导入 JSON 文件（上次仿真导出的需求序列可复用）
     st.markdown("#### 📦 需求数据源")
     demand_source = st.radio(
@@ -35,9 +15,10 @@ def render_settings(role):
         horizontal=True,
         help="导入后所有策略共用同一批车辆需求（保证对比公平），相同种子/相同序列可复现结果",
     )
+    import_mode = demand_source.startswith("导入")
     imported_vehicles = None
     imported_meta = None
-    if demand_source.startswith("导入"):
+    if import_mode:
         up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
                               help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
         if up is not None:
@@ -91,6 +72,32 @@ def render_settings(role):
         st.session_state.imported_vehicles = None
         st.session_state.imported_meta = None
 
+    if import_mode:
+        st.caption("已导入需求序列：灰色参数不再影响本次仿真（车辆数、需求生成环境参数），其余参数照常生效。")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        layout_keys = list(LAYOUTS.keys()) + list(LAYOUT_BUILDERS.keys() - set(LAYOUTS.keys()))
+        layout_labels = {**LAYOUTS, **{k: k for k in LAYOUT_BUILDERS if k not in LAYOUTS}}
+        layout = st.selectbox("停车场布局", layout_keys,
+                              format_func=lambda x: layout_labels.get(x, x),
+                              disabled=disabled)
+        n_spots = st.slider("车位数", 5, 50, 15, disabled=disabled)
+        tandem_ratio = st.slider("纵深比例", 0.0, 1.0, 0.5, 0.1, disabled=disabled)
+    with c2:
+        n_vehicles = st.slider("车辆数", 10, 200, 60,
+                               disabled=disabled or import_mode,
+                               help="导入需求序列后以文件车辆为准，此项不再生效（变灰）")
+        seed = st.number_input("随机种子", 0, 999, 42, disabled=disabled,
+                               help="导入需求序列后仍影响引擎与策略随机性（不影响车辆生成）")
+        n_runs = st.slider("仿真次数（多种子取平均）", 1, 10, 3, disabled=disabled,
+                           help="随机系统单次结果波动大，多种子取平均更稳定；次数越多越准但越慢")
+        wait_policy = st.selectbox("等待调度策略", ["fifo", "shortest"],
+                                   format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
+                                   help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
+        strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
+                                     format_func=lambda x: STRATEGY_LABELS[x])
+
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
         st.markdown(strategy_description(strategy_name))
         st.markdown("""
@@ -108,7 +115,11 @@ def render_settings(role):
 
     # 环境参数（引擎 + 需求，可调）
     with st.expander("🌐 环境参数（车速/等待/需求，可调）"):
-        env_params = render_env_params(disabled)
+        if import_mode:
+            st.caption("导入需求序列后，需求生成参数（仿真时长/停车时长/高峰占比/预估误差）不再生效，已变灰；"
+                       "车速与排队等待上限仍生效。")
+        env_params = render_env_params(
+            disabled, disabled_keys=DEMAND_GEN_ENV_KEYS if import_mode else None)
 
     # 停车时长上下限校验：下限不应大于上限
     if env_params["duration_min"] > env_params["duration_max"]:

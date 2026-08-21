@@ -833,11 +833,21 @@ def render_strategy_params(strategy_name, disabled=False):
     return params
 
 
-def render_env_params(disabled=False):
-    """渲染环境参数（引擎 + 需求）控件，返回 {key: value}。"""
+# 导入需求序列后不再起作用的「需求生成」环境参数（导入模式将变灰）
+DEMAND_GEN_ENV_KEYS = {"sim_duration", "duration_min", "duration_max",
+                       "peak_ratio", "error_ratio"}
+
+
+def render_env_params(disabled=False, disabled_keys=None):
+    """渲染环境参数（引擎 + 需求）控件，返回 {key: value}。
+
+    disabled_keys: 需要额外禁用的参数 key 集合（如导入需求序列后，需求生成参数变灰）。
+    """
     params = {}
     for p in ENV_PARAM_SPECS:
-        params[p["key"]] = _render_param_widget(p, "env", disabled)
+        key = p["key"]
+        dis = disabled or (disabled_keys is not None and key in disabled_keys)
+        params[key] = _render_param_widget(p, "env", dis)
     return params
 
 
