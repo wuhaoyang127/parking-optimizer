@@ -753,9 +753,9 @@ def render_metrics_page():
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    # 算法筛选优先级说明（动态，跟随用户在仿真设置页的调整）
-    st.markdown("### 🎯 算法筛选优先级")
-    st.caption("当前排序规则（字典序：先比第一项，相同再比下一项）")
+    # 算法筛选优先级说明（动态，跟随用户在仿真设置页的调整；仅在字典序模式下生效）
+    st.markdown("### 🎯 算法筛选优先级（仅字典序模式生效）")
+    st.caption("当前默认排序为「加权评分」，可在下方多策略对比区切换；此优先级仅在切到「字典序优先级」时使用")
     priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
     prio = pd.DataFrame([
         [i + 1, name,
@@ -776,8 +776,10 @@ def render_metrics_page():
         st.caption(f"基于 {src_note}")
         all_m = st.session_state.sim_all_metrics
 
-        # 排序模式：字典序（原有，保留）/ 加权评分（新增）
-        rank_mode = st.radio("排序模式", ["字典序优先级", "加权评分"],
+        # 排序模式：加权评分（默认）/ 字典序优先级（原有，保留）
+        if "rank_mode" not in st.session_state:
+            st.session_state.rank_mode = "加权评分"
+        rank_mode = st.radio("排序模式", ["加权评分", "字典序优先级"],
                              horizontal=True, key="rank_mode")
 
         if rank_mode == "加权评分":
