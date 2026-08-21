@@ -906,11 +906,24 @@ def render_metrics_page():
             )
             default_name = f"demand_{demand_source}_{time.strftime('%Y%m%d_%H%M%S')}.json"
             download_name = f"parking_demand_{time.strftime('%Y%m%d_%H%M%S')}.json"
-            st.download_button("📥 浏览器下载",
-                               json_str.encode("utf-8"),
-                               download_name, "application/json")
-            st.caption("每次下载文件名带时间戳，不会重名")
-            with st.expander("💾 保存到项目文件夹（可改文件名与位置）", expanded=True):
+            cdl, cproj = st.columns(2)
+            with cdl:
+                st.download_button("📥 浏览器下载",
+                                   json_str.encode("utf-8"),
+                                   download_name, "application/json")
+                st.caption("每次下载文件名带时间戳，不会重名")
+            with cproj:
+                if st.button("💾 下载到项目文件夹", use_container_width=True,
+                             key="save_demand_project",
+                             help="一键保存到 data/demand_exports/（自动命名），"
+                                  "回仿真设置页可从下拉直接导入，方便快速测试复现性"):
+                    saved = save_demand_to_project(
+                        vehs, seed=meta.get("seed"), source=demand_source,
+                        generator_params=meta.get("generator_params"),
+                        generated_at=meta.get("generated_at"))
+                    st.success(f"✅ 已保存：{saved.name}")
+                    st.caption("回「仿真设置 → 导入需求序列 JSON → 从项目文件夹选择」即可快速导入")
+            with st.expander("💾 保存到指定位置（长期保留：自选目录与文件名）", expanded=False):
                 cdir, cfile = st.columns(2)
                 with cdir:
                     save_dir = st.text_input(

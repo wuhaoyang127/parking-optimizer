@@ -347,6 +347,20 @@ def _plot_radar(all_m):
     return fig
 
 
+def save_demand_to_project(vehicles, seed=None, source="generated",
+                           generator_params=None, generated_at=None,
+                           prefix="demand") -> Path:
+    """一键保存到项目 data/demand_exports/（自动时间戳命名防覆盖），返回保存路径。"""
+    DEMAND_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    path = DEMAND_EXPORT_DIR / f"{prefix}_{source}_{stamp}.json"
+    text = export_demand_json(vehicles, seed=seed, source=source,
+                              generator_params=generator_params,
+                              generated_at=generated_at)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
 def save_demand_to_path(vehicles, path, seed=None, source="generated",
                         generator_params=None, generated_at=None) -> Path:
     """把需求序列写到用户指定路径（父目录不存在则创建），返回实际保存路径。"""
