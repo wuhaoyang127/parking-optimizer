@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sys, hashlib, json, math, os, shutil, time
+import sys, hashlib, json, math, time
 from pathlib import Path
 # 确保 src 在 sys.path（本文件位于 src/ui/，其父目录的父目录是 src）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -359,98 +359,6 @@ def save_demand_to_path(vehicles, path, seed=None, source="generated",
                               generated_at=generated_at)
     target.write_text(text, encoding="utf-8")
     return target
-
-
-def is_local_desktop() -> bool:
-    """是否本地桌面运行（Windows）。Streamlit Cloud 等服务器环境返回 False。
-
-    移动/删除「电脑 Downloads 里的文件」这类功能只能在本地运行时使用：
-    服务器进程无法访问用户本机的 Downloads 文件夹。
-    """
-    return os.name == "nt"
-
-
-def get_downloads_dir() -> Path:
-    """获取 Windows 系统真实的 Downloads 文件夹路径。
-
-    优先读注册表 User Shell Folders（支持被重定向到 D 盘/OneDrive 等情况）；
-    失败时按常见位置回退（Downloads、下载、OneDrive/Downloads、OneDrive/下载）。
-    """
-    candidates: list[Path] = []
-    try:
-        import winreg
-        with winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER,
-                r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
-            value, _ = winreg.QueryValueEx(
-                key, "{374DE290-123F-4565-9164-39C4925E467B}")
-            if value:
-                expanded = Path(os.path.expandvars(str(value)))
-                candidates.append(expanded if expanded.is_absolute() else Path.home() / expanded)
-    except Exception:
-        pass
-    home = Path.home()
-    candidates += [home / "Downloads", home / "下载",
-                   home / "OneDrive" / "Downloads", home / "OneDrive" / "下载"]
-    for c in candidates:
-        if c.exists() and c.is_dir():
-            return c
-    return home / "Downloads"
-
-
-def list_downloaded_demand_files(downloads_dir=None) -> list[tuple[Path, str]]:
-    """列出 Downloads 文件夹里的 parking_demand*.json，返回 [(路径, 显示名)]，按修改时间倒序。"""
-    downloads = Path(downloads_dir) if downloads_dir else get_downloads_dir()
-    if not downloads.exists():
-        return []
-    files = sorted(downloads.glob("parking_demand*.json"),
-                   key=lambda p: p.stat().st_mtime, reverse=True)
-    return [(p, f"{p.name}（{time.strftime('%Y-%m-%d %H:%M', time.localtime(p.stat().st_mtime))}）")
-            for p in files]
-
-
-def _unique_demand_target(name: str) -> Path:
-    """在 data/demand_exports/ 下生成不重名的目标路径（自动补 .json、重名加序号）。"""
-    target_name = Path(name)
-    if target_name.suffix.lower() != ".json":
-        target_name = target_name.with_suffix(".json")
-    DEMAND_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
-    dst = DEMAND_EXPORT_DIR / target_name.name
-    if dst.exists():
-        stem, suffix = dst.stem, dst.suffix
-        i = 1
-        while (DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}").exists():
-            i += 1
-        dst = DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}"
-    return dst
-
-
-def move_downloaded_demand_files(paths, new_name: str | None = None) -> list[Path]:
-    """把用户勾选的下载文件移动到 data/demand_exports/。
-
-    new_name 仅在移动 1 个文件时用作新文件名；多个文件保留原名。返回移动后的路径列表。
-    """
-    moved: list[Path] = []
-    for src in paths:
-        src = Path(src)
-        if not src.exists():
-            continue
-        name = (new_name or "").strip() if len(paths) == 1 else ""
-        dst = _unique_demand_target(name or src.name)
-        shutil.move(str(src), str(dst))
-        moved.append(dst)
-    return moved
-
-
-def delete_downloaded_demand_files(paths) -> list[str]:
-    """删除用户勾选的下载文件（仅限从 Downloads 列表传入的路径），返回删除的文件名列表。"""
-    deleted: list[str] = []
-    for src in paths:
-        src = Path(src)
-        if src.exists():
-            src.unlink()
-            deleted.append(src.name)
-    return deleted
 
 
 def list_demand_files() -> list[tuple[Path, str]]:
