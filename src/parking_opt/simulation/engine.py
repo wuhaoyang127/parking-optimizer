@@ -1,6 +1,7 @@
 from __future__ import annotations
 """离散事件仿真引擎 (SimPy)"""
 
+import math
 import random
 import simpy
 from .parking_lot import ParkingLot
@@ -79,6 +80,16 @@ class SimulationEngine:
             self.env.process(self._wait_timeout(vehicle))
             return
 
+        # 兜底防御：分配车位在路网中从入口不可达时拒绝，
+        # 避免 inf 行驶时间传播进仿真时钟产生 nan 事件时间（真实布局导入）
+        dist_to_spot = self.path_engine.distance_to_spot(spot.node_id)
+        if not math.isfinite(dist_to_spot):
+            vehicle.rejected = True
+            self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
+                      strategy=self.strategy.name,
+                      reason=f"分配车位 {spot.spot_id} 从入口不可达，无法入位")
+            return
+
         # 立即分配成功：同步占位，异步行驶入位
         self._occupy(vehicle, spot)
         self.env.process(self._drive_and_depart(vehicle, spot))
@@ -123,6 +134,17 @@ class SimulationEngine:
             spot, status = self.strategy.assign(vehicle, self.env.now,
                                                 self.parking_lot, self.path_engine)
             if status == "assigned":
+                # 兜底防御：不可达车位拒绝，避免 inf/nan 时间传播
+                dist = self.path_engine.distance_to_spot(spot.node_id)
+                if not math.isfinite(dist):
+                    self.waiting_queue.remove(vehicle)
+                    vehicle.wait_end = self.env.now
+                    vehicle.rejected = True
+                    self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
+                    self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
+                              strategy=self.strategy.name,
+                              reason=f"分配车位 {spot.spot_id} 从入口不可达，无法入位")
+                    continue
                 self.waiting_queue.remove(vehicle)
                 vehicle.wait_end = self.env.now
                 self._log(self.env.now, EventType.WAIT_END, vehicle.vehicle_id)
@@ -159,6 +181,12 @@ class SimulationEngine:
 
             # 移位
             dist = self.path_engine.shortest_distance(blk_spot.node_id, buffer.node_id)
+            if not math.isfinite(dist):
+                self.parking_lot.release_buffer(buffer.spot_id)
+                self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
+                          blocked_vehicle=vehicle.vehicle_id,
+                          reason=f"缓冲位 {buffer.spot_id} 与阻挡车位 {blk_spot.spot_id} 不连通，无法移位")
+                continue
             travel_time = dist / self.car_speed
 
             self._log(self.env.now, EventType.SHIFT_START, blk_vid,

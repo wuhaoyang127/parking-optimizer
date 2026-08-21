@@ -477,13 +477,28 @@ def weighted_rank_df(all_m, weights_by_label):
 
 
 def _fmt_clock(seconds):
-    """把秒数格式化为 HH:MM:SS；None 返回 '-'。"""
+    """把秒数格式化为 HH:MM:SS；None/非有限值返回 '-'。"""
     if seconds is None:
         return "-"
-    sec = int(round(float(seconds)))
+    try:
+        f = float(seconds)
+        if not math.isfinite(f):
+            return "-"
+        sec = int(round(f))
+    except (TypeError, ValueError, OverflowError):
+        return "-"
     h, rem = divmod(sec, 3600)
     m, s = divmod(rem, 60)
     return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def _finite_time(value):
+    """把事件时间转成有限非负 float；异常或非有限返回 None。"""
+    try:
+        f = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return f if math.isfinite(f) and f >= 0 else None
 
 
 def build_vehicle_detail_rows(events_raw):
@@ -517,20 +532,25 @@ def build_vehicle_detail_rows(events_raw):
     rows = []
     for vid in sorted(by_vid):
         rec = by_vid[vid]
+        arr = _finite_time(rec["arrival"])
+        dep = _finite_time(rec["departure"])
+        entry = _finite_time(rec["entry"])
+        ws = _finite_time(rec["wait_start"])
+        we = _finite_time(rec["wait_end"])
         wait = None
-        if rec["wait_start"] is not None:
-            end = rec["wait_end"] if rec["wait_end"] is not None else rec["arrival"]
+        if ws is not None:
+            end = we if we is not None else arr
             if end is None:
-                end = rec["wait_start"]
-            wait = round(float(end) - float(rec["wait_start"]), 1)
+                end = ws
+            wait = round(end - ws, 1)
         rows.append({
             "车辆编号": vid,
-            "到达时间(s)": round(rec["arrival"], 1) if rec["arrival"] is not None else None,
-            "到达时刻": _fmt_clock(rec["arrival"]),
+            "到达时间(s)": round(arr, 1) if arr is not None else None,
+            "到达时刻": _fmt_clock(arr),
             "分配车位": rec["assigned_spot"] or "-",
-            "进入车位(s)": round(rec["entry"], 1) if rec["entry"] is not None else None,
-            "离场时间(s)": round(rec["departure"], 1) if rec["departure"] is not None else None,
-            "离场时刻": _fmt_clock(rec["departure"]),
+            "进入车位(s)": round(entry, 1) if entry is not None else None,
+            "离场时间(s)": round(dep, 1) if dep is not None else None,
+            "离场时刻": _fmt_clock(dep),
             "等待时长(s)": wait,
             "状态": "拒绝" if rec["rejected"] else "正常",
         })
@@ -539,8 +559,12 @@ def build_vehicle_detail_rows(events_raw):
 
 def build_demand_histogram(events_raw, bin_hours=1):
     """到达/离场按时段分布的条形图（plotly Figure）；无事件返回 None。"""
-    arrivals = [float(e["time"]) for e in events_raw if e.get("type") == "vehicle_arrival"]
-    departures = [float(e["time"]) for e in events_raw if e.get("type") == "departure"]
+    arrivals = [_finite_time(e.get("time"))
+                for e in events_raw if e.get("type") == "vehicle_arrival"]
+    departures = [_finite_time(e.get("time"))
+                  for e in events_raw if e.get("type") == "departure"]
+    arrivals = [t for t in arrivals if t is not None]
+    departures = [t for t in departures if t is not None]
     if not arrivals and not departures:
         return None
 

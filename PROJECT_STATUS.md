@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 10
+status_version: 11
 last_updated: 2026-08-21
 current_stage: D
 stage_status: in_progress
@@ -129,7 +129,7 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`，共 49 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`，共 51 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
 - 备份存档：git tag `backup-before-ui-refactor-20260818`（2026-08-18）；更早 `backup-before-algo-interface-20260817`（2026-08-17）。
@@ -190,6 +190,7 @@ Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反�
 
 ## 13. 最近重要变更
 
+- 2026-08-21：修复线上崩溃（Cloud 报 `build_demand_histogram` ValueError）：根因是导入的真实布局存在从入口不可达的车位时，行驶时间 inf 传播进 SimPy 时钟产生 nan 事件时间。三层防御：①引擎层——分配/等待分配时拒绝不可达车位、移位不可达缓冲位记 BUFFER_FAILED，杜绝 inf/nan 事件；②导入校验——布局 JSON 校验每个车位「入口可达且可返回入口」，不连通直接报错拒收；③UI 层——直方图/车辆明细表/时钟格式化对 None/nan/inf/字符串时间全部兜底。新增 `tests/test_engine_robustness.py`（2 项），pytest 51 passed、自检通过；
 - 2026-08-21：按用户反馈，仿真设置页「停车场布局」下拉拆为「布局来源」分组（内置示意布局 / 导入的真实布局，仅在有导入布局时显示后者）；真实布局下加说明「路网/车位真实，车辆需求仍为仿真；车位数/纵深比例滑杆不生效」；新增 `BUILTIN_LAYOUT_KEYS` 常量区分内置/自定义布局；打备份 tag `backup-before-layout-source-20260821`；pytest 49 passed、AppTest 两场景通过、启动包自检通过，待用户验收；
 - 2026-08-21：打备份 tag `backup-before-feedback-round2-20260821`；完成反馈优化第二批 `stage-d-feedback-round2`：需求时序条形图/车辆明细表/需求序列 JSON 导出导入 + 指标权重百分条/归一化/加权排名（与字典序并存切换），pytest 49 passed，自检与 AppTest 通过；后续按用户反馈定稿需求序列保存方式：①「浏览器下载」（时间戳防重名）②「下载到项目文件夹 data/demand_exports/」（一键，快速测试复现性，配套导入下拉）③「保存到指定位置（自选目录与文件名，长期保留用，默认折叠）」；「从项目文件夹选择」导入下拉保留；移动/删除下载文件功能已移除；仿真设置页在「导入需求序列」模式下把不再生效的参数变灰（车辆数、仿真时长/停车时长/高峰占比/预估误差），仍生效的保留可调（布局/策略/策略参数/车速/等待上限/种子/运行次数/优先级）；保存区定稿为「浏览器下载（通用）+ 另存为…（浏览器 File System Access API，访问者自选位置，Cloud/本机可用，不支持自动降级）+ 下载到项目文件夹（仅本机运行时显示）+ 保存到指定位置（自选目录与文件名）」；指标分析页排序模式默认改为「加权评分」（字典序保留可切换，顶部优先级区块标注仅字典序生效）；随后按用户反馈把「排序模式 + 权重」配置整体上移到仿真设置页「算法排名设置」，指标分析页只按设置展示对应内容（加权显示权重表+加权排名，字典序显示优先级表+字典序排名），单策略模式同样生效（打 tag `backup-before-demand-save-20260821`）；布局导入说明开放给操作员查看（说明+示例下载，上传仍仅管理员），待用户验收；
 - 2026-08-18：完成「UI 拆分重构 + 交付体验优化」8 项优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/app.py 拆分 1827→90 行/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿，已验收；

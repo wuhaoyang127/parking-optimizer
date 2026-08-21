@@ -1,3 +1,4 @@
+import math
 from ui.common import *
 from ui.common import _avg_metrics, _plot_radar
 
@@ -477,8 +478,18 @@ def _render_import_layout():
                 if ed["from"] not in node_ids or ed["to"] not in node_ids:
                     st.error(f"边 {ed['from']}→{ed['to']} 引用了不存在的节点")
                     st.stop()
-            # 测试构建
+            # 测试构建 + 连通性校验（每个车位必须从入口可达且能返回入口）
             net, spots = build_layout_from_json(data)
+            pe_check = PathEngine(net)
+            bad_in = [s.spot_id for s in spots
+                      if not math.isfinite(pe_check.distance_to_spot(s.node_id))]
+            bad_out = [s.spot_id for s in spots
+                       if not math.isfinite(pe_check.shortest_distance(s.node_id, pe_check.entry_id))]
+            if bad_in or bad_out:
+                problems = list(dict.fromkeys(bad_in + bad_out))
+                st.error("布局校验失败：以下车位与入口不连通（请检查 edges 是否双向完整、有无遗漏）："
+                         + "、".join(problems[:12]) + ("…" if len(problems) > 12 else ""))
+                st.stop()
             name = data["name"]
             layout_id = name.lower().replace(" ", "_")
 
