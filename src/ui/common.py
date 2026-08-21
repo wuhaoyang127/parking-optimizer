@@ -389,22 +389,19 @@ def get_downloads_dir() -> Path:
     return home / "Downloads"
 
 
-def move_latest_downloaded_demand(downloads_dir=None, new_name: str | None = None) -> Path | None:
-    """把下载文件夹里最新的 parking_demand*.json 移动到项目 data/demand_exports/，可重命名。
-
-    downloads_dir: 下载文件夹路径；缺省用 get_downloads_dir()（系统真实 Downloads 目录）。
-    new_name: 移动后的文件名；为空则保留原文件名。不带 .json 后缀自动补。
-    目标重名自动加序号防覆盖；跨盘移动由 shutil.move 处理。无匹配文件返回 None。
-    """
+def list_downloaded_demand_files(downloads_dir=None) -> list[tuple[Path, str]]:
+    """列出 Downloads 文件夹里的 parking_demand*.json，返回 [(路径, 显示名)]，按修改时间倒序。"""
     downloads = Path(downloads_dir) if downloads_dir else get_downloads_dir()
     if not downloads.exists():
-        return None
-    candidates = sorted(downloads.glob("parking_demand*.json"),
-                        key=lambda p: p.stat().st_mtime, reverse=True)
-    if not candidates:
-        return None
-    src = candidates[0]
-    name = (new_name or "").strip() or src.name
+        return []
+    files = sorted(downloads.glob("parking_demand*.json"),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    return [(p, f"{p.name}（{time.strftime('%Y-%m-%d %H:%M', time.localtime(p.stat().st_mtime))}）")
+            for p in files]
+
+
+def _unique_demand_target(name: str) -> Path:
+    """在 data/demand_exports/ 下生成不重名的目标路径（自动补 .json、重名加序号）。"""
     target_name = Path(name)
     if target_name.suffix.lower() != ".json":
         target_name = target_name.with_suffix(".json")
@@ -416,8 +413,35 @@ def move_latest_downloaded_demand(downloads_dir=None, new_name: str | None = Non
         while (DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}").exists():
             i += 1
         dst = DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}"
-    shutil.move(str(src), str(dst))
     return dst
+
+
+def move_downloaded_demand_files(paths, new_name: str | None = None) -> list[Path]:
+    """把用户勾选的下载文件移动到 data/demand_exports/。
+
+    new_name 仅在移动 1 个文件时用作新文件名；多个文件保留原名。返回移动后的路径列表。
+    """
+    moved: list[Path] = []
+    for src in paths:
+        src = Path(src)
+        if not src.exists():
+            continue
+        name = (new_name or "").strip() if len(paths) == 1 else ""
+        dst = _unique_demand_target(name or src.name)
+        shutil.move(str(src), str(dst))
+        moved.append(dst)
+    return moved
+
+
+def delete_downloaded_demand_files(paths) -> list[str]:
+    """删除用户勾选的下载文件（仅限从 Downloads 列表传入的路径），返回删除的文件名列表。"""
+    deleted: list[str] = []
+    for src in paths:
+        src = Path(src)
+        if src.exists():
+            src.unlink()
+            deleted.append(src.name)
+    return deleted
 
 
 def list_demand_files() -> list[tuple[Path, str]]:
