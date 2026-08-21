@@ -44,6 +44,8 @@ data/interim/**
 data/processed/**
 !data/processed/.gitkeep
 data/synthetic/generated/**
+data/demand_exports/**
+!data/demand_exports/.gitkeep
 
 # Local notebooks and temporary files
 .ipynb_checkpoints/

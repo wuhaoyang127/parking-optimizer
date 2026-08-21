@@ -83,6 +83,10 @@ DEFAULT_WEIGHTS_BY_LABEL = {
     "移位距离": 10, "行驶距离": 5, "运行耗时": 5,
 }
 
+# 需求序列导出的项目内文件夹（本地运行时方便下次直接从这里导入；不入库）
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DEMAND_EXPORT_DIR = PROJECT_ROOT / "data" / "demand_exports"
+
 def strategy_description(name: str) -> str:
     """返回策略说明：优先读策略类的 DESCRIPTION 属性，新算法接入后无需改这里即可自动展示。"""
     if name == "compare_all":
@@ -339,6 +343,30 @@ def _plot_radar(all_m):
                       legend=dict(orientation="h", yanchor="bottom", y=-0.15),
                       polar=dict(radialaxis=dict(range=[0, 1], showticklabels=False)))
     return fig
+
+
+def save_demand_to_project(vehicles, seed=None, source="generated",
+                           generator_params=None, generated_at=None,
+                           prefix="demand") -> Path:
+    """把需求序列保存到项目 data/demand_exports/ 下，自动命名防覆盖，返回保存路径。"""
+    DEMAND_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    path = DEMAND_EXPORT_DIR / f"{prefix}_{source}_{stamp}.json"
+    text = export_demand_json(vehicles, seed=seed, source=source,
+                              generator_params=generator_params,
+                              generated_at=generated_at)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def list_demand_files() -> list[tuple[Path, str]]:
+    """列出项目 data/demand_exports/ 下的需求序列 JSON，返回 [(路径, 显示名)]，按修改时间倒序。"""
+    if not DEMAND_EXPORT_DIR.exists():
+        return []
+    files = sorted(DEMAND_EXPORT_DIR.glob("*.json"),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
+    return [(p, f"{p.name}（{time.strftime('%Y-%m-%d %H:%M', time.localtime(p.stat().st_mtime))}）")
+            for p in files]
 
 
 def weighted_rank_df(all_m, weights_by_label):

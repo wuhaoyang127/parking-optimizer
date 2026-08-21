@@ -39,7 +39,7 @@ def render_settings(role):
     imported_meta = None
     if demand_source.startswith("导入"):
         up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
-                              help="文件来自「指标分析页 → 需求时序分布 → 下载需求序列 JSON」")
+                              help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
         if up is not None:
             try:
                 imported_vehicles, imported_meta = parse_demand_json(up.getvalue().decode("utf-8"))
@@ -51,12 +51,32 @@ def render_settings(role):
                            f"运行仿真将以该序列为准，忽略「车辆数」设置。")
             except ValueError as exc:
                 st.error(f"❌ 导入失败：{exc}")
-        elif st.session_state.get("imported_vehicles"):
-            # 本次会话之前已导入过（例如运行后回来），沿用缓存
-            imported_vehicles = st.session_state.imported_vehicles
-            imported_meta = st.session_state.get("imported_meta") or {}
-            st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
-                    f"重新上传文件可替换。")
+        else:
+            # 从项目文件夹 data/demand_exports/ 直接选择（本地保存的需求序列）
+            local_files = list_demand_files()
+            if local_files:
+                labels = [disp for _, disp in local_files]
+                sel = st.selectbox(
+                    "或从项目文件夹选择（data/demand_exports/）",
+                    ["（不选择）"] + labels, key="local_demand_sel",
+                    help="选择后立即解析该文件作为本次需求序列；文件由「指标分析页 → 保存到项目文件夹」生成",
+                )
+                if sel != "（不选择）":
+                    path = local_files[labels.index(sel)][0]
+                    try:
+                        imported_vehicles, imported_meta = parse_demand_json(
+                            path.read_text(encoding="utf-8"))
+                        st.session_state.imported_vehicles = imported_vehicles
+                        st.session_state.imported_meta = imported_meta
+                        st.success(f"✅ 已从项目文件夹加载 {imported_meta.get('vehicle_count')} 辆车：{path.name}")
+                    except ValueError as exc:
+                        st.error(f"❌ 导入失败：{exc}")
+            elif st.session_state.get("imported_vehicles"):
+                # 本次会话之前已导入过（例如运行后回来），沿用缓存
+                imported_vehicles = st.session_state.imported_vehicles
+                imported_meta = st.session_state.get("imported_meta") or {}
+                st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
+                        f"重新上传文件可替换。")
         st.download_button(
             "📄 下载需求序列 JSON 示例",
             export_demand_json(
@@ -884,9 +904,24 @@ def render_metrics_page():
                 generator_params=meta.get("generator_params"),
                 generated_at=meta.get("generated_at"),
             )
-            st.download_button("📥 下载需求序列 JSON（可下次导入复用）",
-                               json_str.encode("utf-8"),
-                               "parking_demand.json", "application/json")
+            cdl, csl = st.columns(2)
+            with cdl:
+                st.download_button("📥 下载需求序列 JSON（浏览器下载）",
+                                   json_str.encode("utf-8"),
+                                   "parking_demand.json", "application/json")
+            with csl:
+                if st.button("💾 保存到项目文件夹（data/demand_exports/）",
+                             use_container_width=True, key="save_demand_local",
+                             help="保存后可在「仿真设置 → 导入需求序列 JSON」中从项目文件夹直接选择"):
+                    saved_path = save_demand_to_project(
+                        vehs,
+                        seed=meta.get("seed"),
+                        source=demand_source,
+                        generator_params=meta.get("generator_params"),
+                        generated_at=meta.get("generated_at"),
+                    )
+                    st.success(f"✅ 已保存：{saved_path}")
+                    st.caption("下次在「仿真设置 → 导入需求序列 JSON」中可从项目文件夹直接选择该文件。")
     else:
         st.info("暂无事件日志（请先运行仿真）")
 
