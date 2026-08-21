@@ -910,18 +910,20 @@ def render_metrics_page():
                 st.download_button("📥 浏览器下载",
                                    json_str.encode("utf-8"),
                                    "parking_demand.json", "application/json")
+                st.caption("下载后文件名为 parking_demand.json")
             with csl:
-                if st.button("📥 移动下载的需求序列到项目文件夹",
-                             use_container_width=True, key="move_downloaded_demand",
-                             help="把浏览器下载到「下载」文件夹的 parking_demand*.json 一键移动到 data/demand_exports/"):
-                    moved = move_downloaded_demand_to_project()
-                    if moved:
-                        st.success(f"✅ 已移动 {len(moved)} 个文件到 data/demand_exports/")
-                        for p in moved:
-                            st.caption(f"· {p.name}")
+                move_name = st.text_input(
+                    "移动后命名", "parking_demand.json", key="move_name_input",
+                    help="把下载文件夹里最新的 parking_demand*.json 移动过来并改成这个名字；"
+                         "不带 .json 后缀会自动补上")
+                if st.button("📥 移动并命名", use_container_width=True,
+                             key="move_downloaded_demand"):
+                    moved_path = move_latest_downloaded_demand(new_name=move_name)
+                    if moved_path is not None:
+                        st.success(f"✅ 已移动并命名：{moved_path.name}")
                     else:
                         st.info("「下载」文件夹里没有找到 parking_demand*.json，"
-                                "请先点上方「浏览器下载」。")
+                                "请先点「浏览器下载」。")
             with st.expander("💾 保存到项目文件夹（可改文件名与位置）", expanded=True):
                 cdir, cfile = st.columns(2)
                 with cdir:
