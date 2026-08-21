@@ -913,44 +913,51 @@ def render_metrics_page():
                                    download_name, "application/json")
                 st.caption("每次下载文件名带时间戳，不会重名")
             with csl:
-                dl_files = list_downloaded_demand_files()
-                if dl_files:
-                    labels = [disp for _, disp in dl_files]
-                    move_sel = st.multiselect(
-                        "选择要移动的文件", labels, default=[labels[0]],
-                        key="move_dl_sel",
-                        help="勾选要移动到 data/demand_exports/ 的文件（默认最新一个）")
-                    del_sel = st.multiselect(
-                        "选择要删除的文件", labels, default=[],
-                        key="del_dl_sel",
-                        help="勾选要从 Downloads 删除的文件（清理 (1)(2) 等重复文件）")
-                    move_name = st.text_input(
-                        "移动后命名（仅移动 1 个时生效）", "parking_demand.json",
-                        key="move_name_input",
-                        help="只勾选 1 个文件时，移动过去并改成这个名字；不带 .json 自动补")
-                    cmv, cdel = st.columns(2)
-                    with cmv:
-                        if st.button("📥 移动选中", use_container_width=True,
-                                     key="move_dl_btn"):
-                            paths = [dl_files[labels.index(x)][0] for x in move_sel]
-                            moved = move_downloaded_demand_files(
-                                paths, new_name=move_name if len(paths) == 1 else None)
-                            if moved:
-                                st.success("已移动：" + "、".join(p.name for p in moved))
-                            else:
-                                st.info("未选择要移动的文件")
-                    with cdel:
-                        if st.button("🗑 删除选中", use_container_width=True,
-                                     key="del_dl_btn"):
-                            paths = [dl_files[labels.index(x)][0] for x in del_sel]
-                            deleted = delete_downloaded_demand_files(paths)
-                            if deleted:
-                                st.success("已删除：" + "、".join(deleted))
-                            else:
-                                st.info("未选择要删除的文件")
+                if not is_local_desktop():
+                    st.info("「移动/删除下载文件」仅在**本地运行**时可用："
+                            "云端服务器无法访问你电脑的 Downloads 文件夹。\n\n"
+                            "请用左侧「浏览器下载」保存到电脑；"
+                            "需要放入项目文件夹时，请在本地运行 "
+                            "`py -m streamlit run app.py` 使用该功能。")
                 else:
-                    st.info(f"Downloads 文件夹（{get_downloads_dir()}）里没有找到 "
-                            f"parking_demand*.json，请先点「浏览器下载」。")
+                    dl_files = list_downloaded_demand_files()
+                    if dl_files:
+                        labels = [disp for _, disp in dl_files]
+                        move_sel = st.multiselect(
+                            "选择要移动的文件", labels, default=[labels[0]],
+                            key="move_dl_sel",
+                            help="勾选要移动到 data/demand_exports/ 的文件（默认最新一个）")
+                        del_sel = st.multiselect(
+                            "选择要删除的文件", labels, default=[],
+                            key="del_dl_sel",
+                            help="勾选要从 Downloads 删除的文件（清理 (1)(2) 等重复文件）")
+                        move_name = st.text_input(
+                            "移动后命名（仅移动 1 个时生效）", "parking_demand.json",
+                            key="move_name_input",
+                            help="只勾选 1 个文件时，移动过去并改成这个名字；不带 .json 自动补")
+                        cmv, cdel = st.columns(2)
+                        with cmv:
+                            if st.button("📥 移动选中", use_container_width=True,
+                                         key="move_dl_btn"):
+                                paths = [dl_files[labels.index(x)][0] for x in move_sel]
+                                moved = move_downloaded_demand_files(
+                                    paths, new_name=move_name if len(paths) == 1 else None)
+                                if moved:
+                                    st.success("已移动：" + "、".join(p.name for p in moved))
+                                else:
+                                    st.info("未选择要移动的文件")
+                        with cdel:
+                            if st.button("🗑 删除选中", use_container_width=True,
+                                         key="del_dl_btn"):
+                                paths = [dl_files[labels.index(x)][0] for x in del_sel]
+                                deleted = delete_downloaded_demand_files(paths)
+                                if deleted:
+                                    st.success("已删除：" + "、".join(deleted))
+                                else:
+                                    st.info("未选择要删除的文件")
+                    else:
+                        st.info(f"Downloads 文件夹（{get_downloads_dir()}）里没有找到 "
+                                f"parking_demand*.json，请先点「浏览器下载」。")
             with st.expander("💾 保存到项目文件夹（可改文件名与位置）", expanded=True):
                 cdir, cfile = st.columns(2)
                 with cdir:

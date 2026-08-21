@@ -361,6 +361,15 @@ def save_demand_to_path(vehicles, path, seed=None, source="generated",
     return target
 
 
+def is_local_desktop() -> bool:
+    """是否本地桌面运行（Windows）。Streamlit Cloud 等服务器环境返回 False。
+
+    移动/删除「电脑 Downloads 里的文件」这类功能只能在本地运行时使用：
+    服务器进程无法访问用户本机的 Downloads 文件夹。
+    """
+    return os.name == "nt"
+
+
 def get_downloads_dir() -> Path:
     """获取 Windows 系统真实的 Downloads 文件夹路径。
 
