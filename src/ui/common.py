@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sys, hashlib, json, math, time
+import sys, hashlib, json, math, shutil, time
 from pathlib import Path
 # 确保 src 在 sys.path（本文件位于 src/ui/，其父目录的父目录是 src）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -383,6 +383,32 @@ def save_demand_to_path(vehicles, path, seed=None, source="generated",
                               generated_at=generated_at)
     target.write_text(text, encoding="utf-8")
     return target
+
+
+def move_downloaded_demand_to_project(downloads_dir=None) -> list[Path]:
+    """把下载文件夹里的 parking_demand*.json 一键移动到项目 data/demand_exports/。
+
+    downloads_dir: 下载文件夹路径；缺省用系统下载文件夹（Path.home()/Downloads）。
+    目标重名自动加序号防覆盖；跨盘移动由 shutil.move 处理。返回移动后的路径列表。
+    """
+    downloads = Path(downloads_dir) if downloads_dir else (Path.home() / "Downloads")
+    if not downloads.exists():
+        return []
+    candidates = sorted(downloads.glob("parking_demand*.json"),
+                        key=lambda p: p.stat().st_mtime)
+    DEMAND_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
+    moved: list[Path] = []
+    for src in candidates:
+        dst = DEMAND_EXPORT_DIR / src.name
+        if dst.exists():
+            stem, suffix = dst.stem, dst.suffix
+            i = 1
+            while (DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}").exists():
+                i += 1
+            dst = DEMAND_EXPORT_DIR / f"{stem}_{i}{suffix}"
+        shutil.move(str(src), str(dst))
+        moved.append(dst)
+    return moved
 
 
 def list_demand_files() -> list[tuple[Path, str]]:
