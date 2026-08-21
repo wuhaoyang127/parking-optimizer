@@ -914,7 +914,7 @@ def render_metrics_page():
             with csl:
                 move_name = st.text_input(
                     "移动后命名", "parking_demand.json", key="move_name_input",
-                    help="把下载文件夹里最新的 parking_demand*.json 移动过来并改成这个名字；"
+                    help="把 Downloads 文件夹里最新的 parking_demand*.json 移动过来并改成这个名字；"
                          "不带 .json 后缀会自动补上")
                 if st.button("📥 移动并命名", use_container_width=True,
                              key="move_downloaded_demand"):
@@ -922,8 +922,8 @@ def render_metrics_page():
                     if moved_path is not None:
                         st.success(f"✅ 已移动并命名：{moved_path.name}")
                     else:
-                        st.info("「下载」文件夹里没有找到 parking_demand*.json，"
-                                "请先点「浏览器下载」。")
+                        st.info(f"Downloads 文件夹（{get_downloads_dir()}）里没有找到 "
+                                f"parking_demand*.json，请先点「浏览器下载」。")
             with st.expander("💾 保存到项目文件夹（可改文件名与位置）", expanded=True):
                 cdir, cfile = st.columns(2)
                 with cdir:

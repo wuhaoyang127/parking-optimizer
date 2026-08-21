@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import sys, hashlib, json, math, shutil, time
+import sys, hashlib, json, math, os, shutil, time
 from pathlib import Path
 # 确保 src 在 sys.path（本文件位于 src/ui/，其父目录的父目录是 src）
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -361,14 +361,42 @@ def save_demand_to_path(vehicles, path, seed=None, source="generated",
     return target
 
 
+def get_downloads_dir() -> Path:
+    """获取 Windows 系统真实的 Downloads 文件夹路径。
+
+    优先读注册表 User Shell Folders（支持被重定向到 D 盘/OneDrive 等情况）；
+    失败时按常见位置回退（Downloads、下载、OneDrive/Downloads、OneDrive/下载）。
+    """
+    candidates: list[Path] = []
+    try:
+        import winreg
+        with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders") as key:
+            value, _ = winreg.QueryValueEx(
+                key, "{374DE290-123F-4565-9164-39C4925E467B}")
+            if value:
+                expanded = Path(os.path.expandvars(str(value)))
+                candidates.append(expanded if expanded.is_absolute() else Path.home() / expanded)
+    except Exception:
+        pass
+    home = Path.home()
+    candidates += [home / "Downloads", home / "下载",
+                   home / "OneDrive" / "Downloads", home / "OneDrive" / "下载"]
+    for c in candidates:
+        if c.exists() and c.is_dir():
+            return c
+    return home / "Downloads"
+
+
 def move_latest_downloaded_demand(downloads_dir=None, new_name: str | None = None) -> Path | None:
     """把下载文件夹里最新的 parking_demand*.json 移动到项目 data/demand_exports/，可重命名。
 
-    downloads_dir: 下载文件夹路径；缺省用系统下载文件夹（Path.home()/Downloads）。
+    downloads_dir: 下载文件夹路径；缺省用 get_downloads_dir()（系统真实 Downloads 目录）。
     new_name: 移动后的文件名；为空则保留原文件名。不带 .json 后缀自动补。
     目标重名自动加序号防覆盖；跨盘移动由 shutil.move 处理。无匹配文件返回 None。
     """
-    downloads = Path(downloads_dir) if downloads_dir else (Path.home() / "Downloads")
+    downloads = Path(downloads_dir) if downloads_dir else get_downloads_dir()
     if not downloads.exists():
         return None
     candidates = sorted(downloads.glob("parking_demand*.json"),
