@@ -189,7 +189,7 @@ Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反�
 
 ## 13. 最近重要变更
 
-- 2026-08-21：打备份 tag `backup-before-feedback-round2-20260821`；完成反馈优化第二批 `stage-d-feedback-round2`：需求时序条形图/车辆明细表/需求序列 JSON 导出导入 + 指标权重百分条/归一化/加权排名（与字典序并存切换），pytest 49 passed，自检与 AppTest 通过；后续补充需求序列「保存到项目文件夹 data/demand_exports/」与「从项目文件夹直接选择导入」（打 tag `backup-before-demand-save-20260821`），待用户验收；
+- 2026-08-21：打备份 tag `backup-before-feedback-round2-20260821`；完成反馈优化第二批 `stage-d-feedback-round2`：需求时序条形图/车辆明细表/需求序列 JSON 导出导入 + 指标权重百分条/归一化/加权排名（与字典序并存切换），pytest 49 passed，自检与 AppTest 通过；后续补充需求序列「另存为…（原生保存对话框，自选位置）」+「手动输入路径保存」+「从项目文件夹直接选择导入」（打 tag `backup-before-demand-save-20260821`），待用户验收；
 - 2026-08-18：完成「UI 拆分重构 + 交付体验优化」8 项优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/app.py 拆分 1827→90 行/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿，已验收；
 - 2026-08-18：打备份 tag `backup-before-ui-refactor-20260818`；
 - 2026-08-17：完成「算法接入接口 + 参数化」改造：PARAMS 参数声明规范、StrategyRegistry 统一注册表、策略/引擎/需求参数全暴露、融合算法示例 PeakOffPeakFusion、网页参数控件动态渲染 + 每策略 5 条调参历史、新算法接入说明文档；

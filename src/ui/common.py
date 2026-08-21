@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys, hashlib, json, math, time
 from pathlib import Path
 # 确保 src 在 sys.path（本文件位于 src/ui/，其父目录的父目录是 src）
@@ -345,18 +347,42 @@ def _plot_radar(all_m):
     return fig
 
 
-def save_demand_to_project(vehicles, seed=None, source="generated",
-                           generator_params=None, generated_at=None,
-                           prefix="demand") -> Path:
-    """把需求序列保存到项目 data/demand_exports/ 下，自动命名防覆盖，返回保存路径。"""
-    DEMAND_EXPORT_DIR.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%d_%H%M%S")
-    path = DEMAND_EXPORT_DIR / f"{prefix}_{source}_{stamp}.json"
+def save_demand_dialog(default_dir, default_name: str) -> str | None:
+    """弹出原生「另存为」对话框（本机运行时可用，类似 Word 另存为）。
+
+    返回用户选择的完整路径；无 GUI 环境（如 Streamlit Cloud）或用户取消时返回 None。
+    """
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        path = filedialog.asksaveasfilename(
+            initialdir=str(default_dir),
+            initialfile=default_name,
+            title="另存为需求序列 JSON",
+            defaultextension=".json",
+            filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")],
+        )
+        root.destroy()
+        return path or None
+    except Exception:
+        return None
+
+
+def save_demand_to_path(vehicles, path, seed=None, source="generated",
+                        generator_params=None, generated_at=None) -> Path:
+    """把需求序列写到用户指定路径（父目录不存在则创建），返回实际保存路径。"""
+    target = Path(path)
+    if target.suffix.lower() != ".json":
+        target = target.with_suffix(".json")
+    target.parent.mkdir(parents=True, exist_ok=True)
     text = export_demand_json(vehicles, seed=seed, source=source,
                               generator_params=generator_params,
                               generated_at=generated_at)
-    path.write_text(text, encoding="utf-8")
-    return path
+    target.write_text(text, encoding="utf-8")
+    return target
 
 
 def list_demand_files() -> list[tuple[Path, str]]:
