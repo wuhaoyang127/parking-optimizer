@@ -359,10 +359,18 @@ def render_system(role):
 
     # ── 导入布局 ──
     with tab3:
-        if not role["can_manage_data"]:
-            st.info("仅管理员可导入布局")
+        if not role["can_configure"]:
+            st.info("仅管理员/操作员可查看布局导入说明")
         else:
-            _render_import_layout()
+            with st.expander("📖 布局导入格式说明", expanded=False):
+                st.markdown(_load_layout_doc())
+                st.download_button("📥 下载示例布局 JSON",
+                                   json.dumps(EXAMPLE_LAYOUT, indent=2, ensure_ascii=False),
+                                   "example_layout.json", "application/json")
+            if not role["can_manage_data"]:
+                st.info("📤 上传布局仅管理员可操作")
+            else:
+                _render_import_layout()
 
 
 def _render_import_users():
@@ -432,15 +440,9 @@ def _load_layout_doc() -> str:
 
 
 def _render_import_layout():
-    """导入自定义停车场布局"""
+    """上传自定义停车场布局（仅管理员调用；说明文档在 tab3 公共区展示）"""
     if "custom_layouts" not in st.session_state:
         st.session_state.custom_layouts = {}
-
-    with st.expander("📖 布局导入格式说明", expanded=False):
-        st.markdown(_load_layout_doc())
-        st.download_button("📥 下载示例布局 JSON",
-                           json.dumps(EXAMPLE_LAYOUT, indent=2, ensure_ascii=False),
-                           "example_layout.json", "application/json")
 
     uploaded = st.file_uploader("📤 上传布局 JSON", type=["json"], key="import_layout")
     if uploaded is not None:
