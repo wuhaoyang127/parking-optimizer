@@ -115,6 +115,8 @@ ROLES = {
 }
 LAYOUT_BUILDERS = {}
 LAYOUTS = {"linear": "线形", "rectangle": "矩形", "lshape": "L形", "triangle": "三角形", "circle": "环形"}
+# 内置示意布局的 key（其余出现在 LAYOUT_BUILDERS 中的为导入的真实布局）
+BUILTIN_LAYOUT_KEYS = ["linear", "rectangle", "lshape", "triangle", "circle"]
 
 # 自定义布局 JSON 的最简示例（供「导入布局」页下载参考）
 EXAMPLE_LAYOUT = {

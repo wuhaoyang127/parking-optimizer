@@ -77,11 +77,28 @@ def render_settings(role):
 
     c1, c2 = st.columns(2)
     with c1:
-        layout_keys = list(LAYOUTS.keys()) + list(LAYOUT_BUILDERS.keys() - set(LAYOUTS.keys()))
-        layout_labels = {**LAYOUTS, **{k: k for k in LAYOUT_BUILDERS if k not in LAYOUTS}}
-        layout = st.selectbox("停车场布局", layout_keys,
-                              format_func=lambda x: layout_labels.get(x, x),
-                              disabled=disabled)
+        # 布局来源分组：内置示意布局（参数化生成）/ 导入的真实布局（JSON 定义）
+        builtin_keys = [k for k in BUILTIN_LAYOUT_KEYS if k in LAYOUT_BUILDERS]
+        custom_keys = [k for k in LAYOUT_BUILDERS if k not in BUILTIN_LAYOUT_KEYS]
+        source_options = ["内置示意布局"]
+        if custom_keys:
+            source_options.append("导入的真实布局")
+        if st.session_state.get("layout_source") not in source_options:
+            st.session_state.layout_source = source_options[0]
+        layout_source = st.radio(
+            "布局来源", source_options, horizontal=True,
+            key="layout_source", disabled=disabled,
+            help="内置示意布局按「车位数/纵深比例」参数化生成；导入的真实布局按上传的 JSON 定义")
+        if layout_source == "导入的真实布局":
+            layout = st.selectbox("真实布局", custom_keys,
+                                  format_func=lambda x: LAYOUTS.get(x, x),
+                                  disabled=disabled)
+            st.caption("真实布局：路网与车位来自导入的 JSON；车辆需求仍为仿真生成。"
+                       "车位数/纵深比例滑杆对该布局不生效。")
+        else:
+            layout = st.selectbox("内置布局", builtin_keys,
+                                  format_func=lambda x: LAYOUTS.get(x, x),
+                                  disabled=disabled)
         n_spots = st.slider("车位数", 5, 50, 15, disabled=disabled)
         tandem_ratio = st.slider("纵深比例", 0.0, 1.0, 0.5, 0.1, disabled=disabled)
     with c2:
