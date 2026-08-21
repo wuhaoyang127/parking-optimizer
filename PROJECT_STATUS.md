@@ -1,14 +1,14 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 8
-last_updated: 2026-08-18
+status_version: 9
+last_updated: 2026-08-21
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-ui-refactor
+current_milestone: stage-d-feedback-round2
 git_initialized: true
 current_branch: stage-d-deliver
 last_verified_commit: null
-current_exec_plan: null
+current_exec_plan: docs/plans/stage-d-feedback-round2.md
 latest_handoff: null
 next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-ui-refactor`（UI 拆分重构 + 交付体验优化，9 项已验收）；
+- **当前里程碑**：`stage-d-feedback-round2`（反馈优化第二批：需求时序可视化 + 加权多指标排名，已实现待验收）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：本轮 9 项已验收，待 Streamlit Cloud 重新部署后生效；
+- **当前唯一下一步**：按 `docs/plans/stage-d-feedback-round2.md` 实施两条最新反馈（需求时序图/车辆明细/需求序列导入导出 + 指标权重百分条/归一化/多算法加权排名）；
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -129,7 +129,7 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`，共 49 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
 - 备份存档：git tag `backup-before-ui-refactor-20260818`（2026-08-18）；更早 `backup-before-algo-interface-20260817`（2026-08-17）。
@@ -149,6 +149,8 @@ superseded
 | `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效 |
 | `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 有效 |
 | `src/parking_opt/strategies/fusion.py` | 融合算法接口 + 示例 | 有效 |
+| `src/parking_opt/io/demand_io.py` | 需求序列 JSON 导出/导入（schema v1） | 有效，本轮新增 |
+| `src/parking_opt/evaluation/ranking.py` | 加权多指标评分排名（归一化+方向） | 有效，本轮新增 |
 | `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
 | `docs/布局导入格式说明.md` | 自定义布局 JSON 格式说明 | 有效 |
 | `docs/research/05_最终路线决策.md` | 阶段A最终路线决策（权威路线文档） | 已批准 |
@@ -171,19 +173,13 @@ superseded
 
 ## 11. 当前唯一下一步
 
-「算法接入接口 + 参数可调 + 融合算法示例」已完成；本轮「UI 拆分重构 + 交付体验优化」9 项改动已验收（2026-08-18 用户确认），测试通过（pytest 24 passed、全角色×全页面 25 场景 0 异常），待 Streamlit Cloud 重新部署后生效：
+Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反馈优化第二批 `stage-d-feedback-round2`（计划：`docs/plans/stage-d-feedback-round2.md`），实施部署后两条最新用户反馈：
 
-1. [x] 数据备份导出排除登录凭证（session_token/password_hash 脱敏）；
-2. [x] 布局图道路边/车辆 trace 合并（85 边 88 trace → 5 trace）提速；
-3. [x] compare_all 加进度条 + CP-SAT 运行提示；
-4. [x] 反馈管理区分页（每页 10 条）；
-5. [x] 动态路径页按车辆编号分段选车（V0001~V0020）；
-6. [x] 登录限流收敛常量 LOGIN_MAX_FAILS / LOGIN_LOCK_SECONDS；
-7. [x] app.py 拆分（1827 行 → 90 行瘦入口）+ src/ui 模块化；
-8. [x] 算法说明收敛到策略类 DESCRIPTION 属性；
-9. [x] 系统状态页 use_container_width 废弃预警检测。
+1. [x] 需求时序可视化：到达/离开按时段分布条形图 + 每辆车到达/离开时间明细表（指标分析页新增区块，可下载 CSV）；
+2. [x] 需求序列导出/导入：JSON 单文件（含元数据 + 车辆列表），下次仿真可导入复用（相同种子/相同序列可复现）；
+3. [x] 加权多指标排名：指标权重百分条（总和=100，数据归一化）+ 多算法加权综合排名，与现有字典序优先级并存切换。
 
-后续：部署生效后，可进入真实布局数据接入、更多融合算法接入等下一批任务。
+上一轮「UI 拆分重构 + 交付体验优化」9 项已验收（2026-08-18），测试通过（pytest 24 passed、全角色×全页面 25 场景 0 异常）。
 
 ## 12. 预计后续需要用户确认
 
@@ -193,6 +189,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-21：打备份 tag `backup-before-feedback-round2-20260821`；完成反馈优化第二批 `stage-d-feedback-round2`：需求时序条形图/车辆明细表/需求序列 JSON 导出导入 + 指标权重百分条/归一化/加权排名（与字典序并存切换），pytest 49 passed，自检与 AppTest 通过，待用户验收；
 - 2026-08-18：完成「UI 拆分重构 + 交付体验优化」8 项优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/app.py 拆分 1827→90 行/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿，已验收；
 - 2026-08-18：打备份 tag `backup-before-ui-refactor-20260818`；
 - 2026-08-17：完成「算法接入接口 + 参数化」改造：PARAMS 参数声明规范、StrategyRegistry 统一注册表、策略/引擎/需求参数全暴露、融合算法示例 PeakOffPeakFusion、网页参数控件动态渲染 + 每策略 5 条调参历史、新算法接入说明文档；

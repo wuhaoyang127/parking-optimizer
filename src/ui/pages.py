@@ -27,6 +27,50 @@ def render_settings(role):
         strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
                                      format_func=lambda x: STRATEGY_LABELS[x])
 
+    # 需求数据源：自动生成（种子）或导入 JSON 文件（上次仿真导出的需求序列可复用）
+    st.markdown("#### 📦 需求数据源")
+    demand_source = st.radio(
+        "车辆到达/离场需求来源",
+        ["自动生成（随机种子）", "导入需求序列 JSON"],
+        horizontal=True,
+        help="导入后所有策略共用同一批车辆需求（保证对比公平），相同种子/相同序列可复现结果",
+    )
+    imported_vehicles = None
+    imported_meta = None
+    if demand_source.startswith("导入"):
+        up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
+                              help="文件来自「指标分析页 → 需求时序分布 → 下载需求序列 JSON」")
+        if up is not None:
+            try:
+                imported_vehicles, imported_meta = parse_demand_json(up.getvalue().decode("utf-8"))
+                st.session_state.imported_vehicles = imported_vehicles
+                st.session_state.imported_meta = imported_meta
+                first = imported_meta.get("generated_at", "未知")
+                seed_of_file = imported_meta.get("seed", "未知")
+                st.success(f"✅ 已解析 {imported_meta.get('vehicle_count')} 辆车（生成时间 {first}，种子 {seed_of_file}）。"
+                           f"运行仿真将以该序列为准，忽略「车辆数」设置。")
+            except ValueError as exc:
+                st.error(f"❌ 导入失败：{exc}")
+        elif st.session_state.get("imported_vehicles"):
+            # 本次会话之前已导入过（例如运行后回来），沿用缓存
+            imported_vehicles = st.session_state.imported_vehicles
+            imported_meta = st.session_state.get("imported_meta") or {}
+            st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
+                    f"重新上传文件可替换。")
+        st.download_button(
+            "📄 下载需求序列 JSON 示例",
+            export_demand_json(
+                generate_demand(total_vehicles=20, seed=42),
+                seed=42,
+                generator_params={"total_vehicles": 20, "sim_duration": 21600},
+            ).encode("utf-8"),
+            "demand_example.json", "application/json",
+            help="示例仅 20 辆车，演示文件格式；导入前可先用它试运行",
+        )
+    else:
+        st.session_state.imported_vehicles = None
+        st.session_state.imported_meta = None
+
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
         st.markdown(strategy_description(strategy_name))
         st.markdown("""
@@ -94,6 +138,11 @@ def render_settings(role):
             eng_kwargs = dict(car_speed=env_params["car_speed"],
                               max_wait_time=env_params["max_wait_time"])
 
+            # 需求来源：导入序列（所有 run/策略复用同一批，保证公平）或按种子生成
+            base_vehicles = list(imported_vehicles) if imported_vehicles else None
+            demand_source_used = "imported" if base_vehicles is not None else "generated"
+            sim_vehicles_candidate = None
+
             if strategy_name == "compare_all":
                 all_m = []
                 main_events_raw = None
@@ -106,7 +155,8 @@ def render_settings(role):
                     seed_metrics = []
                     for r in range(n_runs):
                         s = seed + r
-                        vehs = generate_demand(seed=s, **demand_kwargs)
+                        vehs = (list(base_vehicles) if base_vehicles is not None
+                                else generate_demand(seed=s, **demand_kwargs))
                         m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
                         seed_metrics.append(m)
                         # 主方法事件日志（取第一个种子），供「车辆动态路径」页展示
@@ -114,6 +164,7 @@ def render_settings(role):
                             main_events_raw = [{"time": e.time, "type": e.event_type.value,
                                                 "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                                 "metadata": dict(e.metadata)} for e in ev]
+                            sim_vehicles_candidate = list(vehs)
                     all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
@@ -124,7 +175,8 @@ def render_settings(role):
                 events_raw = None
                 for r in range(n_runs):
                     s = seed + r
-                    vehs = generate_demand(seed=s, **demand_kwargs)
+                    vehs = (list(base_vehicles) if base_vehicles is not None
+                            else generate_demand(seed=s, **demand_kwargs))
                     # 每次新建策略实例（避免有状态策略跨 run 污染）
                     strategy = StrategyRegistry.create(strategy_name, **strat_params)
                     m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
@@ -133,6 +185,7 @@ def render_settings(role):
                         events_raw = [{"time": e.time, "type": e.event_type.value,
                                        "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                        "metadata": dict(e.metadata)} for e in ev]
+                        sim_vehicles_candidate = list(vehs)
                 avg_m = _avg_metrics(seed_metrics)
                 st.session_state.sim_metrics = avg_m
                 st.session_state.sim_events_raw = events_raw
@@ -163,19 +216,26 @@ def render_settings(role):
             st.session_state.sim_spots = spots
             st.session_state.sim_pe = pe
             st.session_state.sim_n_spots = n_spots
-            st.session_state.sim_n_vehicles = n_vehicles
+            st.session_state.sim_n_vehicles = (len(sim_vehicles_candidate)
+                                               if sim_vehicles_candidate else n_vehicles)
             st.session_state.sim_seed = seed
             st.session_state.sim_n_runs = n_runs
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
             st.session_state.sim_strategy_params = strat_params
             st.session_state.sim_env_params = env_params
+            st.session_state.sim_vehicles = sim_vehicles_candidate
+            st.session_state.sim_demand_source = demand_source_used
+            st.session_state.sim_demand_meta = (imported_meta or {}
+                                                if demand_source_used == "imported"
+                                                else {"seed": seed, "generator_params": demand_kwargs})
 
             # 计算理论最优（CP-SAT 离线全信息上界，最多约 10 秒）
             cpsat_rate = None
             with st.spinner("计算 CP-SAT 理论最优（最多约 10 秒）..."):
                 try:
-                    cps_vehs = generate_demand(seed=seed, **demand_kwargs)
+                    cps_vehs = (list(base_vehicles) if base_vehicles is not None
+                                else generate_demand(seed=seed, **demand_kwargs))
                     cps_lot = ParkingLot(spots)
                     cps_res = CPSatBaseline(cps_lot, pe).solve(cps_vehs)
                     if cps_res is not None:
@@ -679,47 +739,93 @@ def render_metrics_page():
     if st.session_state.get("sim_all_metrics"):
         st.markdown("### 🏆 多策略对比")
         n_runs = st.session_state.get("sim_n_runs", 1)
-        st.caption(f"基于 {n_runs} 次不同随机种子的平均值（降低随机波动）")
+        demand_source = st.session_state.get("sim_demand_source", "generated")
+        src_note = ("同一导入需求序列" if demand_source == "imported"
+                    else f"{n_runs} 次不同随机种子的平均值（降低随机波动）")
+        st.caption(f"基于 {src_note}")
         all_m = st.session_state.sim_all_metrics
-        # 按用户定义的优先级做字典序排序
-        priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
-        def sort_key(m):
-            key = []
-            for name in priority_order:
-                if name not in PRIORITY_METRICS:
-                    continue
-                field, direction, _ = PRIORITY_METRICS[name]
-                val = m.get(field, 0)
-                key.append(-val if direction == "max" else val)
-            return tuple(key)
-        sorted_m = sorted(all_m, key=sort_key)
-        best = sorted_m[0]
-        df = pd.DataFrame(sorted_m)[["strategy","satisfaction_rate","spatial_utilization","avg_wait_time_s",
-                                     "shift_count","shift_distance_m","total_drive_distance_m",
-                                     "rejected_count","runtime_s"]]
-        df.columns = ["策略","满足率","利用率","平均等待(s)","移位次数","移位距离(m)","行驶距离(m)","拒绝数","耗时(s)"]
-        st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"],best["strategy"])}** 满足率 {best["satisfaction_rate"]:.1%}')
-        cpsat_rate = st.session_state.get("sim_cpsat_rate")
-        if cpsat_rate is not None:
-            gap = best["satisfaction_rate"] - cpsat_rate
-            st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，最佳策略距最优 {gap:.1%}')
 
-        def _highlight_best(row):
-            # 第一行（按优先级排序后的最优策略）标绿
-            return ['background-color: #d4edda' if row.name == 0 else '' for _ in row]
+        # 排序模式：字典序（原有，保留）/ 加权评分（新增）
+        rank_mode = st.radio("排序模式", ["字典序优先级", "加权评分"],
+                             horizontal=True, key="rank_mode")
 
-        styled = (df.style
-                  .format({"满足率":"{:.1%}","利用率":"{:.1%}","平均等待(s)":"{:.1f}",
-                           "移位距离(m)":"{:.1f}","行驶距离(m)":"{:.1f}","耗时(s)":"{:.3f}"})
-                  .apply(_highlight_best, axis=1))
-        st.dataframe(styled, use_container_width=True, hide_index=True)
+        if rank_mode == "加权评分":
+            st.markdown("#### 🎚️ 指标权重（总和应为 100，已自动归一化）")
+            weights_by_label = {}
+            default_weights = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
+            wcols = st.columns(4)
+            for i, name in enumerate(list(PRIORITY_METRICS.keys())):
+                with wcols[i % 4]:
+                    weights_by_label[name] = st.number_input(
+                        name, 0, 100, int(default_weights.get(name, 10)), step=5,
+                        key=f"weight_{name}",
+                        help=f"{PRIORITY_METRICS[name][2]}（"
+                             f"{'越大越好' if PRIORITY_METRICS[name][1] == 'max' else '越小越好'}）")
+            st.session_state.rank_weights = weights_by_label
+            total_w = sum(weights_by_label.values())
+            if total_w != 100:
+                st.warning(f"⚠️ 权重总和为 {total_w}（应为 100），将按比例归一化后计算排名")
+            else:
+                st.caption("权重总和 = 100 ✅")
+            wdf, ranked = weighted_rank_df(all_m, weights_by_label)
+            best = ranked[0]
+            st.markdown(f'> 🏆 加权推荐: **{STRATEGY_LABELS.get(best["strategy"], best["strategy"])}**'
+                        f' 综合得分 {best["weighted_score"]:.3f}（满分 1.0）')
+            cpsat_rate = st.session_state.get("sim_cpsat_rate")
+            if cpsat_rate is not None:
+                gap = best["satisfaction_rate"] - cpsat_rate
+                st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，'
+                            f'推荐策略距最优 {gap:.1%}')
+            df = wdf
+            styled = (df.style
+                      .format({"综合得分": "{:.3f}", "满足率": "{:.1%}", "利用率": "{:.1%}",
+                               "平均等待(s)": "{:.1f}", "移位距离(m)": "{:.1f}",
+                               "行驶距离(m)": "{:.1f}", "耗时(s)": "{:.3f}"})
+                      .apply(lambda row: ['background-color: #d4edda' if row.name == 0
+                                          else '' for _ in row], axis=1))
+            st.dataframe(styled, use_container_width=True, hide_index=True)
+            st.download_button("📥 下载加权排名 CSV", wdf.to_csv(index=False).encode('utf-8'),
+                               "parking_weighted_ranking.csv", "text/csv")
+        else:
+            # 按用户定义的优先级做字典序排序（原有逻辑，保留）
+            priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
+            def sort_key(m):
+                key = []
+                for name in priority_order:
+                    if name not in PRIORITY_METRICS:
+                        continue
+                    field, direction, _ = PRIORITY_METRICS[name]
+                    val = m.get(field, 0)
+                    key.append(-val if direction == "max" else val)
+                return tuple(key)
+            sorted_m = sorted(all_m, key=sort_key)
+            best = sorted_m[0]
+            df = pd.DataFrame(sorted_m)[["strategy", "satisfaction_rate", "spatial_utilization",
+                                         "avg_wait_time_s", "shift_count", "shift_distance_m",
+                                         "total_drive_distance_m", "rejected_count", "runtime_s"]]
+            df.columns = ["策略", "满足率", "利用率", "平均等待(s)", "移位次数",
+                          "移位距离(m)", "行驶距离(m)", "拒绝数", "耗时(s)"]
+            st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"], best["strategy"])}**'
+                        f' 满足率 {best["satisfaction_rate"]:.1%}')
+            cpsat_rate = st.session_state.get("sim_cpsat_rate")
+            if cpsat_rate is not None:
+                gap = best["satisfaction_rate"] - cpsat_rate
+                st.markdown(f'> 🎯 理论最优（CP-SAT 离线全信息）满足率 **{cpsat_rate:.1%}**，'
+                            f'最佳策略距最优 {gap:.1%}')
+            styled = (df.style
+                      .format({"满足率": "{:.1%}", "利用率": "{:.1%}", "平均等待(s)": "{:.1f}",
+                               "移位距离(m)": "{:.1f}", "行驶距离(m)": "{:.1f}", "耗时(s)": "{:.3f}"})
+                      .apply(lambda row: ['background-color: #d4edda' if row.name == 0
+                                          else '' for _ in row], axis=1))
+            st.dataframe(styled, use_container_width=True, hide_index=True)
+            st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
+                               "parking_comparison.csv", "text/csv")
+
         c1, c2 = st.columns(2)
         with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
         with c2: st.bar_chart(df.set_index("策略")["移位次数"], height=200)
         st.markdown("#### 📡 多维指标雷达图（外圈=更好）")
         st.plotly_chart(_plot_radar(all_m), use_container_width=True)
-        st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
-                           "parking_comparison.csv", "text/csv")
     else:
         # 单策略详情
         m = st.session_state.get("sim_metrics")
@@ -745,6 +851,44 @@ def render_metrics_page():
                 st.warning(f"⚠️ 降级: {buffers} 缓冲失败, {rejs} 拒绝")
             st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
                                f"parking_{m.get('strategy','result')}.csv", "text/csv")
+
+    # ── 需求时序分布 + 车辆明细（反馈优化第二批）──
+    st.markdown("---")
+    st.markdown("### 🕒 需求时序分布与车辆明细")
+    events_raw = st.session_state.get("sim_events_raw")
+    demand_source = st.session_state.get("sim_demand_source", "generated")
+    if events_raw:
+        if demand_source == "imported":
+            st.caption("事件日志来自导入的需求序列；「全部对比」模式下为当前主方法（时长感知贪心）的事件日志。")
+        else:
+            st.caption("事件日志来自最近一次仿真；「全部对比」模式下为当前主方法（时长感知贪心）的事件日志。")
+        hist = build_demand_histogram(events_raw)
+        if hist is not None:
+            st.plotly_chart(hist, use_container_width=True)
+        else:
+            st.info("暂无到达/离场事件")
+        rows = build_vehicle_detail_rows(events_raw)
+        if rows:
+            vdf = pd.DataFrame(rows)
+            st.dataframe(vdf, use_container_width=True, hide_index=True)
+            st.download_button("📥 下载车辆明细 CSV",
+                               vdf.to_csv(index=False).encode('utf-8-sig'),
+                               "parking_vehicle_details.csv", "text/csv")
+        vehs = st.session_state.get("sim_vehicles")
+        if vehs:
+            meta = st.session_state.get("sim_demand_meta") or {}
+            json_str = export_demand_json(
+                vehs,
+                seed=meta.get("seed"),
+                source=demand_source,
+                generator_params=meta.get("generator_params"),
+                generated_at=meta.get("generated_at"),
+            )
+            st.download_button("📥 下载需求序列 JSON（可下次导入复用）",
+                               json_str.encode("utf-8"),
+                               "parking_demand.json", "application/json")
+    else:
+        st.info("暂无事件日志（请先运行仿真）")
 
     # ── 参数调优历史（每策略最近 5 次）──
     history = st.session_state.get("run_history", {})

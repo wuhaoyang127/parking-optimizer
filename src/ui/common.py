@@ -51,6 +51,8 @@ from parking_opt.simulation.defaults import (CAR_SPEED, MAX_WAIT_TIME, SIM_DURAT
                                              DURATION_MIN, DURATION_MAX, PEAK_RATIO, ERROR_RATIO)
 from parking_opt.strategies import StrategyRegistry
 from parking_opt.evaluation.metrics import compute_metrics
+from parking_opt.evaluation.ranking import weighted_rank, DEFAULT_WEIGHTS as RANK_DEFAULT_WEIGHTS
+from parking_opt.io.demand_io import export_demand_json, parse_demand_json
 from parking_opt.optimization.cpsat_baseline import CPSatBaseline
 from viz import draw_parking_layout
 
@@ -74,6 +76,12 @@ PRIORITY_METRICS = {
 }
 # 默认优先级顺序（从高到低）
 DEFAULT_PRIORITY = ["满足率", "利用率", "平均等待", "移位次数", "移位距离", "行驶距离", "运行耗时"]
+
+# 加权评分默认权重（中文指标名 -> 百分值，总和 100）；字段名见 ranking.DEFAULT_WEIGHTS
+DEFAULT_WEIGHTS_BY_LABEL = {
+    "满足率": 30, "利用率": 25, "平均等待": 15, "移位次数": 10,
+    "移位距离": 10, "行驶距离": 5, "运行耗时": 5,
+}
 
 def strategy_description(name: str) -> str:
     """返回策略说明：优先读策略类的 DESCRIPTION 属性，新算法接入后无需改这里即可自动展示。"""
@@ -322,14 +330,119 @@ def _plot_radar(all_m):
                        (1 - (v - lo) / (hi - lo) if direction == "min" else (v - lo) / (hi - lo)))
                       for v in vals]
     fig = go.Figure()
-    for m in all_m:
+    for idx, m in enumerate(all_m):
         nm = STRATEGY_LABELS.get(m["strategy"], m["strategy"])
-        vals = [norm[d[0]][i] for i, d in enumerate(dims)]
+        vals = [norm[d[0]][idx] for d in dims]
         fig.add_trace(go.Scatterpolar(r=vals + [vals[0]], theta=labels + [labels[0]],
                                       name=nm, fill="toself", opacity=0.45))
     fig.update_layout(height=420, margin=dict(l=50, r=50, t=50, b=50),
                       legend=dict(orientation="h", yanchor="bottom", y=-0.15),
                       polar=dict(radialaxis=dict(range=[0, 1], showticklabels=False)))
+    return fig
+
+
+def weighted_rank_df(all_m, weights_by_label):
+    """按中文指标名权重对多策略指标做加权评分，返回 (DataFrame, 排序后的带分列表)。"""
+    weights = {}
+    for label, w in weights_by_label.items():
+        if label in PRIORITY_METRICS:
+            weights[PRIORITY_METRICS[label][0]] = w
+    ranked = weighted_rank(all_m, weights)
+    df = pd.DataFrame(ranked)[["rank", "strategy", "weighted_score",
+                               "satisfaction_rate", "spatial_utilization",
+                               "avg_wait_time_s", "shift_count", "shift_distance_m",
+                               "total_drive_distance_m", "rejected_count", "runtime_s"]]
+    df.columns = ["排名", "策略", "综合得分", "满足率", "利用率", "平均等待(s)",
+                  "移位次数", "移位距离(m)", "行驶距离(m)", "拒绝数", "耗时(s)"]
+    return df, ranked
+
+
+def _fmt_clock(seconds):
+    """把秒数格式化为 HH:MM:SS；None 返回 '-'。"""
+    if seconds is None:
+        return "-"
+    sec = int(round(float(seconds)))
+    h, rem = divmod(sec, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+def build_vehicle_detail_rows(events_raw):
+    """从事件日志（dict 列表）提取每辆车的到达/离开明细，返回 list[dict]。"""
+    by_vid = {}
+    for e in events_raw:
+        vid = str(e.get("vehicle_id", "") or "")
+        if not vid:
+            continue
+        rec = by_vid.setdefault(vid, {
+            "arrival": None, "assigned_spot": "", "entry": None, "departure": None,
+            "wait_start": None, "wait_end": None, "rejected": False,
+        })
+        et = e.get("type")
+        t = e.get("time", 0)
+        if et == "vehicle_arrival":
+            rec["arrival"] = t
+        elif et == "parking_assigned":
+            rec["assigned_spot"] = str(e.get("spot_id", "") or "")
+        elif et == "spot_entry":
+            rec["entry"] = t
+        elif et == "departure" and rec["departure"] is None:
+            rec["departure"] = t
+        elif et == "wait_start":
+            rec["wait_start"] = t
+        elif et == "wait_end":
+            rec["wait_end"] = t
+        elif et == "rejected":
+            rec["rejected"] = True
+
+    rows = []
+    for vid in sorted(by_vid):
+        rec = by_vid[vid]
+        wait = None
+        if rec["wait_start"] is not None:
+            end = rec["wait_end"] if rec["wait_end"] is not None else rec["arrival"]
+            if end is None:
+                end = rec["wait_start"]
+            wait = round(float(end) - float(rec["wait_start"]), 1)
+        rows.append({
+            "车辆编号": vid,
+            "到达时间(s)": round(rec["arrival"], 1) if rec["arrival"] is not None else None,
+            "到达时刻": _fmt_clock(rec["arrival"]),
+            "分配车位": rec["assigned_spot"] or "-",
+            "进入车位(s)": round(rec["entry"], 1) if rec["entry"] is not None else None,
+            "离场时间(s)": round(rec["departure"], 1) if rec["departure"] is not None else None,
+            "离场时刻": _fmt_clock(rec["departure"]),
+            "等待时长(s)": wait,
+            "状态": "拒绝" if rec["rejected"] else "正常",
+        })
+    return rows
+
+
+def build_demand_histogram(events_raw, bin_hours=1):
+    """到达/离场按时段分布的条形图（plotly Figure）；无事件返回 None。"""
+    arrivals = [float(e["time"]) for e in events_raw if e.get("type") == "vehicle_arrival"]
+    departures = [float(e["time"]) for e in events_raw if e.get("type") == "departure"]
+    if not arrivals and not departures:
+        return None
+
+    bin_s = bin_hours * 3600
+    max_t = max(arrivals + departures)
+    n_bins = max(1, int(math.ceil(max_t / bin_s)))
+    labels, a_counts, d_counts = [], [0] * n_bins, [0] * n_bins
+    for t in arrivals:
+        a_counts[min(int(t // bin_s), n_bins - 1)] += 1
+    for t in departures:
+        d_counts[min(int(t // bin_s), n_bins - 1)] += 1
+    for i in range(n_bins):
+        labels.append(f"{i * bin_hours}-{i * bin_hours + bin_hours}h")
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(name="到达", x=labels, y=a_counts, marker_color="#3b82f6"))
+    fig.add_trace(go.Bar(name="离场", x=labels, y=d_counts, marker_color="#f59e0b"))
+    fig.update_layout(barmode="group", height=320,
+                      margin=dict(l=30, r=30, t=40, b=30),
+                      xaxis_title="仿真时段", yaxis_title="车辆数",
+                      legend=dict(orientation="h", yanchor="bottom", y=1.02))
     return fig
 
 
