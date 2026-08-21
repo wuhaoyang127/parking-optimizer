@@ -127,31 +127,55 @@ def render_settings(role):
         env_params["duration_min"], env_params["duration_max"] = \
             env_params["duration_max"], env_params["duration_min"]
 
-    # 算法评估优先级（可自主调整，字典序排序）
-    st.markdown("#### 🎯 算法评估优先级")
-    st.caption("勾选顺序即优先级（从上到下 = 从高到低）；取消勾选后按新顺序重新勾选即可调整")
-    priority_order = st.multiselect(
-        "评估指标排序",
-        options=list(PRIORITY_METRICS.keys()),
-        default=st.session_state.get("priority_order", DEFAULT_PRIORITY),
-        key="priority_order_sel",
-        format_func=lambda n: f"{n} {'↑越大越好' if PRIORITY_METRICS[n][1]=='max' else '↓越小越好'}",
-        disabled=disabled,
-    )
-    if not priority_order:
-        priority_order = DEFAULT_PRIORITY
-        st.warning("至少保留一个指标，已恢复默认顺序")
-    st.session_state.priority_order = priority_order
+    # 算法排名设置（加权评分 / 字典序优先级），运行后指标分析页按此展示
+    st.markdown("#### 🏆 算法排名设置")
+    if "rank_mode" not in st.session_state:
+        st.session_state.rank_mode = "加权评分"
+    rank_mode = st.radio("排序模式", ["加权评分", "字典序优先级"],
+                         horizontal=True, key="rank_mode", disabled=disabled)
 
-    # 优先级变化时保存到 Supabase（登录用户，跨会话持久）
-    if st.session_state.get("priority_order_saved") != priority_order:
-        token = st.session_state.get("token")
-        if token:
-            try:
-                auth_set_pref(token, "algorithm_priority", json.dumps(priority_order))
-                st.session_state.priority_order_saved = priority_order
-            except Exception:
-                pass
+    if rank_mode == "加权评分":
+        st.caption("指标权重（总和应为 100，将自动归一化；指标先 min-max 归一化再加权求和）")
+        weights_by_label = {}
+        default_weights = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
+        wcols = st.columns(4)
+        for i, name in enumerate(list(PRIORITY_METRICS.keys())):
+            with wcols[i % 4]:
+                weights_by_label[name] = st.number_input(
+                    name, 0, 100, int(default_weights.get(name, 10)), step=5,
+                    key=f"rank_weight_{name}", disabled=disabled,
+                    help=f"{PRIORITY_METRICS[name][2]}（"
+                         f"{'越大越好' if PRIORITY_METRICS[name][1] == 'max' else '越小越好'}）")
+        total_w = sum(weights_by_label.values())
+        if total_w != 100:
+            st.warning(f"⚠️ 权重总和为 {total_w}（应为 100），计算排名时将按比例归一化")
+        else:
+            st.caption("权重总和 = 100 ✅")
+        st.session_state.rank_weights = weights_by_label
+    else:
+        st.caption("勾选顺序即优先级（从上到下 = 从高到低）；取消勾选后按新顺序重新勾选即可调整")
+        priority_order = st.multiselect(
+            "评估指标排序",
+            options=list(PRIORITY_METRICS.keys()),
+            default=st.session_state.get("priority_order", DEFAULT_PRIORITY),
+            key="priority_order_sel",
+            format_func=lambda n: f"{n} {'↑越大越好' if PRIORITY_METRICS[n][1]=='max' else '↓越小越好'}",
+            disabled=disabled,
+        )
+        if not priority_order:
+            priority_order = DEFAULT_PRIORITY
+            st.warning("至少保留一个指标，已恢复默认顺序")
+        st.session_state.priority_order = priority_order
+
+        # 优先级变化时保存到 Supabase（登录用户，跨会话持久）
+        if st.session_state.get("priority_order_saved") != priority_order:
+            token = st.session_state.get("token")
+            if token:
+                try:
+                    auth_set_pref(token, "algorithm_priority", json.dumps(priority_order))
+                    st.session_state.priority_order_saved = priority_order
+                except Exception:
+                    pass
 
     if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):
@@ -753,17 +777,31 @@ def render_metrics_page():
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    # 算法筛选优先级说明（动态，跟随用户在仿真设置页的调整；仅在字典序模式下生效）
-    st.markdown("### 🎯 算法筛选优先级（仅字典序模式生效）")
-    st.caption("当前默认排序为「加权评分」，可在下方多策略对比区切换；此优先级仅在切到「字典序优先级」时使用")
-    priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
-    prio = pd.DataFrame([
-        [i + 1, name,
-         "越高越好" if PRIORITY_METRICS[name][1] == "max" else "越低越好",
-         PRIORITY_METRICS[name][2]]
-        for i, name in enumerate(priority_order)
-    ], columns=["优先级", "评估指标", "方向", "说明"])
-    st.dataframe(prio, use_container_width=True, hide_index=True)
+    # 排名设置展示：与仿真设置页一致（权重 / 优先级）
+    rank_mode = st.session_state.get("rank_mode", "加权评分")
+    if rank_mode == "加权评分":
+        st.markdown("### 🎚️ 指标权重（在仿真设置页调整）")
+        weights_show = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
+        wsum = sum(weights_show.values())
+        wtab = pd.DataFrame([
+            [name, weights_show.get(name, 0),
+             "越高越好" if PRIORITY_METRICS[name][1] == "max" else "越低越好",
+             PRIORITY_METRICS[name][2]]
+            for name in list(PRIORITY_METRICS.keys())
+        ], columns=["指标", "权重", "方向", "说明"])
+        st.dataframe(wtab, use_container_width=True, hide_index=True)
+        st.caption(f"权重总和 {wsum}{'（≠100，排名时按比例归一化）' if wsum != 100 else ' = 100 ✅'}")
+    else:
+        st.markdown("### 🎯 算法筛选优先级（字典序）")
+        st.caption("按以下顺序逐项比较：先比第一项，相同再比下一项")
+        priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
+        prio = pd.DataFrame([
+            [i + 1, name,
+             "越高越好" if PRIORITY_METRICS[name][1] == "max" else "越低越好",
+             PRIORITY_METRICS[name][2]]
+            for i, name in enumerate(priority_order)
+        ], columns=["优先级", "评估指标", "方向", "说明"])
+        st.dataframe(prio, use_container_width=True, hide_index=True)
     st.markdown("---")
 
     # 多策略对比
@@ -776,30 +814,12 @@ def render_metrics_page():
         st.caption(f"基于 {src_note}")
         all_m = st.session_state.sim_all_metrics
 
-        # 排序模式：加权评分（默认）/ 字典序优先级（原有，保留）
-        if "rank_mode" not in st.session_state:
-            st.session_state.rank_mode = "加权评分"
-        rank_mode = st.radio("排序模式", ["加权评分", "字典序优先级"],
-                             horizontal=True, key="rank_mode")
+        # 排序模式与权重在「仿真设置 → 算法排名设置」中配置，此处按配置展示
+        rank_mode = st.session_state.get("rank_mode", "加权评分")
 
         if rank_mode == "加权评分":
-            st.markdown("#### 🎚️ 指标权重（总和应为 100，已自动归一化）")
-            weights_by_label = {}
-            default_weights = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
-            wcols = st.columns(4)
-            for i, name in enumerate(list(PRIORITY_METRICS.keys())):
-                with wcols[i % 4]:
-                    weights_by_label[name] = st.number_input(
-                        name, 0, 100, int(default_weights.get(name, 10)), step=5,
-                        key=f"weight_{name}",
-                        help=f"{PRIORITY_METRICS[name][2]}（"
-                             f"{'越大越好' if PRIORITY_METRICS[name][1] == 'max' else '越小越好'}）")
-            st.session_state.rank_weights = weights_by_label
-            total_w = sum(weights_by_label.values())
-            if total_w != 100:
-                st.warning(f"⚠️ 权重总和为 {total_w}（应为 100），将按比例归一化后计算排名")
-            else:
-                st.caption("权重总和 = 100 ✅")
+            weights_by_label = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
+            st.caption("当前为加权评分模式；权重在「仿真设置 → 算法排名设置」中调整")
             wdf, ranked = weighted_rank_df(all_m, weights_by_label)
             best = ranked[0]
             st.markdown(f'> 🏆 加权推荐: **{STRATEGY_LABELS.get(best["strategy"], best["strategy"])}**'
@@ -864,6 +884,11 @@ def render_metrics_page():
         m = st.session_state.get("sim_metrics")
         if m:
             st.markdown(f"### 📈 策略: {STRATEGY_LABELS.get(m['strategy'], m['strategy'])}")
+            if st.session_state.get("rank_mode", "加权评分") == "加权评分":
+                st.caption("当前为加权评分模式（权重见上方表格）；单策略无对比基准，此处展示该策略各指标，"
+                           "加权排名请运行「全部对比」。")
+            else:
+                st.caption("当前为字典序优先级模式（优先级见上方表格）。")
             c1, c2, c3, c4 = st.columns(4)
             with c1: _metric("满足率", f"{m['satisfaction_rate']:.1%}", "good" if m['satisfaction_rate']>0.5 else "bad")
             with c2: _metric("空间利用率", f"{m['spatial_utilization']:.1%}")
