@@ -910,6 +910,7 @@ def render_metrics_page():
                 st.download_button("📥 浏览器下载",
                                    json_str.encode("utf-8"),
                                    "parking_demand.json", "application/json")
+            with csl:
                 if st.button("📥 移动下载的需求序列到项目文件夹",
                              use_container_width=True, key="move_downloaded_demand",
                              help="把浏览器下载到「下载」文件夹的 parking_demand*.json 一键移动到 data/demand_exports/"):
@@ -921,27 +922,7 @@ def render_metrics_page():
                     else:
                         st.info("「下载」文件夹里没有找到 parking_demand*.json，"
                                 "请先点上方「浏览器下载」。")
-            with csl:
-                if st.button("💾 另存为…（自选保存位置）",
-                             use_container_width=True, key="save_demand_as",
-                             help="类似 Word 另存为：本机运行时弹出保存对话框，可自行选择保存位置与文件名"):
-                    chosen = save_demand_dialog(DEMAND_EXPORT_DIR, default_name)
-                    if chosen:
-                        try:
-                            saved_path = save_demand_to_path(
-                                vehs, chosen,
-                                seed=meta.get("seed"),
-                                source=demand_source,
-                                generator_params=meta.get("generator_params"),
-                                generated_at=meta.get("generated_at"),
-                            )
-                            st.success(f"✅ 已保存：{saved_path}")
-                        except OSError as exc:
-                            st.error(f"❌ 保存失败：{exc}")
-                    else:
-                        st.info("当前环境无法弹出保存对话框（例如 Streamlit Cloud），"
-                                "请在下方「或保存到指定位置」中输入路径保存。")
-            with st.expander("📂 或保存到指定位置（手动输入路径）"):
+            with st.expander("💾 保存到项目文件夹（可改文件名与位置）", expanded=True):
                 cdir, cfile = st.columns(2)
                 with cdir:
                     save_dir = st.text_input(
