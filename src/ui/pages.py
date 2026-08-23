@@ -16,6 +16,7 @@ def render_settings(role):
         "车辆到达/离场需求来源",
         ["自动生成（随机种子）", "导入需求序列 JSON"],
         horizontal=True,
+        disabled=disabled,
         help="导入后所有策略共用同一批车辆需求（保证对比公平），相同种子/相同序列可复现结果",
     )
     import_mode = demand_source.startswith("导入")
@@ -23,6 +24,7 @@ def render_settings(role):
     imported_meta = None
     if import_mode:
         up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
+                              disabled=disabled,
                               help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
         if up is not None:
             try:
@@ -43,6 +45,7 @@ def render_settings(role):
                 sel = st.selectbox(
                     "或从项目文件夹选择（data/demand_exports/）",
                     ["（不选择）"] + labels, key="local_demand_sel",
+                    disabled=disabled,
                     help="选择后立即解析该文件作为本次需求序列；文件由「指标分析页 → 保存到项目文件夹」生成",
                 )
                 if sel != "（不选择）":
@@ -118,9 +121,11 @@ def render_settings(role):
                            help="随机系统单次结果波动大，多种子取平均更稳定；次数越多越准但越慢")
         wait_policy = st.selectbox("等待调度策略", ["fifo", "shortest"],
                                    format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
+                                   disabled=disabled,
                                    help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
         strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
-                                     format_func=lambda x: STRATEGY_LABELS[x])
+                                     format_func=lambda x: STRATEGY_LABELS[x],
+                                     disabled=disabled)
 
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
         st.markdown(strategy_description(strategy_name))
