@@ -518,15 +518,30 @@ def _render_import_layout():
     # 已导入的布局列表
     if st.session_state.custom_layouts:
         st.divider()
-        st.caption("**已导入的布局：**")
+        st.caption("**已导入的布局（管理）：**")
         for lid, linfo in st.session_state.custom_layouts.items():
             c1, c2 = st.columns([4, 1])
             c1.write(f"📐 **{linfo['name']}** ({len(linfo['spots'])}车位)")
-            if c2.button("删除", key=f"del_layout_{lid}"):
-                del st.session_state.custom_layouts[lid]
-                LAYOUT_BUILDERS.pop(lid, None)
-                LAYOUTS.pop(lid, None)
-                st.rerun()
+            confirm_key = f"confirm_del_{lid}"
+            if not st.session_state.get(confirm_key):
+                if c2.button("🗑 删除", key=f"del_layout_{lid}",
+                             help=f"删除布局「{linfo['name']}」", type="primary"):
+                    st.session_state[confirm_key] = True
+                    st.rerun()
+            else:
+                with c2:
+                    st.warning(f"确认删除「{linfo['name']}」？")
+                    cc1, cc2 = st.columns(2)
+                    if cc1.button("✅ 确认", key=f"del_ok_{lid}", type="primary"):
+                        st.session_state.custom_layouts.pop(lid, None)
+                        LAYOUT_BUILDERS.pop(lid, None)
+                        LAYOUTS.pop(lid, None)
+                        st.session_state.pop(confirm_key, None)
+                        st.success(f"已删除布局「{linfo['name']}」")
+                        st.rerun()
+                    if cc2.button("取消", key=f"del_cancel_{lid}"):
+                        st.session_state.pop(confirm_key, None)
+                        st.rerun()
 
 
 def _build_custom(data):
