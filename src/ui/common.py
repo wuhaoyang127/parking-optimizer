@@ -801,6 +801,89 @@ def _load_run_history():
         pass
 
 
+# 自定义布局持久化（Supabase 偏好，用户级）：布局真相源为 session_state.custom_layouts，
+# 全局 LAYOUT_BUILDERS/LAYOUTS 仅作为渲染时的镜像，避免"进程残留但删不掉"。
+CUSTOM_LAYOUTS_PREF_KEY = "custom_layouts_v1"
+
+
+def _sync_custom_layouts_to_globals():
+    """以 session_state.custom_layouts 为真相源，重建全局字典中的自定义布局项。"""
+    customs = st.session_state.get("custom_layouts", {}) or {}
+    for k in [k for k in LAYOUT_BUILDERS if k not in BUILTIN_LAYOUT_KEYS]:
+        LAYOUT_BUILDERS.pop(k, None)
+    for k in [k for k in LAYOUTS if k not in BUILTIN_LAYOUT_KEYS]:
+        LAYOUTS.pop(k, None)
+    for lid, linfo in customs.items():
+        data = linfo.get("data")
+        if not isinstance(data, dict):
+            continue
+        net, spots = linfo.get("net"), linfo.get("spots")
+        if net is None or spots is None:
+            try:
+                net, spots = build_layout_from_json(data)
+                linfo["net"], linfo["spots"] = net, spots
+            except Exception:
+                continue
+        LAYOUT_BUILDERS[lid] = (lambda ns=len(spots), tr=0.0, d=data: build_layout_from_json(d))
+        LAYOUTS[lid] = linfo.get("name", lid)
+
+
+def restore_custom_layouts():
+    """登录/恢复会话后，从 Supabase 恢复自定义布局列表。"""
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        val = auth_get_pref(token, CUSTOM_LAYOUTS_PREF_KEY)
+        if not val:
+            return
+        items = json.loads(val)
+        if not isinstance(items, list):
+            return
+        customs = {}
+        for it in items:
+            if not isinstance(it, dict):
+                continue
+            name = it.get("name")
+            data = it.get("data")
+            if not name or not isinstance(data, dict):
+                continue
+            lid = str(name).lower().replace(" ", "_")
+            try:
+                net, spots = build_layout_from_json(data)
+            except Exception:
+                continue
+            customs[lid] = {"name": name, "data": data, "net": net, "spots": spots}
+        if customs:
+            st.session_state.custom_layouts = customs
+            _sync_custom_layouts_to_globals()
+    except Exception:
+        pass
+
+
+def persist_custom_layouts():
+    """把当前自定义布局列表保存到 Supabase（失败静默降级，仅本会话可用）。"""
+    token = st.session_state.get("token")
+    if not token:
+        return
+    customs = st.session_state.get("custom_layouts", {}) or {}
+    items = [{"name": v.get("name", lid), "data": v.get("data")}
+             for lid, v in customs.items() if isinstance(v.get("data"), dict)]
+    try:
+        auth_set_pref(token, CUSTOM_LAYOUTS_PREF_KEY, json.dumps(items, ensure_ascii=False))
+    except Exception:
+        pass
+
+
+def clear_custom_layouts():
+    """退出登录时清空当前会话的自定义布局（session_state 与全局镜像）。"""
+    st.session_state.pop("custom_layouts", None)
+    for k in [k for k in LAYOUT_BUILDERS if k not in BUILTIN_LAYOUT_KEYS]:
+        LAYOUT_BUILDERS.pop(k, None)
+    for k in [k for k in LAYOUTS if k not in BUILTIN_LAYOUT_KEYS]:
+        LAYOUTS.pop(k, None)
+
+
 def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
@@ -814,6 +897,7 @@ def check_login():
             st.session_state.token = restored["token"]
             _load_priority_preference()
             _load_run_history()
+            restore_custom_layouts()
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
         st.session_state.login_blocked_until = 0.0
@@ -842,6 +926,7 @@ def check_login():
                         set_session_token(res["token"])
                         _load_priority_preference()
                         _load_run_history()
+                        restore_custom_layouts()
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1

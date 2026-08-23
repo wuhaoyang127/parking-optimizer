@@ -1,9 +1,11 @@
 import math
 from ui.common import *
-from ui.common import _avg_metrics, _plot_radar
+from ui.common import (_avg_metrics, _plot_radar,
+                      _sync_custom_layouts_to_globals, persist_custom_layouts)
 
 def render_settings(role):
     """页面1: 仿真设置"""
+    _sync_custom_layouts_to_globals()
     st.subheader("⚙️ 仿真参数配置")
     disabled = not role["can_configure"]
     if disabled: st.caption("⚠️ 当前角色仅可查看，不可修改参数")
@@ -459,6 +461,7 @@ def _load_layout_doc() -> str:
 
 def _render_import_layout():
     """上传自定义停车场布局（仅管理员调用；说明文档在 tab3 公共区展示）"""
+    _sync_custom_layouts_to_globals()
     if "custom_layouts" not in st.session_state:
         st.session_state.custom_layouts = {}
 
@@ -507,7 +510,8 @@ def _render_import_layout():
                 }
                 LAYOUT_BUILDERS[layout_id] = lambda ns=len(spots), tr=0.0, d=data: _build_custom(d)
                 LAYOUTS[layout_id] = name
-                st.success(f"✅ `{name}` 已添加！在仿真设置中可选")
+                persist_custom_layouts()
+                st.success(f"✅ `{name}` 已添加并保存！在仿真设置中可选")
                 # 清除 uploader
                 st.rerun()
         except json.JSONDecodeError:
@@ -537,6 +541,7 @@ def _render_import_layout():
                         LAYOUT_BUILDERS.pop(lid, None)
                         LAYOUTS.pop(lid, None)
                         st.session_state.pop(confirm_key, None)
+                        persist_custom_layouts()
                         st.success(f"已删除布局「{linfo['name']}」")
                         st.rerun()
                     if cc2.button("取消", key=f"del_cancel_{lid}"):
@@ -552,6 +557,7 @@ def _build_custom(data):
 
 def render_layout_page():
     """页面3: 停车场布局图（静态）"""
+    _sync_custom_layouts_to_globals()
     st.subheader("🅿️ 停车场布局图")
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")

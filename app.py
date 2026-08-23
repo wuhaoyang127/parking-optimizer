@@ -29,6 +29,7 @@ with st.sidebar:
     if st.button("🚪 退出", use_container_width=True):
         auth_logout(st.session_state.token)
         clear_session_token()
+        clear_custom_layouts()
         st.session_state.logged_in = False; st.session_state.token = None
         st.rerun()
 

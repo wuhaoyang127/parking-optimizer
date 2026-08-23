@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 12
+status_version: 13
 last_updated: 2026-08-21
 current_stage: D
 stage_status: in_progress
@@ -190,6 +190,7 @@ Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反�
 
 ## 13. 最近重要变更
 
+- 2026-08-21：布局持久化：自定义布局以 `session_state.custom_layouts` 为真相源，登录/恢复会话时从 Supabase 偏好（`custom_layouts_v1`）恢复，导入/删除时回写；渲染相关页面前 `_sync_custom_layouts_to_globals()` 重建全局镜像（清除进程残留），退出登录 `clear_custom_layouts()` 清空。解决「退出登录后布局能用但删不掉/不显示」问题；打备份 tag `backup-before-layout-persist-20260823`；pytest 51 passed、AppTest 同步三场景通过、自检通过；
 - 2026-08-21：布局删除入口优化：系统设置→导入布局→已导入列表的删除按钮改为红色 primary「🗑 删除」+ 行内二次确认（确认/取消），防误删；打备份 tag `backup-before-layout-delete-confirm-20260823`；pytest 51 passed、AppTest 删除/取消/确认三场景通过、自检通过；
 - 2026-08-21：修复线上崩溃（Cloud 报 `build_demand_histogram` ValueError）：根因是导入的真实布局存在从入口不可达的车位时，行驶时间 inf 传播进 SimPy 时钟产生 nan 事件时间。三层防御：①引擎层——分配/等待分配时拒绝不可达车位、移位不可达缓冲位记 BUFFER_FAILED，杜绝 inf/nan 事件；②导入校验——布局 JSON 校验每个车位「入口可达且可返回入口」，不连通直接报错拒收；③UI 层——直方图/车辆明细表/时钟格式化对 None/nan/inf/字符串时间全部兜底。新增 `tests/test_engine_robustness.py`（2 项），pytest 51 passed、自检通过；
 - 2026-08-21：按用户反馈，仿真设置页「停车场布局」下拉拆为「布局来源」分组（内置示意布局 / 导入的真实布局，仅在有导入布局时显示后者）；真实布局下加说明「路网/车位真实，车辆需求仍为仿真；车位数/纵深比例滑杆不生效」；新增 `BUILTIN_LAYOUT_KEYS` 常量区分内置/自定义布局；打备份 tag `backup-before-layout-source-20260821`；pytest 49 passed、AppTest 两场景通过、启动包自检通过，待用户验收；
