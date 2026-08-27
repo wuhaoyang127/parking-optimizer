@@ -1438,10 +1438,8 @@ def _render_admin_feedbacks():
         status = f.get("status", "pending")
         st.markdown(f"**{f.get('title', '')}**  `[{cat}]` — {f.get('username', '')}({f.get('role', '')})")
         disp_time = _feedback_display_time(f)
-        raw_time = f.get("created_at", "")
-        time_txt = f"时间：{disp_time} | 状态：{status}"
-        if f.get("display_time") and raw_time:
-            time_txt += f"（原始：{raw_time}）"
+        status_label = "已处理" if status == "resolved" else "待处理"
+        time_txt = f"时间：{disp_time} | 状态：{status_label}"
         c_time, c_edit = st.columns([12, 1])
         with c_time:
             st.caption(time_txt)
@@ -1461,10 +1459,10 @@ def _render_admin_feedbacks():
             new_dt = st.text_input(
                 "显示时间", value=f.get("display_time") or "",
                 key=f"fb_dt_{fid}",
-                placeholder=raw_time or "例：2026-08-27 15:30",
+                placeholder="例：2026-08-27 15:30",
                 label_visibility="collapsed",
             )
-            cb1, cb2, cb3 = st.columns([1, 1, 2])
+            cb1, cb3 = st.columns([1, 2])
             with cb1:
                 if st.button("保存", key=f"fb_dt_save_{fid}"):
                     res = auth_update_feedback_display_time(
@@ -1472,16 +1470,6 @@ def _render_admin_feedbacks():
                     if isinstance(res, dict) and res.get("success"):
                         st.session_state[open_key] = False
                         st.success("✅ 已保存")
-                    else:
-                        st.error((res or {}).get("error", "保存失败"))
-                    st.rerun()
-            with cb2:
-                if st.button("恢复原始", key=f"fb_dt_reset_{fid}"):
-                    res = auth_update_feedback_display_time(
-                        st.session_state.token, fid, "")
-                    if isinstance(res, dict) and res.get("success"):
-                        st.session_state[open_key] = False
-                        st.success("✅ 已恢复原始时间")
                     else:
                         st.error((res or {}).get("error", "保存失败"))
                     st.rerun()
