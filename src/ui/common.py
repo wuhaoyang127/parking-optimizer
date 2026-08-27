@@ -53,6 +53,7 @@ from parking_opt.simulation.defaults import (CAR_SPEED, MAX_WAIT_TIME, SIM_DURAT
                                              DURATION_MIN, DURATION_MAX, PEAK_RATIO, ERROR_RATIO)
 from parking_opt.strategies import StrategyRegistry
 from parking_opt.strategies.mosa import estimate_scene as estimate_mosa_scene
+from parking_opt.strategies.mosa import resolve_scene as resolve_mosa_scene
 from parking_opt.strategies.mosa import SCENE_LABELS as MOSA_SCENE_LABELS
 from parking_opt.evaluation.metrics import compute_metrics
 from parking_opt.evaluation.ranking import weighted_rank, DEFAULT_WEIGHTS as RANK_DEFAULT_WEIGHTS

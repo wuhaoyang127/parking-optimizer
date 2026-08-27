@@ -73,6 +73,26 @@ def estimate_scene(n_spots: int, n_vehicles: int, sim_duration: float,
     return "normal"
 
 
+def resolve_scene(n_spots: int, vehicles) -> str:
+    """按真实车位与真实车辆需求精确判定场景（运行时与 UI 预判共用同一规则）。
+
+    与 MosaStrategy._resolve_scene 逻辑一致：总停车时长 / (车位数 × 需求时间跨度)。
+    """
+    if n_spots <= 0 or not vehicles:
+        return "normal"
+    total_demand_time = sum(v.parking_duration for v in vehicles)
+    span = (max(v.departure_time for v in vehicles)
+            - min(v.arrival_time for v in vehicles))
+    if span <= 0:
+        return "peak"
+    demand_ratio = total_demand_time / (n_spots * span)
+    if demand_ratio >= 0.85:
+        return "saturated"
+    if demand_ratio >= 0.6:
+        return "peak"
+    return "normal"
+
+
 class MosaStrategy(BaseStrategy):
     """MOSA 多目标优化（离线全信息预分配）。
 
@@ -168,25 +188,10 @@ class MosaStrategy(BaseStrategy):
         return est
 
     def _resolve_scene(self, vehicles: list[Vehicle]) -> str:
-        """scene=auto 时按需求密度判定：饱和 / 高峰 / 平峰。"""
+        """scene=auto 时按真实车位与车辆需求判定：饱和 / 高峰 / 平峰。"""
         if self.scene != "auto":
             return self.scene
-        if not vehicles:
-            return "normal"
-        n_spots = len(self._spots)
-        if n_spots == 0:
-            return "normal"
-        total_demand_time = sum(v.parking_duration for v in vehicles)
-        span = (max(v.departure_time for v in vehicles)
-                - min(v.arrival_time for v in vehicles))
-        if span <= 0:
-            return "peak"
-        demand_ratio = total_demand_time / (n_spots * span)
-        if demand_ratio >= 0.85:
-            return "saturated"
-        if demand_ratio >= 0.6:
-            return "peak"
-        return "normal"
+        return resolve_scene(len(self._spots), vehicles)
 
     # ========== NSGA-II ==========
 
