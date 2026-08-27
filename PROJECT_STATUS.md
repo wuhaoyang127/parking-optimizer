@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 17
+status_version: 18
 last_updated: 2026-08-27
 current_stage: D
 stage_status: in_progress
@@ -196,7 +196,7 @@ superseded
 
 ## 13. 最近重要变更
 
-- 2026-08-27：交付体验第三批：①**布局持久化兜底**——`persist_custom_layouts()` 返回 (ok,error) 并在 UI 显示云端保存失败原因；本地桌面运行时额外写 `data/custom_layouts_backup.json`，Supabase 恢复为空时回退本地备份并自愈回写；②**新算法接入页文件删除**——每个已上传算法文件增加「🗑 删除」+ 行内二次确认（确认/取消）；③**反馈显示时间可改**——新增迁移 `migrations/04_feedback_display_time.sql`（feedback 表加 `display_time` 字段 + `update_feedback_display_time` RPC 仅管理员），管理员在全部反馈区每条反馈可修改显示时间并保存，我的反馈/CSV 导出同步使用；④**权限落实**——`can_export` 实际生效（访客在设置页/指标页看不到下载导出控件），操作员在新算法接入页可见全部说明文字但不可上传（`can_configure` 可见 / `can_import_algo` 可传）；pytest 71 passed、自检通过（129 文件）、AppTest 通过；打 tag `backup-before-layout-algo-feedback-perm-20260827`；待用户验收；
+- 2026-08-27：交付体验第三批：①**布局持久化兜底**——`persist_custom_layouts()` 返回 (ok,error) 并在 UI 显示云端保存失败原因；本地桌面运行时额外写 `data/custom_layouts_backup.json`，Supabase 恢复为空时回退本地备份并自愈回写；②**新算法接入页文件删除**——每个已上传算法文件增加「🗑 删除」+ 行内二次确认（确认/取消）；③**反馈显示时间可改**——新增迁移 `migrations/04_feedback_display_time.sql`（feedback 表加 `display_time` 字段 + `update_feedback_display_time` RPC 仅管理员），管理员在全部反馈区每条反馈可修改显示时间并保存（入口为时间旁低调小「✎」按钮，点击后才展开编辑，不显式标注），我的反馈/CSV 导出同步使用；④**权限落实**——`can_export` 实际生效（访客在设置页/指标页看不到下载导出控件），操作员在新算法接入页可见全部说明文字但不可上传（`can_configure` 可见 / `can_import_algo` 可传）；pytest 71 passed、自检通过（129 文件）、AppTest 通过；打 tag `backup-before-layout-algo-feedback-perm-20260827`；待用户验收；
 - 2026-08-27：修复真实布局 MOSA 场景判定提示：设置页场景绑定提示在「导入的真实布局」下改用导入 JSON 的**实际车位数**（此前误用变灰滑杆的默认值 15）；有导入需求序列时改用新增的 `resolve_scene()` 按真实车辆时序精确判定（与运行时 `_resolve_scene` 共用同一规则，杜绝 UI 预估与运行时权重不一致）；新增测试 2 项，pytest 71 passed、自检通过、AppTest 真实布局 20 车位提示验证通过；打 tag `backup-before-scene-hint-fix-20260827`；
 - 2026-08-27：策略最近参数持久化：新增 Supabase 用户偏好 `last_params_v1`——每次运行仿真后保存该策略本次参数（`persist_last_params`），登录/恢复会话时 `_load_last_params()` 拉回，设置页按策略自动回填控件（reboot/刷新后参数不丢）；`_render_param_widget`/`render_strategy_params` 支持 `initial` 回填，并对持久化值做类型转换与 min/max 夹取兜底（防脏数据崩溃）；打 tag `backup-before-last-params-persist-20260827`；pytest 69 passed、启动包自检通过、AppTest 回填/运行后保存验证通过，待用户验收；
 - 2026-08-27：MOSA 场景权重与车位数/车辆数/时间**自动绑定**：新增 `estimate_scene()` 公共判定函数（需求密度 = 车辆数×平均停车时长 / (车位数×时间跨度)，≥0.85 饱和/≥0.6 高峰/否则平峰，共 3 种情况）；`scene` 参数标记 `locked`（网页渲染为灰色不可调，默认 auto）；UI 参数渲染器支持 PARAMS 项的 `locked` 字段（置灰），MOSA 策略下仿真设置页实时显示「当前车位数/车辆数/平均停车时长 → 判定为哪种场景及权重（时间/距离/利用率）」；新增场景绑定测试 3 项，pytest 69 passed、自检通过；
