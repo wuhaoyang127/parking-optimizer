@@ -29,6 +29,7 @@ try:
     from auth import update_feedback_status as auth_update_feedback_status
     from auth import reply_feedback as auth_reply_feedback
     from auth import delete_feedback as auth_delete_feedback
+    from auth import update_feedback_display_time as auth_update_feedback_display_time
 except ImportError:
     def _fb_unavailable(*_a, **_k):
         return {"success": False, "error": "反馈功能未加载：后端代码未同步，请重新部署应用"}
@@ -39,6 +40,7 @@ except ImportError:
     auth_update_feedback_status = _fb_unavailable
     auth_reply_feedback = _fb_unavailable
     auth_delete_feedback = _fb_unavailable
+    auth_update_feedback_display_time = _fb_unavailable
 
 import streamlit as st
 import pandas as pd
@@ -91,6 +93,8 @@ DEFAULT_WEIGHTS_BY_LABEL = {
 # 需求序列导出的项目内文件夹（本地运行时方便下次直接从这里导入；不入库）
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DEMAND_EXPORT_DIR = PROJECT_ROOT / "data" / "demand_exports"
+# 自定义布局本地备份文件（仅本地桌面运行时写入，作为 Supabase 失败时的兜底恢复源）
+LOCAL_LAYOUT_BACKUP_PATH = PROJECT_ROOT / "data" / "custom_layouts_backup.json"
 
 def strategy_description(name: str) -> str:
     """返回策略说明：优先读策略类的 DESCRIPTION 属性，新算法接入后无需改这里即可自动展示。"""
@@ -864,51 +868,101 @@ def _sync_custom_layouts_to_globals():
         LAYOUTS[lid] = linfo.get("name", lid)
 
 
+def _build_customs_from_items(items) -> dict:
+    """把持久化的布局 items 列表转成 {lid: {name,data,net,spots}}，跳过无效项。"""
+    customs = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        name = it.get("name")
+        data = it.get("data")
+        if not name or not isinstance(data, dict):
+            continue
+        lid = str(name).lower().replace(" ", "_")
+        try:
+            net, spots = build_layout_from_json(data)
+        except Exception:
+            continue
+        customs[lid] = {"name": name, "data": data, "net": net, "spots": spots}
+    return customs
+
+
+def _load_layout_items_from_local_backup():
+    """读取本地备份文件（仅桌面运行时可能存在），返回 items 列表或 None。"""
+    if not is_local_desktop():
+        return None
+    try:
+        if not LOCAL_LAYOUT_BACKUP_PATH.exists():
+            return None
+        items = json.loads(LOCAL_LAYOUT_BACKUP_PATH.read_text(encoding="utf-8"))
+        return items if isinstance(items, list) else None
+    except Exception:
+        return None
+
+
+def _write_local_layout_backup(items):
+    """本地桌面运行时，把布局列表写一份到 data/custom_layouts_backup.json。"""
+    if not is_local_desktop():
+        return
+    try:
+        LOCAL_LAYOUT_BACKUP_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LOCAL_LAYOUT_BACKUP_PATH.write_text(
+            json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def restore_custom_layouts():
-    """登录/恢复会话后，从 Supabase 恢复自定义布局列表。"""
+    """登录/恢复会话后，从 Supabase 恢复自定义布局列表。
+
+    云端无记录但本地备份存在时（仅桌面运行时），回退本地备份并自愈回写云端。
+    """
     token = st.session_state.get("token")
     if not token:
         return
+    customs = {}
+    cloud_ok = False
     try:
         val = auth_get_pref(token, CUSTOM_LAYOUTS_PREF_KEY)
-        if not val:
-            return
-        items = json.loads(val)
-        if not isinstance(items, list):
-            return
-        customs = {}
-        for it in items:
-            if not isinstance(it, dict):
-                continue
-            name = it.get("name")
-            data = it.get("data")
-            if not name or not isinstance(data, dict):
-                continue
-            lid = str(name).lower().replace(" ", "_")
-            try:
-                net, spots = build_layout_from_json(data)
-            except Exception:
-                continue
-            customs[lid] = {"name": name, "data": data, "net": net, "spots": spots}
-        if customs:
-            st.session_state.custom_layouts = customs
-            _sync_custom_layouts_to_globals()
+        if val:
+            items = json.loads(val)
+            if isinstance(items, list):
+                customs = _build_customs_from_items(items)
+                cloud_ok = True
     except Exception:
         pass
+    if not customs:
+        local_items = _load_layout_items_from_local_backup()
+        if local_items:
+            customs = _build_customs_from_items(local_items)
+    if customs:
+        st.session_state.custom_layouts = customs
+        _sync_custom_layouts_to_globals()
+        if not cloud_ok:
+            # 云端没有记录但本地备份有：回写云端（自愈）
+            persist_custom_layouts()
 
 
 def persist_custom_layouts():
-    """把当前自定义布局列表保存到 Supabase（失败静默降级，仅本会话可用）。"""
+    """把当前自定义布局列表保存到 Supabase（并写本地备份）。
+
+    返回 (ok, error)：ok=False 时 UI 应提示用户云端保存失败的原因。
+    """
     token = st.session_state.get("token")
     if not token:
-        return
+        return False, "未登录，无法保存到云端"
     customs = st.session_state.get("custom_layouts", {}) or {}
     items = [{"name": v.get("name", lid), "data": v.get("data")}
              for lid, v in customs.items() if isinstance(v.get("data"), dict)]
+    _write_local_layout_backup(items)
     try:
-        auth_set_pref(token, CUSTOM_LAYOUTS_PREF_KEY, json.dumps(items, ensure_ascii=False))
-    except Exception:
-        pass
+        res = auth_set_pref(token, CUSTOM_LAYOUTS_PREF_KEY,
+                            json.dumps(items, ensure_ascii=False))
+    except Exception as e:
+        return False, f"云端保存异常：{e}"
+    if isinstance(res, dict) and res.get("success"):
+        return True, ""
+    return False, (res or {}).get("error", "云端保存失败")
 
 
 def clear_custom_layouts():

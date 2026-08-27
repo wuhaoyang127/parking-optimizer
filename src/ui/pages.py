@@ -64,16 +64,17 @@ def render_settings(role):
                 imported_meta = st.session_state.get("imported_meta") or {}
                 st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
                         f"重新上传文件可替换。")
-        st.download_button(
-            "📄 下载需求序列 JSON 示例",
-            export_demand_json(
-                generate_demand(total_vehicles=20, seed=42),
-                seed=42,
-                generator_params={"total_vehicles": 20, "sim_duration": 21600},
-            ).encode("utf-8"),
-            "demand_example.json", "application/json",
-            help="示例仅 20 辆车，演示文件格式；导入前可先用它试运行",
-        )
+        if role["can_export"]:
+            st.download_button(
+                "📄 下载需求序列 JSON 示例",
+                export_demand_json(
+                    generate_demand(total_vehicles=20, seed=42),
+                    seed=42,
+                    generator_params={"total_vehicles": 20, "sim_duration": 21600},
+                ).encode("utf-8"),
+                "demand_example.json", "application/json",
+                help="示例仅 20 辆车，演示文件格式；导入前可先用它试运行",
+            )
     else:
         st.session_state.imported_vehicles = None
         st.session_state.imported_meta = None
@@ -551,8 +552,12 @@ def _render_import_layout():
                 }
                 LAYOUT_BUILDERS[layout_id] = lambda ns=len(spots), tr=0.0, d=data: _build_custom(d)
                 LAYOUTS[layout_id] = name
-                persist_custom_layouts()
-                st.success(f"✅ `{name}` 已添加并保存！在仿真设置中可选")
+                ok, err = persist_custom_layouts()
+                if ok:
+                    st.success(f"✅ `{name}` 已添加并保存！在仿真设置中可选")
+                else:
+                    st.warning(f"⚠️ 布局已在本会话生效，但云端保存失败：{err}"
+                               f"（重新登录/重启后可能丢失）")
                 # 清除 uploader
                 st.rerun()
         except json.JSONDecodeError:
@@ -582,8 +587,11 @@ def _render_import_layout():
                         LAYOUT_BUILDERS.pop(lid, None)
                         LAYOUTS.pop(lid, None)
                         st.session_state.pop(confirm_key, None)
-                        persist_custom_layouts()
-                        st.success(f"已删除布局「{linfo['name']}」")
+                        ok, err = persist_custom_layouts()
+                        if ok:
+                            st.success(f"已删除布局「{linfo['name']}」")
+                        else:
+                            st.warning(f"⚠️ 已在本会话删除，但云端同步失败：{err}")
                         st.rerun()
                     if cc2.button("取消", key=f"del_cancel_{lid}"):
                         st.session_state.pop(confirm_key, None)
@@ -862,9 +870,10 @@ def _draw_charts(net, spots, events, max_time):
         st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
-def render_metrics_page():
+def render_metrics_page(role):
     """页面5: 指标分析"""
     st.subheader("📊 指标分析")
+    can_export = role.get("can_export", False)
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
@@ -929,8 +938,9 @@ def render_metrics_page():
                       .apply(lambda row: ['background-color: #d4edda' if row.name == 0
                                           else '' for _ in row], axis=1))
             st.dataframe(styled, use_container_width=True, hide_index=True)
-            st.download_button("📥 下载加权排名 CSV", wdf.to_csv(index=False).encode('utf-8'),
-                               "parking_weighted_ranking.csv", "text/csv")
+            if can_export:
+                st.download_button("📥 下载加权排名 CSV", wdf.to_csv(index=False).encode('utf-8'),
+                                   "parking_weighted_ranking.csv", "text/csv")
         else:
             # 按用户定义的优先级做字典序排序（原有逻辑，保留）
             priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
@@ -963,8 +973,9 @@ def render_metrics_page():
                       .apply(lambda row: ['background-color: #d4edda' if row.name == 0
                                           else '' for _ in row], axis=1))
             st.dataframe(styled, use_container_width=True, hide_index=True)
-            st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
-                               "parking_comparison.csv", "text/csv")
+            if can_export:
+                st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
+                                   "parking_comparison.csv", "text/csv")
 
         c1, c2 = st.columns(2)
         with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
@@ -999,8 +1010,9 @@ def render_metrics_page():
             rejs = m.get('rejected_count', 0)
             if buffers or rejs:
                 st.warning(f"⚠️ 降级: {buffers} 缓冲失败, {rejs} 拒绝")
-            st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
-                               f"parking_{m.get('strategy','result')}.csv", "text/csv")
+            if can_export:
+                st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
+                                   f"parking_{m.get('strategy','result')}.csv", "text/csv")
 
     # ── 需求时序分布 + 车辆明细（反馈优化第二批）──
     st.markdown("---")
@@ -1021,9 +1033,10 @@ def render_metrics_page():
         if rows:
             vdf = pd.DataFrame(rows)
             st.dataframe(vdf, use_container_width=True, hide_index=True)
-            st.download_button("📥 下载车辆明细 CSV",
-                               vdf.to_csv(index=False).encode('utf-8-sig'),
-                               "parking_vehicle_details.csv", "text/csv")
+            if can_export:
+                st.download_button("📥 下载车辆明细 CSV",
+                                   vdf.to_csv(index=False).encode('utf-8-sig'),
+                                   "parking_vehicle_details.csv", "text/csv")
         vehs = st.session_state.get("sim_vehicles")
         if vehs:
             meta = st.session_state.get("sim_demand_meta") or {}
@@ -1036,55 +1049,56 @@ def render_metrics_page():
             )
             default_name = f"demand_{demand_source}_{time.strftime('%Y%m%d_%H%M%S')}.json"
             download_name = f"parking_demand_{time.strftime('%Y%m%d_%H%M%S')}.json"
-            cdl, csave = st.columns(2)
-            with cdl:
-                st.download_button("📥 浏览器下载",
-                                   json_str.encode("utf-8"),
-                                   download_name, "application/json")
-                st.caption("每次下载文件名带时间戳，不会重名")
-            with csave:
-                render_save_as_button(json_str, download_name)
-            if is_local_desktop():
-                if st.button("💾 下载到项目文件夹（仅本机运行可用）",
-                             use_container_width=True, key="save_demand_project",
-                             help="一键保存到本机项目的 data/demand_exports/（自动命名），"
-                                  "回仿真设置页可从下拉直接导入，方便快速测试复现性"):
-                    saved = save_demand_to_project(
-                        vehs, seed=meta.get("seed"), source=demand_source,
-                        generator_params=meta.get("generator_params"),
-                        generated_at=meta.get("generated_at"))
-                    st.success(f"✅ 已保存：{saved.name}")
-                    st.caption("回「仿真设置 → 导入需求序列 JSON → 从项目文件夹选择」即可快速导入")
-            with st.expander("💾 保存到指定位置（长期保留：自选目录与文件名）", expanded=False):
-                cdir, cfile = st.columns(2)
-                with cdir:
-                    save_dir = st.text_input(
-                        "保存目录", str(DEMAND_EXPORT_DIR), key="save_dir_input",
-                        help="绝对路径，或相对项目根目录的路径（默认 data/demand_exports/）")
-                with cfile:
-                    save_name = st.text_input(
-                        "文件名", default_name, key="save_name_input",
-                        help="不含 .json 后缀会自动补上；填完整路径则忽略左侧目录")
-                if st.button("💾 保存到该位置", key="save_demand_manual"):
-                    try:
-                        name_p = Path(save_name)
-                        if name_p.is_absolute():
-                            target = name_p
-                        else:
-                            base = Path(save_dir)
-                            if not base.is_absolute():
-                                base = PROJECT_ROOT / base
-                            target = base / save_name
-                        saved_path = save_demand_to_path(
-                            vehs, target,
-                            seed=meta.get("seed"),
-                            source=demand_source,
+            if can_export:
+                cdl, csave = st.columns(2)
+                with cdl:
+                    st.download_button("📥 浏览器下载",
+                                       json_str.encode("utf-8"),
+                                       download_name, "application/json")
+                    st.caption("每次下载文件名带时间戳，不会重名")
+                with csave:
+                    render_save_as_button(json_str, download_name)
+                if is_local_desktop():
+                    if st.button("💾 下载到项目文件夹（仅本机运行可用）",
+                                 use_container_width=True, key="save_demand_project",
+                                 help="一键保存到本机项目的 data/demand_exports/（自动命名），"
+                                      "回仿真设置页可从下拉直接导入，方便快速测试复现性"):
+                        saved = save_demand_to_project(
+                            vehs, seed=meta.get("seed"), source=demand_source,
                             generator_params=meta.get("generator_params"),
-                            generated_at=meta.get("generated_at"),
-                        )
-                        st.success(f"✅ 已保存：{saved_path}")
-                    except OSError as exc:
-                        st.error(f"❌ 保存失败：{exc}")
+                            generated_at=meta.get("generated_at"))
+                        st.success(f"✅ 已保存：{saved.name}")
+                        st.caption("回「仿真设置 → 导入需求序列 JSON → 从项目文件夹选择」即可快速导入")
+                with st.expander("💾 保存到指定位置（长期保留：自选目录与文件名）", expanded=False):
+                    cdir, cfile = st.columns(2)
+                    with cdir:
+                        save_dir = st.text_input(
+                            "保存目录", str(DEMAND_EXPORT_DIR), key="save_dir_input",
+                            help="绝对路径，或相对项目根目录的路径（默认 data/demand_exports/）")
+                    with cfile:
+                        save_name = st.text_input(
+                            "文件名", default_name, key="save_name_input",
+                            help="不含 .json 后缀会自动补上；填完整路径则忽略左侧目录")
+                    if st.button("💾 保存到该位置", key="save_demand_manual"):
+                        try:
+                            name_p = Path(save_name)
+                            if name_p.is_absolute():
+                                target = name_p
+                            else:
+                                base = Path(save_dir)
+                                if not base.is_absolute():
+                                    base = PROJECT_ROOT / base
+                                target = base / save_name
+                            saved_path = save_demand_to_path(
+                                vehs, target,
+                                seed=meta.get("seed"),
+                                source=demand_source,
+                                generator_params=meta.get("generator_params"),
+                                generated_at=meta.get("generated_at"),
+                            )
+                            st.success(f"✅ 已保存：{saved_path}")
+                        except OSError as exc:
+                            st.error(f"❌ 保存失败：{exc}")
     else:
         st.info("暂无事件日志（请先运行仿真）")
 
@@ -1213,8 +1227,10 @@ def render_status_page(role):
 def render_algo_import_page(role):
     """页面: 新算法接入 —— 上传算法描述文件，供 AI 后台接入"""
     st.subheader("🧩 新算法接入")
-    if not role["can_import_algo"]:
-        st.info("仅管理员可接入新算法")
+    can_upload = role["can_import_algo"]
+    can_view_docs = role["can_configure"] or can_upload
+    if not can_view_docs:
+        st.info("仅管理员/操作员可查看新算法接入说明")
         return
     st.markdown("""
 上传你的算法描述文件（**文字说明 / 代码示例 / 伪代码**，支持 `.md` / `.txt` / `.py` / `.json`），
@@ -1223,6 +1239,9 @@ def render_algo_import_page(role):
 > 上传后，请回到 **Deep Code 对话** 中说一句「接入算法」，AI 会读取文件、编写代码、复检并接入，
 > 最后跑仿真比较，选出最优算法。
 """)
+    if not can_upload:
+        st.info("📤 上传/删除算法文件仅管理员可操作；操作员可查看以上接入说明。")
+        return
 
     pending_dir = Path(__file__).resolve().parents[2] / "pending_algorithms"
     pending_dir.mkdir(parents=True, exist_ok=True)
@@ -1244,7 +1263,29 @@ def render_algo_import_page(role):
         st.divider()
         st.caption("**已上传的算法文件：**")
         for f in files:
-            st.write(f"📄 `{f.name}`（{f.stat().st_size} 字节）")
+            c1, c2 = st.columns([4, 1])
+            c1.write(f"📄 `{f.name}`（{f.stat().st_size} 字节）")
+            confirm_key = f"confirm_algo_del_{f.name}"
+            if not st.session_state.get(confirm_key):
+                if c2.button("🗑 删除", key=f"del_algo_{f.name}",
+                             help=f"删除算法文件「{f.name}」", type="primary"):
+                    st.session_state[confirm_key] = True
+                    st.rerun()
+            else:
+                with c2:
+                    st.warning(f"确认删除「{f.name}」？")
+                    cc1, cc2 = st.columns(2)
+                    if cc1.button("✅ 确认", key=f"del_algo_ok_{f.name}", type="primary"):
+                        try:
+                            f.unlink()
+                            st.session_state.pop(confirm_key, None)
+                            st.success(f"已删除「{f.name}」")
+                        except Exception as e:
+                            st.error(f"删除失败：{e}")
+                        st.rerun()
+                    if cc2.button("取消", key=f"del_algo_cancel_{f.name}"):
+                        st.session_state.pop(confirm_key, None)
+                        st.rerun()
     else:
         st.caption("暂无已上传的算法文件")
 
@@ -1304,6 +1345,11 @@ def _render_submit_feedback():
                 st.error(res.get("error", "提交失败"))
 
 
+def _feedback_display_time(f: dict) -> str:
+    """反馈显示时间：管理员可覆盖 display_time，未覆盖时用原始 created_at。"""
+    return f.get("display_time") or f.get("created_at", "")
+
+
 def _render_my_feedbacks():
     """展示当前用户自己提交的反馈及管理员回复"""
     items = auth_list_my_feedbacks(st.session_state.token)
@@ -1315,7 +1361,7 @@ def _render_my_feedbacks():
         status = f.get("status", "pending")
         icon = "✅" if status == "resolved" else "⏳"
         st.markdown(f"**{f.get('title', '')}**  `[{cat}]` {icon} `{status}`")
-        st.caption(f"提交时间：{f.get('created_at', '')}")
+        st.caption(f"提交时间：{_feedback_display_time(f)}")
         st.write(f.get("content", ""))
         if f.get("reply"):
             st.info(f"💬 管理员回复：{f['reply']}")
@@ -1332,7 +1378,7 @@ def _feedback_to_csv(items):
     for f in items:
         w.writerow([f.get("title", ""), f.get("category", ""), f.get("username", ""),
                     f.get("role", ""), f.get("status", ""), f.get("content", ""),
-                    f.get("reply", ""), f.get("created_at", "")])
+                    f.get("reply", ""), _feedback_display_time(f)])
     return buf.getvalue().encode("utf-8-sig")
 
 
@@ -1391,13 +1437,34 @@ def _render_admin_feedbacks():
         cat = "仿真" if f.get("category") == "simulation" else "通用"
         status = f.get("status", "pending")
         st.markdown(f"**{f.get('title', '')}**  `[{cat}]` — {f.get('username', '')}({f.get('role', '')})")
-        st.caption(f"时间：{f.get('created_at', '')} | 状态：{status}")
+        disp_time = _feedback_display_time(f)
+        raw_time = f.get("created_at", "")
+        time_txt = f"时间：{disp_time} | 状态：{status}"
+        if f.get("display_time") and raw_time:
+            time_txt += f"（原始：{raw_time}）"
+        st.caption(time_txt)
         if f.get("related_run"):
             with st.expander("关联仿真信息"):
                 st.code(f.get("related_run"))
         st.write(f.get("content", ""))
         if f.get("reply"):
             st.info(f"💬 已回复：{f['reply']}")
+
+        with st.expander("🕒 修改显示时间"):
+            new_dt = st.text_input(
+                "显示时间（留空恢复原始时间）",
+                value=f.get("display_time") or "",
+                key=f"fb_dt_{fid}",
+                placeholder=raw_time or "例：2026-08-27 15:30",
+            )
+            if st.button("保存显示时间", key=f"fb_dt_btn_{fid}"):
+                res = auth_update_feedback_display_time(
+                    st.session_state.token, fid, new_dt.strip())
+                if isinstance(res, dict) and res.get("success"):
+                    st.success("✅ 显示时间已保存")
+                else:
+                    st.error((res or {}).get("error", "保存失败"))
+                st.rerun()
 
         c1, c2, c3 = st.columns([1, 1, 3])
         with c1:

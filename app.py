@@ -77,7 +77,7 @@ elif page == pages[2]:
 elif page == pages[3]:
     render_path_page()
 elif page == pages[4]:
-    render_metrics_page()
+    render_metrics_page(role)
 elif page == pages[5]:
     render_algo_import_page(role)
 elif page == pages[6]:

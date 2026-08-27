@@ -214,3 +214,9 @@ def reply_feedback(token: str, feedback_id: str, reply: str) -> dict:
 
 def delete_feedback(token: str, feedback_id: str) -> dict:
     return _rpc("delete_feedback", {"p_token": token, "p_id": feedback_id})
+
+
+def update_feedback_display_time(token: str, feedback_id: str, display_time: str) -> dict:
+    """管理员修改反馈的显示时间（display_time 为空表示恢复原始时间）。"""
+    return _rpc("update_feedback_display_time", {
+        "p_token": token, "p_id": feedback_id, "p_display_time": display_time})
