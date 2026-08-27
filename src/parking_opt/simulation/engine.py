@@ -250,10 +250,17 @@ class SimulationEngine:
 
         # ── 外行车回位 ──
         for blk_spot, buffer, blk_vid in reversed(shift_pairs):
+            # 回位前/后各检查一次：行驶期间若已被其它进程移走，则跳过回位
+            if buffer.occupied_by != blk_vid:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
             blocker = self._vehicle_by_id(blk_vid)
             path_back = self.path_engine.shortest_path(buffer.node_id, blk_spot.node_id)
             if blocker is not None and path_back:
                 yield from self._reserve_drive(blocker, path_back, "shift", self.env.now)
+            if buffer.occupied_by != blk_vid:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
             self.parking_lot.move_vehicle(buffer, blk_spot)
             self.parking_lot.release_buffer(buffer.spot_id)
             self._log(self.env.now, EventType.SHIFT_END, blk_vid,
@@ -369,10 +376,17 @@ class SimulationEngine:
             ok, _ = yield from self._reserve_drive(vehicle, path_out, "leave", self.env.now)
             self.parking_lot.free(spot)
 
-            # 阻挡车归位（或前移）
+            # 阻挡车归位（或前移）。回位前/后各检查一次：行驶期间若已被
+            # 其它进程移走（并发让行竞态），则跳过回位，防止 move_vehicle 断言崩溃。
+            if buffer.occupied_by != blk_vid:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
             path_back = self.path_engine.shortest_path(buffer.node_id, blk_spot.node_id)
             if blocker is not None and path_back:
                 yield from self._reserve_drive(blocker, path_back, "shift", self.env.now)
+            if buffer.occupied_by != blk_vid:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
             innermost = self._find_innermost_available(blk_spot)
             target = innermost if innermost else blk_spot
             self.parking_lot.move_vehicle(buffer, target)

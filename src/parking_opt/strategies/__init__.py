@@ -5,6 +5,7 @@ from .greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
 from .registry import StrategyRegistry
 from .fusion import CompositeStrategy, PeakOffPeakFusion
 from .mosa import MosaStrategy
+from .risk_scoring import RiskScoringStrategy
 
 # 登记内置策略（新增算法在此追加一行登记即可）
 StrategyRegistry.register(FCFS)
@@ -15,9 +16,11 @@ StrategyRegistry.register(DepartureOrderGreedy)
 StrategyRegistry.register(DurationAwareGreedy)
 StrategyRegistry.register(PeakOffPeakFusion)
 StrategyRegistry.register(MosaStrategy)
+StrategyRegistry.register(RiskScoringStrategy)
 
 __all__ = [
     "BaseStrategy", "FCFS", "NearestPath", "RandomAssign",
     "GreedyStrategy", "DepartureOrderGreedy", "DurationAwareGreedy",
-    "CompositeStrategy", "PeakOffPeakFusion", "MosaStrategy", "StrategyRegistry",
+    "CompositeStrategy", "PeakOffPeakFusion", "MosaStrategy",
+    "RiskScoringStrategy", "StrategyRegistry",
 ]
