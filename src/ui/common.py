@@ -803,6 +803,39 @@ def _load_run_history():
         pass
 
 
+LAST_PARAMS_PREF_KEY = "last_params_v1"
+
+
+def _load_last_params():
+    """登录/恢复会话后，从 Supabase 加载各策略最近一次使用的参数（用于回填控件）。"""
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        val = auth_get_pref(token, LAST_PARAMS_PREF_KEY)
+        if val:
+            last = json.loads(val)
+            if isinstance(last, dict):
+                st.session_state.last_params = {
+                    k: v for k, v in last.items() if isinstance(v, dict)}
+    except Exception:
+        pass
+
+
+def persist_last_params(strategy_name: str, params: dict):
+    """保存某策略最近一次使用的参数（内存 + Supabase 用户偏好），reboot 后回填控件。"""
+    last = st.session_state.setdefault("last_params", {})
+    last[strategy_name] = dict(params or {})
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        auth_set_pref(token, LAST_PARAMS_PREF_KEY,
+                      json.dumps(last, ensure_ascii=False))
+    except Exception:
+        pass
+
+
 # 自定义布局持久化（Supabase 偏好，用户级）：布局真相源为 session_state.custom_layouts，
 # 全局 LAYOUT_BUILDERS/LAYOUTS 仅作为渲染时的镜像，避免"进程残留但删不掉"。
 CUSTOM_LAYOUTS_PREF_KEY = "custom_layouts_v1"
@@ -899,6 +932,7 @@ def check_login():
             st.session_state.token = restored["token"]
             _load_priority_preference()
             _load_run_history()
+            _load_last_params()
             restore_custom_layouts()
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
@@ -928,6 +962,7 @@ def check_login():
                         set_session_token(res["token"])
                         _load_priority_preference()
                         _load_run_history()
+                        _load_last_params()
                         restore_custom_layouts()
                         st.rerun()
                     else:
@@ -977,11 +1012,37 @@ ENV_PARAM_SPECS = [
 ]
 
 
-def _render_param_widget(p, prefix, disabled):
+def _coerce_int(value, default, lo, hi):
+    """把持久化的参数值安全转成 int 并夹在 [lo, hi] 内。"""
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        try:
+            return int(default)
+        except (TypeError, ValueError):
+            return int(lo)
+    return max(int(lo), min(int(hi), v))
+
+
+def _coerce_float(value, default, lo, hi):
+    """把持久化的参数值安全转成 float 并夹在 [lo, hi] 内。"""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        try:
+            return float(default)
+        except (TypeError, ValueError):
+            return float(lo)
+    return max(float(lo), min(float(hi), v))
+
+
+def _render_param_widget(p, prefix, disabled, initial=None):
     """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。
 
     p 里可带 "locked": True —— 该参数由系统自动判定/绑定，渲染为灰色不可调
     （如 MOSA 的场景模式由车位数/车辆数/时间自动判定）。
+
+    initial: 可选 {key: value}，优先作为控件初始值（用于 reboot 后回填上次参数）。
     """
     key = p["key"]
     label = p.get("label", key)
@@ -990,37 +1051,45 @@ def _render_param_widget(p, prefix, disabled):
     default = p.get("default")
     dis = disabled or bool(p.get("locked", False))
     wkey = f"{prefix}_{key}"
+    initial = initial or {}
     if ptype == "int":
-        return st.slider(label, int(p.get("min", 0)), int(p.get("max", 100)),
-                         int(default if default is not None else p.get("min", 0)),
+        lo, hi = int(p.get("min", 0)), int(p.get("max", 100))
+        init_val = _coerce_int(initial.get(key), default, lo, hi)
+        return st.slider(label, lo, hi, init_val,
                          int(p.get("step", 1)), key=wkey, disabled=dis, help=help_text)
     if ptype == "float":
-        return st.slider(label, float(p.get("min", 0.0)), float(p.get("max", 1.0)),
-                         float(default if default is not None else p.get("min", 0.0)),
+        lo, hi = float(p.get("min", 0.0)), float(p.get("max", 1.0))
+        init_val = _coerce_float(initial.get(key), default, lo, hi)
+        return st.slider(label, lo, hi, init_val,
                          float(p.get("step", 0.1)), key=wkey, disabled=dis, help=help_text)
     if ptype == "choice":
         options = p.get("options", [])
         opts = [o[0] for o in options] if options else []
         fmt = {o[0]: o[1] for o in options} if options else {}
-        idx = opts.index(default) if default in opts else 0
+        iv = initial.get(key)
+        idx = opts.index(iv) if iv in opts else (opts.index(default) if default in opts else 0)
         return st.selectbox(label, opts, index=idx, format_func=lambda v: fmt.get(v, v),
                             key=wkey, disabled=dis, help=help_text)
     if ptype == "bool":
-        return st.checkbox(label, bool(default), key=wkey, disabled=dis, help=help_text)
+        iv = initial.get(key)
+        val = iv if isinstance(iv, bool) else bool(default)
+        return st.checkbox(label, val, key=wkey, disabled=dis, help=help_text)
     if ptype == "strategy":
         names = list(StrategyRegistry.all().keys())
         fmt = {n: StrategyRegistry.get(n).label for n in names}
-        idx = names.index(default) if default in names else 0
+        iv = initial.get(key)
+        idx = names.index(iv) if iv in names else (names.index(default) if default in names else 0)
         return st.selectbox(label, names, index=idx, format_func=lambda v: fmt.get(v, v),
                             key=wkey, disabled=dis, help=help_text)
     return None
 
 
-def render_strategy_params(strategy_name, disabled=False):
-    """渲染某策略的全部参数控件，返回 {key: value}。"""
+def render_strategy_params(strategy_name, disabled=False, initial=None):
+    """渲染某策略的全部参数控件，返回 {key: value}。initial 用于回填上次参数。"""
     params = {}
     for p in StrategyRegistry.specs(strategy_name):
-        params[p["key"]] = _render_param_widget(p, f"sp_{strategy_name}", disabled)
+        params[p["key"]] = _render_param_widget(p, f"sp_{strategy_name}", disabled,
+                                                initial=initial)
     return params
 
 

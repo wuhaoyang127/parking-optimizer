@@ -138,7 +138,8 @@ def render_settings(role):
     # 策略可调参数（按 PARAMS 声明动态渲染）
     if strategy_name != "compare_all" and StrategyRegistry.specs(strategy_name):
         st.markdown("#### 🎛️ 算法参数（可调）")
-        strat_params = render_strategy_params(strategy_name, disabled)
+        last_params = st.session_state.get("last_params", {}).get(strategy_name, {})
+        strat_params = render_strategy_params(strategy_name, disabled, initial=last_params)
     else:
         strat_params = {}
 
@@ -302,6 +303,9 @@ def render_settings(role):
                 if len(history[strategy_name]) > 5:
                     history[strategy_name] = history[strategy_name][-5:]
                 st.session_state.run_history = history
+
+                # 持久化最近一次参数（reboot 后自动回填该策略控件）
+                persist_last_params(strategy_name, strat_params)
 
                 # 持久化到 Supabase（登录用户跨会话保留调参历史）
                 token = st.session_state.get("token")
