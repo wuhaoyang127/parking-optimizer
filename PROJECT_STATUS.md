@@ -1,15 +1,15 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 19
+status_version: 20
 last_updated: 2026-08-27
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-mosa-integration
+current_milestone: stage-d-risk-scoring
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: bf82cdc
-current_exec_plan: docs/plans/stage-d-mosa-integration.md
-latest_handoff: null
+last_verified_commit: dc1a7f8
+current_exec_plan: docs/plans/stage-d-risk-scoring.md
+latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
 current_stage_blockers: []
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-mosa-integration`（算法一 MOSA 多目标优化接入，已实现并验收通过）；
+- **当前里程碑**：`stage-d-risk-scoring`（算法二「风险感知多准则评分」在线策略，已实现待验收）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：用户验收「反馈显示时间提示清理」（管理员反馈列表时间行不再显示「（原始：…）」提示、状态改为中文「待处理/已处理」、✎ 编辑面板删除「恢复原始」按钮仅保留「保存/取消」）；Cloud Redeploy 到最新提交后查看。
+- **当前唯一下一步**：用户验收**算法二 risk_scoring「风险感知多准则评分」**（网页策略下拉出现该策略与 3 个权重滑杆、可单跑/对比/排名；注意这是在线策略，与算法一 MOSA 离线基准定位不同）；Cloud Redeploy 到最新提交后验收。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -81,6 +81,7 @@ superseded
 - [x] 阶段 D：策略最近参数持久化（运行仿真后把该策略本次参数保存到 Supabase 用户偏好 `last_params_v1`，登录/恢复会话自动回填设置页控件，reboot/刷新后参数不丢；持久化值带类型转换与范围夹取兜底），pytest 69 passed、自检通过，已验收。
 - [x] 阶段 D：交付体验第三批（布局持久化兜底：Supabase 写入失败可见 + 本地备份文件自愈；新算法接入页文件删除二次确认；反馈显示时间管理员可改并保存（新迁移 `04_feedback_display_time.sql` 需在 Supabase 执行）；权限落实 `can_export`（访客禁止下载/导出），操作员可见新算法接入说明文字但不可上传），pytest 71 passed、自检通过、AppTest 通过，已验收。
 - [x] 阶段 D：反馈显示时间提示清理（用户验收后反馈：管理员反馈列表时间行删除「（原始：…）」提示、状态由英文 pending/resolved 改为中文「待处理/已处理」、✎ 编辑面板删除「恢复原始」按钮仅保留「保存/取消」、占位提示不再回显原始时间），pytest 71 passed、自检通过，待用户验收。
+- [x] 阶段 D：算法二 risk_scoring 接入（在线「风险感知多准则评分」：候选车位三项原始代价 min–max 归一化后加权 `C = w_d·距离 + w_r·预期移位风险 + w_p·结构惩罚`，argmin 选位；只用当前状态与预估离场，不读真实停车时长；登记注册表网页自动出现 3 个权重滑杆；并入教学文档/18 项单元测试/实验脚本+产物/4 条新文献；另修复实验暴露的引擎移位让行并发竞态并新增 2 项回归测试），pytest 91 passed、自检通过，待用户验收。
 
 ## 5. 已批准的项目级决定
 
@@ -133,10 +134,10 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`，共 71 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`，共 91 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -153,7 +154,12 @@ superseded
 | `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效 |
 | `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 有效 |
 | `src/parking_opt/strategies/fusion.py` | 融合算法接口 + 示例 | 有效 |
-| `src/parking_opt/strategies/mosa.py` | 算法一 MOSA：NSGA-II 离线多目标预分配策略 | 有效，本轮新增 |
+| `src/parking_opt/strategies/mosa.py` | 算法一 MOSA：NSGA-II 离线多目标预分配策略 | 有效 |
+| `src/parking_opt/strategies/risk_scoring.py` | 算法二 risk_scoring：风险感知多准则评分（在线） | 有效，本轮新增 |
+| `tests/test_risk_scoring.py` | 算法二 18 项单元测试 | 有效，本轮新增 |
+| `tests/test_engine_shift_race.py` | 引擎移位让行并发竞态回归测试（2 项） | 有效，本轮新增 |
+| `docs/algorithms/risk_scoring.md` | 算法二教学文档（数学定义/伪代码/实验/优缺点） | 有效，本轮新增 |
+| `scripts/exp_risk_scoring.py` | 算法二第一版实验脚本（产出 `outputs/`，本地产物） | 有效，本轮新增 |
 | `src/parking_opt/io/demand_io.py` | 需求序列 JSON 导出/导入（schema v1） | 有效，本轮新增 |
 | `src/parking_opt/evaluation/ranking.py` | 加权多指标评分排名（归一化+方向） | 有效，本轮新增 |
 | `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
@@ -178,11 +184,12 @@ superseded
 
 ## 11. 当前唯一下一步
 
-1. 用户验收 **反馈显示时间提示清理**（本次修改，最新提交 `bf82cdc`）：
-   - 管理员反馈列表时间行只显示「时间：改后时间 | 状态：待处理/已处理」，不再出现「（原始：…）」提示；
-   - 点开 ✎ 编辑面板仅保留「保存 / 取消」，已删除「恢复原始」按钮；输入框占位提示不再回显原始时间；
-   - Cloud Redeploy 到最新 `stage-d-deliver` 后重新登录查看。
-2. 前序验收项已全部通过（2026-08-27）：MOSA 接入、引擎时间片碰撞检测与场景 B 入库让行、策略最近参数持久化、交付体验第三批、`stage-d-feedback-round2` 4 项反馈。
+1. 用户验收 **算法二 risk_scoring「风险感知多准则评分」**（本次接入，最新提交 `dc1a7f8`）：
+   - 网页仿真设置页「策略」下拉框出现「风险感知多准则评分」，自动渲染 3 个权重滑杆（距离 `w_d` / 阻挡风险 `w_r` / 结构惩罚 `w_p`，0–3 步长 0.1，默认 1.0/1.5/0.5）；
+   - 可单策略运行，也可参与「全部对比」与加权/字典序排名；在线策略不读未来真值（与算法一 MOSA 离线基准定位不同）；
+   - Cloud Redeploy 到最新 `stage-d-deliver` 后重新登录验收。
+2. 用户验收 **反馈显示时间提示清理**（上一轮修改，最新提交 `bf82cdc`）：反馈时间行只显示「时间 + 状态（中文）」、✎ 面板只有「保存 / 取消」。
+3. 前序验收项已全部通过（2026-08-27）：MOSA 接入、引擎时间片碰撞检测与场景 B 入库让行、策略最近参数持久化、交付体验第三批、`stage-d-feedback-round2` 4 项反馈。
 
 ## 12. 预计后续需要用户确认
 
@@ -192,6 +199,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-27：**算法二 risk_scoring 接入**（用户提供 `新算法接入/算法二` 快照，本会话并入 `stage-d-deliver`，主干其它内容全部保留）：新增 `src/parking_opt/strategies/risk_scoring.py`（在线「风险感知多准则评分」，候选车位内 min–max 归一化后加权 `C = w_d·距离 + w_r·预期移位风险 + w_p·结构惩罚`，argmin 选位，不读真实停车时长），登记注册表网页自动出现 3 个权重滑杆（默认 1.0/1.5/0.5）；并入 18 项单元测试、教学文档 `docs/algorithms/risk_scoring.md`、实验脚本 `scripts/exp_risk_scoring.py`（本地产出 `outputs/exp_risk_scoring_*`）、4 条新文献（bib + 文献矩阵 §11）；**修复实验暴露的引擎移位让行并发竞态**——回位 `move_vehicle` 前后加防御检查（缓冲位若已被其它进程移走则跳过回位），新增 `tests/test_engine_shift_race.py`（2 项）；实验按当前引擎重跑，文档 §11 数字与默认权重选取理由如实改写（默认保持 1.0/1.5/0.5：均值移位 0.2 次、行驶 5588m，比严格零移位组合少 92m）；pytest 91 passed、自检通过；打 tag `backup-before-risk-scoring-20260827`；待用户验收；
 - 2026-08-27：反馈显示时间提示清理（用户验收后反馈）：管理员反馈列表时间行删除「（原始：…）」提示，状态由英文 pending/resolved 改为中文「待处理/已处理」；✎ 编辑面板删除「恢复原始」按钮，仅保留「保存 / 取消」；输入框占位提示不再回显原始时间（placeholder 固定为示例格式）；pytest 71 passed、自检通过（129 文件）；打 tag `backup-before-fb-time-hint-cleanup-20260827`；待用户验收；
 - 2026-08-27：修复反馈时间编辑入口的 Streamlit 异常：✎ 按钮的控件 key 与 session_state 状态 key 分离（`fb_dt_btn_*` / `fb_dt_open_*`），避免「控件实例化后修改同 key session_state」的 StreamlitAPIException；pytest 71 passed、AppTest 反馈页无异常；
 - 2026-08-27：交付体验第三批：①**布局持久化兜底**——`persist_custom_layouts()` 返回 (ok,error) 并在 UI 显示云端保存失败原因；本地桌面运行时额外写 `data/custom_layouts_backup.json`，Supabase 恢复为空时回退本地备份并自愈回写；②**新算法接入页文件删除**——每个已上传算法文件增加「🗑 删除」+ 行内二次确认（确认/取消）；③**反馈显示时间可改**——新增迁移 `migrations/04_feedback_display_time.sql`（feedback 表加 `display_time` 字段 + `update_feedback_display_time` RPC 仅管理员），管理员在全部反馈区每条反馈可修改显示时间并保存（入口为时间旁低调小「✎」按钮，点击后才展开编辑，不显式标注），我的反馈/CSV 导出同步使用；④**权限落实**——`can_export` 实际生效（访客在设置页/指标页看不到下载导出控件），操作员在新算法接入页可见全部说明文字但不可上传（`can_configure` 可见 / `can_import_algo` 可传）；pytest 71 passed、自检通过（129 文件）、AppTest 通过；打 tag `backup-before-layout-algo-feedback-perm-20260827`；待用户验收；
