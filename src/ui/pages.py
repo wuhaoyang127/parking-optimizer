@@ -1446,9 +1446,9 @@ def _render_admin_feedbacks():
         with c_time:
             st.caption(time_txt)
         with c_edit:
-            edit_key = f"fb_dt_toggle_{fid}"
-            if st.button("✎", key=edit_key):
-                st.session_state[edit_key] = not st.session_state.get(edit_key, False)
+            open_key = f"fb_dt_open_{fid}"
+            if st.button("✎", key=f"fb_dt_btn_{fid}"):
+                st.session_state[open_key] = not st.session_state.get(open_key, False)
                 st.rerun()
         if f.get("related_run"):
             with st.expander("关联仿真信息"):
@@ -1457,7 +1457,7 @@ def _render_admin_feedbacks():
         if f.get("reply"):
             st.info(f"💬 已回复：{f['reply']}")
 
-        if st.session_state.get(edit_key):
+        if st.session_state.get(open_key):
             new_dt = st.text_input(
                 "显示时间", value=f.get("display_time") or "",
                 key=f"fb_dt_{fid}",
@@ -1470,7 +1470,7 @@ def _render_admin_feedbacks():
                     res = auth_update_feedback_display_time(
                         st.session_state.token, fid, new_dt.strip())
                     if isinstance(res, dict) and res.get("success"):
-                        st.session_state[edit_key] = False
+                        st.session_state[open_key] = False
                         st.success("✅ 已保存")
                     else:
                         st.error((res or {}).get("error", "保存失败"))
@@ -1480,14 +1480,14 @@ def _render_admin_feedbacks():
                     res = auth_update_feedback_display_time(
                         st.session_state.token, fid, "")
                     if isinstance(res, dict) and res.get("success"):
-                        st.session_state[edit_key] = False
+                        st.session_state[open_key] = False
                         st.success("✅ 已恢复原始时间")
                     else:
                         st.error((res or {}).get("error", "保存失败"))
                     st.rerun()
             with cb3:
                 if st.button("取消", key=f"fb_dt_cancel_{fid}"):
-                    st.session_state[edit_key] = False
+                    st.session_state[open_key] = False
                     st.rerun()
 
         c1, c2, c3 = st.columns([1, 1, 3])
