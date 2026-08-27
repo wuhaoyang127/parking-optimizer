@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 15
+status_version: 16
 last_updated: 2026-08-27
 current_stage: D
 stage_status: in_progress
@@ -131,10 +131,10 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`，共 69 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`，共 71 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -178,7 +178,7 @@ superseded
 
 1. 用户验收 **算法一 MOSA 接入**（`stage-d-mosa-integration`，计划：`docs/plans/stage-d-mosa-integration.md`）：
    - 网页仿真设置页「策略」下拉框出现「MOSA 多目标优化（离线）」，带 4 个参数控件（种群规模/进化代数/场景模式/评估等待上限）；
-   - **场景模式已变灰不可调**：由车位数/车辆数/停车时长自动绑定判定（共 3 种：高峰重时间 0.6/0.2/0.2、平峰重距离 0.2/0.6/0.2、饱和重利用率 0.2/0.2/0.6），页面实时显示判定结果与权重；
+   - **场景模式已变灰不可调**：由车位数/车辆数/停车时长自动绑定判定（共 3 种：高峰重时间 0.6/0.2/0.2、平峰重距离 0.2/0.6/0.2、饱和重利用率 0.2/0.2/0.6），页面实时显示判定结果与权重；**导入的真实布局取 JSON 实际车位数**（不用滑杆默认值），导入需求序列时按真实车辆时序精确判定；
    - DESCRIPTION 已标注「离线全信息对照基准」，与在线策略对比时为上界参考（与 CP-SAT 定位一致）。
 2. 用户验收 **引擎改造**（时间片路口碰撞检测 + 场景 B 入库让行，已按用户批准实施）：
    - 所有车辆运动按有向边生成时间片，同边不重叠（GAP 2s）；
@@ -195,6 +195,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-27：修复真实布局 MOSA 场景判定提示：设置页场景绑定提示在「导入的真实布局」下改用导入 JSON 的**实际车位数**（此前误用变灰滑杆的默认值 15）；有导入需求序列时改用新增的 `resolve_scene()` 按真实车辆时序精确判定（与运行时 `_resolve_scene` 共用同一规则，杜绝 UI 预估与运行时权重不一致）；新增测试 2 项，pytest 71 passed、自检通过、AppTest 真实布局 20 车位提示验证通过；打 tag `backup-before-scene-hint-fix-20260827`；
 - 2026-08-27：策略最近参数持久化：新增 Supabase 用户偏好 `last_params_v1`——每次运行仿真后保存该策略本次参数（`persist_last_params`），登录/恢复会话时 `_load_last_params()` 拉回，设置页按策略自动回填控件（reboot/刷新后参数不丢）；`_render_param_widget`/`render_strategy_params` 支持 `initial` 回填，并对持久化值做类型转换与 min/max 夹取兜底（防脏数据崩溃）；打 tag `backup-before-last-params-persist-20260827`；pytest 69 passed、启动包自检通过、AppTest 回填/运行后保存验证通过，待用户验收；
 - 2026-08-27：MOSA 场景权重与车位数/车辆数/时间**自动绑定**：新增 `estimate_scene()` 公共判定函数（需求密度 = 车辆数×平均停车时长 / (车位数×时间跨度)，≥0.85 饱和/≥0.6 高峰/否则平峰，共 3 种情况）；`scene` 参数标记 `locked`（网页渲染为灰色不可调，默认 auto）；UI 参数渲染器支持 PARAMS 项的 `locked` 字段（置灰），MOSA 策略下仿真设置页实时显示「当前车位数/车辆数/平均停车时长 → 判定为哪种场景及权重（时间/距离/利用率）」；新增场景绑定测试 3 项，pytest 69 passed、自检通过；
 - 2026-08-27：按用户批准改造引擎对齐算法一文档：①**时间片路口碰撞检测**——所有车辆运动（入库/离场/移位）按有向边生成 `TimeSlice`，同一边时间片不重叠（`EDGE_GAP=2s` 硬约束），冲突时等待推进；②**场景 B 入库让行**——新车停里层车位被外层车挡时，外层车移位让行 → 新车停入 → 外层车回位（场景 A 离场让行已有）；`PathEngine` 新增 `get_path_edges`；新增 `tests/test_engine_timeslice.py`（4 项），pytest 69 passed、启动包自检通过（128 个关键文件）；
