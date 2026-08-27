@@ -130,7 +130,7 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`，共 62 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`，共 66 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
 - 备份存档：git tag `backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
@@ -177,9 +177,13 @@ superseded
 
 1. 用户验收 **算法一 MOSA 接入**（`stage-d-mosa-integration`，计划：`docs/plans/stage-d-mosa-integration.md`）：
    - 网页仿真设置页「策略」下拉框出现「MOSA 多目标优化（离线）」，带 4 个参数控件（种群规模/进化代数/场景模式/评估等待上限）；
-   - 单策略运行或「全部对比」均可选 MOSA；注意其 DESCRIPTION 已标注「离线全信息对照基准」，与在线策略对比时为上界参考（与 CP-SAT 定位一致）；
-   - 本地验证：pytest 62 passed、启动包自检通过、端到端对比中 MOSA 满足率显著高于在线策略（离线全信息）。
-2. 上轮 `stage-d-feedback-round2` 4 项反馈（需求时序可视化/需求序列导入导出/加权多指标排名/布局来源分组）仍**待用户验收**。
+   - 场景权重已按原算法修正生效（Pareto 前沿 min-max 归一化加权选解），peak/normal/saturated 会选出不同方案；
+   - DESCRIPTION 已标注「离线全信息对照基准」，与在线策略对比时为上界参考（与 CP-SAT 定位一致）。
+2. 用户验收 **引擎改造**（时间片路口碰撞检测 + 场景 B 入库让行，已按用户批准实施）：
+   - 所有车辆运动按有向边生成时间片，同边不重叠（GAP 2s）；
+   - 新车停里层车位被外层车挡时自动入库让行移位；
+   - 本地验证：pytest 66 passed、启动包自检通过、场景 A/B 与时间片测试全绿。
+3. 上轮 `stage-d-feedback-round2` 4 项反馈（需求时序可视化/需求序列导入导出/加权多指标排名/布局来源分组）仍**待用户验收**。
 
 ## 12. 预计后续需要用户确认
 
@@ -189,7 +193,8 @@ superseded
 
 ## 13. 最近重要变更
 
-- 2026-08-27：算法一 MOSA 接入（打 tag `backup-before-mosa-20260827`）：新增 `src/parking_opt/strategies/mosa.py`（NSGA-II 离线全信息多目标优化，f1 总行驶时间/f2 总行驶距离/f3 利用率均衡，场景权重高峰重时间/平峰重距离/饱和重利用率，支持拒绝 -1）；`BaseStrategy` 新增 `prepare` 钩子（离线预分配通用接口），`SimulationEngine.run()` 开头自动调用（向后兼容）；登记注册表后网页自动出现「MOSA 多目标优化（离线）」及参数控件；规模保护（>60 车位或 >120 车跳过优化回退贪心）；新增 `tests/test_mosa.py`（11 项），pytest 62 passed、启动包自检通过；按原算法 `mosa_full.py` 对齐修正：Pareto 前沿 **min-max 归一化加权选解**（场景权重真正生效：peak/normal/saturated 选解不同）、拒绝惩罚 1000、种群/代数默认 30/50、初始化与变异按场景引导（peak 最近/saturated 类型均衡/normal 随机）；
+- 2026-08-27：按用户批准改造引擎对齐算法一文档：①**时间片路口碰撞检测**——所有车辆运动（入库/离场/移位）按有向边生成 `TimeSlice`，同一边时间片不重叠（`EDGE_GAP=2s` 硬约束），冲突时等待推进；②**场景 B 入库让行**——新车停里层车位被外层车挡时，外层车移位让行 → 新车停入 → 外层车回位（场景 A 离场让行已有）；`PathEngine` 新增 `get_path_edges`；新增 `tests/test_engine_timeslice.py`（4 项），pytest 66 passed、启动包自检通过（128 个关键文件）；
+- 2026-08-27：算法一 MOSA 接入（打 tag `backup-before-mosa-20260827`）：新增 `src/parking_opt/strategies/mosa.py`（NSGA-II 离线全信息多目标优化，f1 总行驶时间/f2 总行驶距离/f3 利用率均衡，场景权重高峰重时间/平峰重距离/饱和重利用率，支持拒绝 -1）；`BaseStrategy` 新增 `prepare` 钩子（离线预分配通用接口），`SimulationEngine.run()` 开头自动调用（向后兼容）；登记注册表后网页自动出现「MOSA 多目标优化（离线）」及参数控件；规模保护（>60 车位或 >120 车跳过优化回退贪心）；新增 `tests/test_mosa.py`（11 项）；按原算法 `mosa_full.py` 对齐修正：Pareto 前沿 **min-max 归一化加权选解**（场景权重真正生效：peak/normal/saturated 选解不同）、拒绝惩罚 1000、种群/代数默认 30/50、初始化与变异按场景引导（peak 最近/saturated 类型均衡/normal 随机）；
 - 2026-08-21：布局持久化：自定义布局以 `session_state.custom_layouts` 为真相源，登录/恢复会话时从 Supabase 偏好（`custom_layouts_v1`）恢复，导入/删除时回写；渲染相关页面前 `_sync_custom_layouts_to_globals()` 重建全局镜像（清除进程残留），退出登录 `clear_custom_layouts()` 清空。解决「退出登录后布局能用但删不掉/不显示」问题；打备份 tag `backup-before-layout-persist-20260823`；pytest 51 passed、AppTest 同步三场景通过、自检通过；
 - 2026-08-21：布局删除入口优化：系统设置→导入布局→已导入列表的删除按钮改为红色 primary「🗑 删除」+ 行内二次确认（确认/取消），防误删；打备份 tag `backup-before-layout-delete-confirm-20260823`；pytest 51 passed、AppTest 删除/取消/确认三场景通过、自检通过；
 - 2026-08-21：修复线上崩溃（Cloud 报 `build_demand_histogram` ValueError）：根因是导入的真实布局存在从入口不可达的车位时，行驶时间 inf 传播进 SimPy 时钟产生 nan 事件时间。三层防御：①引擎层——分配/等待分配时拒绝不可达车位、移位不可达缓冲位记 BUFFER_FAILED，杜绝 inf/nan 事件；②导入校验——布局 JSON 校验每个车位「入口可达且可返回入口」，不连通直接报错拒收；③UI 层——直方图/车辆明细表/时钟格式化对 None/nan/inf/字符串时间全部兜底。新增 `tests/test_engine_robustness.py`（2 项），pytest 51 passed、自检通过；

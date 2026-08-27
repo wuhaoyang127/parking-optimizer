@@ -48,6 +48,18 @@ class PathEngine:
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return []
 
+    def get_path_edges(self, path_nodes: list[str]) -> list[tuple[str, str, float]]:
+        """把节点序列转成有向边序列 [(from, to, length)]；找不到边则返回空列表。"""
+        if not path_nodes or len(path_nodes) < 2:
+            return []
+        edges = []
+        for a, b in zip(path_nodes, path_nodes[1:]):
+            data = self.graph.get_edge_data(a, b)
+            if data is None:
+                return []
+            edges.append((a, b, float(data.get("weight", 0.0))))
+        return edges
+
     def distance_to_spot(self, spot_node_id: str) -> float:
         """从入口到某车位的距离"""
         return self.shortest_distance(self.entry_id, spot_node_id)
