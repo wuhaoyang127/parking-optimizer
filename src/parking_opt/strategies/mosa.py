@@ -45,7 +45,32 @@ SCENE_WEIGHTS = {
     "saturated": {"f1": 0.2, "f2": 0.2, "f3": 0.6},
 }
 
+SCENE_LABELS = {
+    "peak": "高峰（重时间）",
+    "normal": "平峰（重距离）",
+    "saturated": "饱和（重利用率）",
+}
+
 REJECT_PENALTY = 1000.0  # 拒绝一辆车的惩罚（加到 f1/f2，与原算法 mosa_full.py 一致）
+
+
+def estimate_scene(n_spots: int, n_vehicles: int, sim_duration: float,
+                   avg_duration: float) -> str:
+    """按车位数/车辆数/时间预估场景权重模式（与 _resolve_scene 同一判定规则）。
+
+    三种情况：高峰（重时间）/ 平峰（重距离）/ 饱和（重利用率）。
+    UI 在运行前用本函数做预估展示；运行时 MosaStrategy 按真实生成车辆精确判定。
+    """
+    if n_spots <= 0 or n_vehicles <= 0 or sim_duration <= 0:
+        return "normal"
+    total_demand_time = n_vehicles * max(avg_duration, 1.0)
+    span = sim_duration + max(avg_duration, 1.0)  # 近似时间跨度（最后到达 + 平均停车）
+    demand_ratio = total_demand_time / (n_spots * span)
+    if demand_ratio >= 0.85:
+        return "saturated"
+    if demand_ratio >= 0.6:
+        return "peak"
+    return "normal"
 
 
 class MosaStrategy(BaseStrategy):
@@ -74,11 +99,11 @@ class MosaStrategy(BaseStrategy):
         {"key": "generations", "label": "进化代数", "type": "int",
          "min": 4, "max": 100, "step": 2, "default": 50,
          "help": "NSGA-II 进化代数（原算法默认 50，越大越充分，耗时越长）"},
-        {"key": "scene", "label": "场景模式", "type": "choice",
-         "options": [("auto", "自动判定"), ("peak", "高峰（重时间）"),
+        {"key": "scene", "label": "场景模式（自动判定）", "type": "choice",
+         "options": [("auto", "自动判定（绑定车位/车辆/时间）"), ("peak", "高峰（重时间）"),
                      ("normal", "平峰（重距离）"), ("saturated", "饱和（重利用率）")],
-         "default": "auto",
-         "help": "场景权重模式：高峰重时间、平峰重距离、饱和重利用率"},
+         "default": "auto", "locked": True,
+         "help": "场景权重由车位数、车辆数、停车时长自动判定（共 3 种：高峰重时间/平峰重距离/饱和重利用率），此控件不可手动调节"},
         {"key": "max_wait", "label": "评估等待上限(秒)", "type": "float",
          "min": 60.0, "max": 3600.0, "step": 60.0, "default": 1800.0,
          "help": "离线评估中车辆等待目标车位空出的时间上限（与引擎排队上限一致）"},

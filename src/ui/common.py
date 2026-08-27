@@ -52,6 +52,8 @@ from parking_opt.simulation.arrival import generate_demand
 from parking_opt.simulation.defaults import (CAR_SPEED, MAX_WAIT_TIME, SIM_DURATION,
                                              DURATION_MIN, DURATION_MAX, PEAK_RATIO, ERROR_RATIO)
 from parking_opt.strategies import StrategyRegistry
+from parking_opt.strategies.mosa import estimate_scene as estimate_mosa_scene
+from parking_opt.strategies.mosa import SCENE_LABELS as MOSA_SCENE_LABELS
 from parking_opt.evaluation.metrics import compute_metrics
 from parking_opt.evaluation.ranking import weighted_rank, DEFAULT_WEIGHTS as RANK_DEFAULT_WEIGHTS
 from parking_opt.io.demand_io import export_demand_json, parse_demand_json
@@ -976,36 +978,41 @@ ENV_PARAM_SPECS = [
 
 
 def _render_param_widget(p, prefix, disabled):
-    """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。"""
+    """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。
+
+    p 里可带 "locked": True —— 该参数由系统自动判定/绑定，渲染为灰色不可调
+    （如 MOSA 的场景模式由车位数/车辆数/时间自动判定）。
+    """
     key = p["key"]
     label = p.get("label", key)
     help_text = p.get("help")
     ptype = p.get("type", "float")
     default = p.get("default")
+    dis = disabled or bool(p.get("locked", False))
     wkey = f"{prefix}_{key}"
     if ptype == "int":
         return st.slider(label, int(p.get("min", 0)), int(p.get("max", 100)),
                          int(default if default is not None else p.get("min", 0)),
-                         int(p.get("step", 1)), key=wkey, disabled=disabled, help=help_text)
+                         int(p.get("step", 1)), key=wkey, disabled=dis, help=help_text)
     if ptype == "float":
         return st.slider(label, float(p.get("min", 0.0)), float(p.get("max", 1.0)),
                          float(default if default is not None else p.get("min", 0.0)),
-                         float(p.get("step", 0.1)), key=wkey, disabled=disabled, help=help_text)
+                         float(p.get("step", 0.1)), key=wkey, disabled=dis, help=help_text)
     if ptype == "choice":
         options = p.get("options", [])
         opts = [o[0] for o in options] if options else []
         fmt = {o[0]: o[1] for o in options} if options else {}
         idx = opts.index(default) if default in opts else 0
         return st.selectbox(label, opts, index=idx, format_func=lambda v: fmt.get(v, v),
-                            key=wkey, disabled=disabled, help=help_text)
+                            key=wkey, disabled=dis, help=help_text)
     if ptype == "bool":
-        return st.checkbox(label, bool(default), key=wkey, disabled=disabled, help=help_text)
+        return st.checkbox(label, bool(default), key=wkey, disabled=dis, help=help_text)
     if ptype == "strategy":
         names = list(StrategyRegistry.all().keys())
         fmt = {n: StrategyRegistry.get(n).label for n in names}
         idx = names.index(default) if default in names else 0
         return st.selectbox(label, names, index=idx, format_func=lambda v: fmt.get(v, v),
-                            key=wkey, disabled=disabled, help=help_text)
+                            key=wkey, disabled=dis, help=help_text)
     return None
 
 

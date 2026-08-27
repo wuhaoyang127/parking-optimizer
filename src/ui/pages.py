@@ -156,6 +156,21 @@ def render_settings(role):
         env_params["duration_min"], env_params["duration_max"] = \
             env_params["duration_max"], env_params["duration_min"]
 
+    # MOSA 场景权重自动绑定提示：由车位数/车辆数/停车时长自动判定（共 3 种，控件已变灰）
+    if strategy_name == "mosa":
+        eff_n_vehicles = len(imported_vehicles) if import_mode and imported_vehicles else n_vehicles
+        avg_duration = (env_params["duration_min"] + env_params["duration_max"]) / 2
+        scene = estimate_mosa_scene(n_spots, eff_n_vehicles,
+                                    env_params["sim_duration"], avg_duration)
+        weights_txt = {"peak": "0.6 / 0.2 / 0.2",
+                       "normal": "0.2 / 0.6 / 0.2",
+                       "saturated": "0.2 / 0.2 / 0.6"}[scene]
+        src_txt = "导入文件车辆数" if import_mode and imported_vehicles else "车辆数"
+        st.info(f"🔒 MOSA 场景权重**自动绑定**：车位数 {n_spots}、{src_txt} {eff_n_vehicles}、"
+                f"平均停车时长约 {avg_duration / 60:.0f} 分钟 → 判定为"
+                f"「{MOSA_SCENE_LABELS[scene]}」，权重（时间/距离/利用率）＝ {weights_txt}。"
+                f"该参数不可手动调节（已变灰）。")
+
     # 算法排名设置（加权评分 / 字典序优先级），运行后指标分析页按此展示
     st.markdown("#### 🏆 算法排名设置")
     if "rank_mode" not in st.session_state:

@@ -9,7 +9,7 @@ from src.parking_opt.simulation.engine import SimulationEngine
 from src.parking_opt.simulation.arrival import generate_demand
 from src.parking_opt.evaluation.metrics import compute_metrics
 from src.parking_opt.strategies import StrategyRegistry
-from src.parking_opt.strategies.mosa import MosaStrategy
+from src.parking_opt.strategies.mosa import MosaStrategy, estimate_scene
 from src.parking_opt.strategies.baselines import FCFS
 
 
@@ -188,3 +188,28 @@ class TestMosaEndToEnd:
                          n_spots=15, n_vehicles=60)
         fcfs_m = run_sim(FCFS(), n_spots=15, n_vehicles=60)
         assert mosa_m["satisfaction_rate"] >= fcfs_m["satisfaction_rate"] - 0.05
+
+
+class TestSceneAutoBinding:
+    """场景权重与车位数/车辆数/时间自动绑定（共 3 种情况）。"""
+
+    def test_estimate_binds_spots_vehicles_time(self):
+        # 车少 → 平峰（重距离）
+        assert estimate_scene(20, 30, 21600, 3900) == "normal"
+        # 车多 → 饱和（重利用率）
+        assert estimate_scene(20, 120, 21600, 3900) == "saturated"
+        # 中等压力 → 高峰（重时间）
+        assert estimate_scene(20, 90, 21600, 3900) == "peak"
+        # 短停车时长下同样车辆数压力更低 → 平峰
+        assert estimate_scene(20, 90, 21600, 600) == "normal"
+
+    def test_scene_param_locked_in_ui(self):
+        """scene 参数应标记为 locked（网页渲染为灰色不可调）。"""
+        scene_spec = next(p for p in MosaStrategy.PARAMS if p["key"] == "scene")
+        assert scene_spec.get("locked") is True
+        assert scene_spec["default"] == "auto"
+
+    def test_estimate_invalid_inputs_fallback_normal(self):
+        assert estimate_scene(0, 10, 21600, 3900) == "normal"
+        assert estimate_scene(20, 0, 21600, 3900) == "normal"
+        assert estimate_scene(20, 10, 0, 3900) == "normal"
