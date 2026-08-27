@@ -45,7 +45,7 @@ SCENE_WEIGHTS = {
     "saturated": {"f1": 0.2, "f2": 0.2, "f3": 0.6},
 }
 
-REJECT_PENALTY = 5000.0  # 拒绝一辆车的惩罚（加到 f1/f2，强烈优先满足率）
+REJECT_PENALTY = 1000.0  # 拒绝一辆车的惩罚（加到 f1/f2，与原算法 mosa_full.py 一致）
 
 
 class MosaStrategy(BaseStrategy):
@@ -69,11 +69,11 @@ class MosaStrategy(BaseStrategy):
 
     PARAMS = [
         {"key": "pop_size", "label": "种群规模", "type": "int",
-         "min": 8, "max": 40, "step": 2, "default": 16,
-         "help": "NSGA-II 种群个体数（越大越充分，耗时越长）"},
+         "min": 8, "max": 60, "step": 2, "default": 30,
+         "help": "NSGA-II 种群个体数（原算法默认 30，越大越充分，耗时越长）"},
         {"key": "generations", "label": "进化代数", "type": "int",
-         "min": 4, "max": 60, "step": 2, "default": 16,
-         "help": "NSGA-II 进化代数（越大越充分，耗时越长）"},
+         "min": 4, "max": 100, "step": 2, "default": 50,
+         "help": "NSGA-II 进化代数（原算法默认 50，越大越充分，耗时越长）"},
         {"key": "scene", "label": "场景模式", "type": "choice",
          "options": [("auto", "自动判定"), ("peak", "高峰（重时间）"),
                      ("normal", "平峰（重距离）"), ("saturated", "饱和（重利用率）")],
@@ -84,7 +84,7 @@ class MosaStrategy(BaseStrategy):
          "help": "离线评估中车辆等待目标车位空出的时间上限（与引擎排队上限一致）"},
     ]
 
-    def __init__(self, pop_size: int = 16, generations: int = 16,
+    def __init__(self, pop_size: int = 30, generations: int = 50,
                  scene: str = "auto", max_wait: float = 1800.0):
         self.pop_size = pop_size
         self.generations = generations
@@ -175,15 +175,19 @@ class MosaStrategy(BaseStrategy):
             self.crowding = 0.0
 
     def _run_nsga2(self, scene: str, path_engine) -> dict[str, str]:
-        """NSGA-II 主循环，返回 {vehicle_id: spot_id} 最优分配方案。"""
+        """NSGA-II 主循环，返回 {vehicle_id: spot_id} 最优分配方案。
+
+        与原算法 mosa_full.py 一致：进化过程按 Pareto 支配排序，最终从
+        Pareto 前沿（rank 0）按场景权重做 min-max 归一化加权选最优解。
+        """
         rng = random.Random(42)  # 固定种子：相同需求序列可复现
 
-        # 初始种群注入高质量贪心启发式解（最早空出车位），避免随机搜索找不到可行解
+        # 初始种群注入高质量贪心启发式解（最早空出车位），其余按场景引导随机
         pop: list["MosaStrategy._Individual"] = []
         pop.append(self._Individual(self._greedy_chromosome(rng, tie_break="nearest")))
         pop.append(self._Individual(self._greedy_chromosome(rng, tie_break="random")))
         while len(pop) < self.pop_size:
-            pop.append(self._random_individual(rng))
+            pop.append(self._random_individual(rng, scene))
         for ind in pop:
             self._evaluate(ind)
 
@@ -196,8 +200,8 @@ class MosaStrategy(BaseStrategy):
                 pa = self._tournament(pop, rng)
                 pb = self._tournament(pop, rng)
                 ca, cb = self._crossover(pa, pb, rng)
-                ca = self._mutate(ca, rng)
-                cb = self._mutate(cb, rng)
+                ca = self._mutate(ca, rng, scene)
+                cb = self._mutate(cb, rng, scene)
                 self._evaluate(ca)
                 self._evaluate(cb)
                 offspring.extend([ca, cb])
@@ -216,7 +220,7 @@ class MosaStrategy(BaseStrategy):
             pop = new_pop
 
         pareto = [p for p in pop if p.rank == 0] or pop
-        best = min(pareto, key=lambda ind: self._weighted_score(ind, scene))
+        best = self._select_best(pareto, scene)
         return self._chromosome_to_plan(best.chromosome)
 
     def _chromosome_to_plan(self, chromosome: list) -> dict[str, str]:
@@ -227,30 +231,34 @@ class MosaStrategy(BaseStrategy):
                 plan[v.vehicle_id] = gene
         return plan
 
-    def _weighted_score(self, ind: "_Individual", scene: str) -> float:
-        """按场景权重对 Pareto 前沿个体做归一化加权评分（越小越好）。"""
+    def _select_best(self, pareto: list["_Individual"], scene: str) -> "_Individual":
+        """按场景权重从 Pareto 前沿选最优：三目标先 min-max 归一化再加权（与原算法一致）。"""
         w = SCENE_WEIGHTS.get(scene, SCENE_WEIGHTS["normal"])
-        score = 0.0
-        for i, key in enumerate(("f1", "f2", "f3")):
-            score += w[key] * ind.objectives[i]
-        return score
+        f1s = [p.objectives[0] for p in pareto]
+        f2s = [p.objectives[1] for p in pareto]
+        f3s = [p.objectives[2] for p in pareto]
+        min_f1, max_f1 = min(f1s), max(f1s)
+        min_f2, max_f2 = min(f2s), max(f2s)
+        min_f3, max_f3 = min(f3s), max(f3s)
 
-    def _random_individual(self, rng: random.Random) -> "_Individual":
-        """随机启发式初始化：独立车位优先、纵深组避免深度冲突、允许拒绝。"""
+        def score(ind: "_Individual") -> float:
+            n1 = 0.0 if max_f1 == min_f1 else (ind.objectives[0] - min_f1) / (max_f1 - min_f1)
+            n2 = 0.0 if max_f2 == min_f2 else (ind.objectives[1] - min_f2) / (max_f2 - min_f2)
+            n3 = 0.0 if max_f3 == min_f3 else (ind.objectives[2] - min_f3) / (max_f3 - min_f3)
+            return (w["f1"] * n1 + w["f2"] * n2 + w["f3"] * n3)
+
+        return min(pareto, key=score)
+
+    def _random_individual(self, rng: random.Random, scene: str) -> "_Individual":
+        """按场景引导的随机初始化（与原算法 create_individual 对齐）：
+
+        peak 选最近可行、saturated 选类型均衡、normal 随机可行；无可行车位则拒绝（None）。
+        """
         chrom = []
         occupied_until: dict[str, float] = {}
-        for v in self._vehicles:
-            feasible = []
-            for s in self._spots:
-                dist = self._entry_dist.get(s.spot_id, float("inf"))
-                if not math.isfinite(dist):
-                    continue
-                prev_end = occupied_until.get(s.spot_id, -1.0)
-                if prev_end <= v.arrival_time:
-                    feasible.append(s.spot_id)
-                elif prev_end - v.arrival_time <= self.max_wait:
-                    feasible.append(s.spot_id)
-            gene = rng.choice(feasible) if feasible else None
+        for idx, v in enumerate(self._vehicles):
+            feasible = self._feasible_spots_for_chrom(chrom, idx, occupied_until)
+            gene = self._pick_by_scene(feasible, chrom, idx, scene, rng)
             chrom.append(gene)
             if gene is not None:
                 dist = self._entry_dist.get(gene, 0.0)
@@ -296,44 +304,79 @@ class MosaStrategy(BaseStrategy):
             occupied_until[gene] = options[0][3]
         return chrom
 
-    def _earliest_feasible_spot(self, chrom: list, idx: int,
-                                rng: random.Random):
-        """为 idx 车辆找一个可行车位：重建其余车辆占用时间轴后选等待最少、距离近的。"""
-        v = self._vehicles[idx]
-        occupied_until: dict[str, float] = {}
-        for j, (veh, gene) in enumerate(zip(self._vehicles, chrom)):
-            if j == idx or gene is None:
-                continue
-            dist = self._entry_dist.get(gene, float("inf"))
-            if not math.isfinite(dist):
-                continue
-            prev_end = occupied_until.get(gene, -1.0)
-            if prev_end <= veh.arrival_time:
-                new_end = veh.arrival_time + dist / CAR_SPEED + veh.parking_duration
-            else:
-                if prev_end - veh.arrival_time > self.max_wait:
-                    continue
-                new_end = prev_end + dist / CAR_SPEED + veh.parking_duration
-            occupied_until[gene] = new_end
+    def _feasible_spots_for_chrom(self, chrom: list, idx: int,
+                                  occupied_until: dict | None = None) -> list:
+        """为 idx 车辆返回可行车位列表 [(spot_id, wait, dist)]（等待 ≤ max_wait）。
 
-        best_sid = None
-        best_key = None
+        传入 occupied_until 时直接使用（初始化逐步构建）；否则按 chrom 重建时间轴。
+        """
+        v = self._vehicles[idx]
+        if occupied_until is None:
+            occupied_until = {}
+            for j, (veh, gene) in enumerate(zip(self._vehicles, chrom)):
+                if j == idx or gene is None:
+                    continue
+                dist = self._entry_dist.get(gene, float("inf"))
+                if not math.isfinite(dist):
+                    continue
+                prev_end = occupied_until.get(gene, -1.0)
+                wait = max(0.0, prev_end - veh.arrival_time)
+                if wait > self.max_wait:
+                    continue
+                occupied_until[gene] = (max(veh.arrival_time, prev_end)
+                                        + dist / CAR_SPEED + veh.parking_duration)
+
+        out = []
         for s in self._spots:
             dist = self._entry_dist.get(s.spot_id, float("inf"))
             if not math.isfinite(dist):
                 continue
             prev_end = occupied_until.get(s.spot_id, -1.0)
-            if prev_end <= v.arrival_time:
-                wait = 0.0
-            else:
-                wait = prev_end - v.arrival_time
-                if wait > self.max_wait:
-                    continue
-            key = (wait, dist, rng.random())
-            if best_key is None or key < best_key:
-                best_key = key
-                best_sid = s.spot_id
-        return best_sid
+            wait = max(0.0, prev_end - v.arrival_time)
+            if wait > self.max_wait:
+                continue
+            out.append((s.spot_id, wait, dist))
+        return out
+
+    def _pick_by_scene(self, feasible: list, chrom: list, idx: int,
+                       scene: str, rng: random.Random):
+        """按场景从可行车位中选一个（与原算法 create_individual/mutate 对齐）：
+
+        peak 选最近、saturated 选类型均衡、normal 随机；无可行返回 None（拒绝）。
+        """
+        if not feasible:
+            return None
+        if scene == "peak":
+            # 高峰重时间：选距离入口最近的可行车位
+            return min(feasible, key=lambda x: (x[2], x[1]))[0]
+        if scene == "saturated":
+            # 饱和重利用率：选类型剩余容量最多的可行车位
+            return self._balanced_pick(feasible, chrom, idx, rng)
+        # 平峰：随机可行
+        return rng.choice(feasible)[0]
+
+    def _balanced_pick(self, feasible: list, chrom: list, idx: int,
+                       rng: random.Random):
+        """类型均衡选择（原算法 _balanced_spot）：统计当前染色体各类型占用，
+        选剩余容量最多的类型，再从该类型可行车位中随机选。"""
+        cap = {SpotType.STANDALONE: 0, SpotType.TANDEM: 0}
+        used = {SpotType.STANDALONE: 0, SpotType.TANDEM: 0}
+        for s in self._spots:
+            cap[s.spot_type] += 1
+        for j, gene in enumerate(chrom):
+            if j == idx or gene is None:
+                continue
+            sp = self._spot_by_id(gene)
+            if sp is not None:
+                used[sp.spot_type] += 1
+        remaining = {t: cap[t] - used[t] for t in cap}
+        max_rem = max(remaining.values())
+        cand_types = [t for t, rem in remaining.items() if rem == max_rem]
+        chosen_type = rng.choice(cand_types)
+        of_type = [x for x in feasible
+                   if self._spot_by_id(x[0]).spot_type == chosen_type]
+        pool = of_type if of_type else feasible
+        return rng.choice(pool)[0]
 
     def _evaluate(self, ind: "_Individual") -> None:
         """轻量时间轴模拟：车位独占 + 等待 + 纵深移位估计。"""
@@ -500,29 +543,15 @@ class MosaStrategy(BaseStrategy):
                 ca[i], cb[i] = cb[i], ca[i]
         return self._Individual(ca), self._Individual(cb)
 
-    def _mutate(self, ind: "_Individual", rng: random.Random) -> "_Individual":
+    def _mutate(self, ind: "_Individual", rng: random.Random,
+                scene: str) -> "_Individual":
+        """变异：随机改一个基因，按场景引导选新车位（与原算法 mutate 对齐）。"""
         chrom = ind.chromosome.copy()
         if not chrom:
             return ind
-        mode = rng.random()
-        none_idx = [i for i, g in enumerate(chrom) if g is None]
-        if mode < 0.45 and none_idx:
-            # 修复拒绝：把一个 None 基因改成可行车位（等待最少优先）
-            i = rng.choice(none_idx)
-            gene = self._earliest_feasible_spot(chrom, i, rng)
-            chrom[i] = gene
-        elif mode < 0.75:
-            # 局部改进：随机选一个基因，改成更早空出的可行车位
-            i = rng.randrange(len(chrom))
-            gene = self._earliest_feasible_spot(chrom, i, rng)
-            if gene is not None:
-                chrom[i] = gene
-        else:
-            # 完全随机（保持多样性，允许引入拒绝）
-            i = rng.randrange(len(chrom))
-            reachable = [s.spot_id for s in self._spots
-                         if self._entry_dist.get(s.spot_id, float("inf")) < float("inf")]
-            chrom[i] = rng.choice(reachable + [None])
+        i = rng.randrange(len(chrom))
+        feasible = self._feasible_spots_for_chrom(chrom, i)
+        chrom[i] = self._pick_by_scene(feasible, chrom, i, scene, rng)
         return self._Individual(chrom)
 
     # ========== 在线执行（查表） ==========
