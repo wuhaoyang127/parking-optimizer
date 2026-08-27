@@ -48,6 +48,12 @@ class SimulationEngine:
 
     def run(self) -> list[Event]:
         """运行仿真，返回事件日志"""
+        # 离线预分配钩子：策略若实现了 prepare（如 MOSA），在仿真开始前
+        # 一次性拿到完整需求做全局优化；在线策略未实现该方法时自动跳过。
+        prepare = getattr(self.strategy, "prepare", None)
+        if callable(prepare):
+            prepare(self.vehicles, self.parking_lot, self.path_engine)
+
         # 调度所有车辆到达
         for v in sorted(self.vehicles, key=lambda x: x.arrival_time):
             self.env.process(self._vehicle_arrival(v))

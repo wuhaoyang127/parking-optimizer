@@ -28,6 +28,19 @@ class BaseStrategy:
     PARAMS: list = []  # 可调参数声明，见类文档字符串
     DESCRIPTION: str = ""  # 算法说明（Markdown），网页仿真设置页自动展示
 
+    def prepare(self, vehicles: list[Vehicle], parking_lot: ParkingLot,
+                path_engine) -> None:
+        """仿真开始前的准备钩子（默认空实现，在线策略无需重写）。
+
+        离线全信息算法（如 MOSA/CP-SAT 类预分配）可重写本方法：在仿真运行前
+        一次性拿到完整需求序列，做全局优化并把结果缓存到实例上；随后 assign
+        只做「查表执行」。引擎在 run() 开头自动调用（若策略实现了本方法）。
+
+        注意：本方法可读完整需求（含未来到达），属离线信息；因此离线预分配
+        策略必须明确标注为「离线全信息对照基准」，与在线策略分开比较。
+        """
+        return None
+
     def assign(self, vehicle: Vehicle, time: float, parking_lot: ParkingLot,
                path_engine) -> tuple[Spot | None, str]:
         raise NotImplementedError

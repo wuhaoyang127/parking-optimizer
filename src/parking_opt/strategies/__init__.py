@@ -4,6 +4,7 @@ from .baselines import BaseStrategy, FCFS, NearestPath, RandomAssign
 from .greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
 from .registry import StrategyRegistry
 from .fusion import CompositeStrategy, PeakOffPeakFusion
+from .mosa import MosaStrategy
 
 # 登记内置策略（新增算法在此追加一行登记即可）
 StrategyRegistry.register(FCFS)
@@ -13,9 +14,10 @@ StrategyRegistry.register(GreedyStrategy)
 StrategyRegistry.register(DepartureOrderGreedy)
 StrategyRegistry.register(DurationAwareGreedy)
 StrategyRegistry.register(PeakOffPeakFusion)
+StrategyRegistry.register(MosaStrategy)
 
 __all__ = [
     "BaseStrategy", "FCFS", "NearestPath", "RandomAssign",
     "GreedyStrategy", "DepartureOrderGreedy", "DurationAwareGreedy",
-    "CompositeStrategy", "PeakOffPeakFusion", "StrategyRegistry",
+    "CompositeStrategy", "PeakOffPeakFusion", "MosaStrategy", "StrategyRegistry",
 ]

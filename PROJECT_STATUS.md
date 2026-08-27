@@ -1,14 +1,14 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 13
-last_updated: 2026-08-21
+status_version: 14
+last_updated: 2026-08-27
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-feedback-round2
+current_milestone: stage-d-mosa-integration
 git_initialized: true
 current_branch: stage-d-deliver
 last_verified_commit: null
-current_exec_plan: docs/plans/stage-d-feedback-round2.md
+current_exec_plan: docs/plans/stage-d-mosa-integration.md
 latest_handoff: null
 next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-feedback-round2`（反馈优化第二批：需求时序可视化 + 加权多指标排名，已实现待验收）；
+- **当前里程碑**：`stage-d-mosa-integration`（算法一 MOSA 多目标优化接入，已实现待验收）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：按 `docs/plans/stage-d-feedback-round2.md` 实施两条最新反馈（需求时序图/车辆明细/需求序列导入导出 + 指标权重百分条/归一化/多算法加权排名）；
+- **当前唯一下一步**：用户验收 MOSA 接入（网页策略下拉框出现「MOSA 多目标优化（离线）」，与在线策略对比、调参）；
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -77,6 +77,7 @@ superseded
 - [x] 阶段 C/D：排队等待机制（车位满排队 30min 上限）、多 seed 统计、算法优先级字典序推荐、CP-SAT 理论最优对照；
 - [x] 阶段 D：Streamlit 多页面 Dashboard（登录/仿真设置/系统设置/布局图/动态路径/指标分析）、Supabase 认证与偏好持久化、自定义布局 JSON 导入。
 - [x] 阶段 D：UI 拆分重构（app.py 1827→90 行瘦入口、src/auth·viz·ui 模块化）+ 8 项交付体验优化（备份脱敏/trace 合并/进度条/反馈分页/动态路径分段/登录限流常量/DESCRIPTION 收敛）+ 系统状态页 use_container_width 废弃预警，测试全绿并已验收。
+- [x] 阶段 D：算法一 MOSA 接入（离线全信息 NSGA-II 多目标优化：f1 总行驶时间/f2 总行驶距离/f3 利用率均衡，场景权重高峰重时间/平峰重距离/饱和重利用率；BaseStrategy.prepare 钩子 + 引擎自动调用 + 登记注册表网页自动出现，规模保护 >60 车位/>120 车回退贪心），pytest 62 passed、自检通过，待用户验收。
 
 ## 5. 已批准的项目级决定
 
@@ -129,10 +130,10 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`，共 51 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`，共 62 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-ui-refactor-20260818`（2026-08-18）；更早 `backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -149,6 +150,7 @@ superseded
 | `src/parking_opt/strategies/greedy.py` | 贪心/离场贪心/时长感知贪心 | 有效 |
 | `src/parking_opt/strategies/registry.py` | 统一策略注册表 | 有效 |
 | `src/parking_opt/strategies/fusion.py` | 融合算法接口 + 示例 | 有效 |
+| `src/parking_opt/strategies/mosa.py` | 算法一 MOSA：NSGA-II 离线多目标预分配策略 | 有效，本轮新增 |
 | `src/parking_opt/io/demand_io.py` | 需求序列 JSON 导出/导入（schema v1） | 有效，本轮新增 |
 | `src/parking_opt/evaluation/ranking.py` | 加权多指标评分排名（归一化+方向） | 有效，本轮新增 |
 | `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
@@ -173,14 +175,11 @@ superseded
 
 ## 11. 当前唯一下一步
 
-Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反馈优化第二批 `stage-d-feedback-round2`（计划：`docs/plans/stage-d-feedback-round2.md`），实施部署后两条最新用户反馈：
-
-1. [x] 需求时序可视化：到达/离开按时段分布条形图 + 每辆车到达/离开时间明细表（指标分析页新增区块，可下载 CSV）；
-2. [x] 需求序列导出/导入：JSON 单文件（含元数据 + 车辆列表），下次仿真可导入复用（相同种子/相同序列可复现）；
-3. [x] 加权多指标排名：指标权重百分条（总和=100，数据归一化）+ 多算法加权综合排名，与现有字典序优先级并存切换。
-4. [x] 布局来源分组：仿真设置页「停车场布局」拆为「布局来源」radio（内置示意布局 / 导入的真实布局），真实布局下提示「路网/车位真实，车辆需求仍为仿真；车位数/纵深比例滑杆不生效」；无导入布局时仅显示内置分组（2026-08-21，打 tag `backup-before-layout-source-20260821`）。
-
-以上 4 项均已实现并本地验证（pytest 49 passed、AppTest 内置/真实分组两场景通过、启动包自检通过），**待用户验收**。
+1. 用户验收 **算法一 MOSA 接入**（`stage-d-mosa-integration`，计划：`docs/plans/stage-d-mosa-integration.md`）：
+   - 网页仿真设置页「策略」下拉框出现「MOSA 多目标优化（离线）」，带 4 个参数控件（种群规模/进化代数/场景模式/评估等待上限）；
+   - 单策略运行或「全部对比」均可选 MOSA；注意其 DESCRIPTION 已标注「离线全信息对照基准」，与在线策略对比时为上界参考（与 CP-SAT 定位一致）；
+   - 本地验证：pytest 62 passed、启动包自检通过、端到端对比中 MOSA 满足率显著高于在线策略（离线全信息）。
+2. 上轮 `stage-d-feedback-round2` 4 项反馈（需求时序可视化/需求序列导入导出/加权多指标排名/布局来源分组）仍**待用户验收**。
 
 ## 12. 预计后续需要用户确认
 
@@ -190,6 +189,7 @@ Streamlit Cloud 已重新部署生效（用户确认 2026-08-21），进入反�
 
 ## 13. 最近重要变更
 
+- 2026-08-27：算法一 MOSA 接入（打 tag `backup-before-mosa-20260827`）：新增 `src/parking_opt/strategies/mosa.py`（NSGA-II 离线全信息多目标优化，f1 总行驶时间/f2 总行驶距离/f3 利用率均衡，场景权重高峰重时间/平峰重距离/饱和重利用率，支持拒绝 -1）；`BaseStrategy` 新增 `prepare` 钩子（离线预分配通用接口），`SimulationEngine.run()` 开头自动调用（向后兼容）；登记注册表后网页自动出现「MOSA 多目标优化（离线）」及参数控件；规模保护（>60 车位或 >120 车跳过优化回退贪心）；新增 `tests/test_mosa.py`（11 项），pytest 62 passed、启动包自检通过；端到端对比中 MOSA 满足率显著高于在线策略（离线全信息上界参考，与 CP-SAT 定位一致）；
 - 2026-08-21：布局持久化：自定义布局以 `session_state.custom_layouts` 为真相源，登录/恢复会话时从 Supabase 偏好（`custom_layouts_v1`）恢复，导入/删除时回写；渲染相关页面前 `_sync_custom_layouts_to_globals()` 重建全局镜像（清除进程残留），退出登录 `clear_custom_layouts()` 清空。解决「退出登录后布局能用但删不掉/不显示」问题；打备份 tag `backup-before-layout-persist-20260823`；pytest 51 passed、AppTest 同步三场景通过、自检通过；
 - 2026-08-21：布局删除入口优化：系统设置→导入布局→已导入列表的删除按钮改为红色 primary「🗑 删除」+ 行内二次确认（确认/取消），防误删；打备份 tag `backup-before-layout-delete-confirm-20260823`；pytest 51 passed、AppTest 删除/取消/确认三场景通过、自检通过；
 - 2026-08-21：修复线上崩溃（Cloud 报 `build_demand_histogram` ValueError）：根因是导入的真实布局存在从入口不可达的车位时，行驶时间 inf 传播进 SimPy 时钟产生 nan 事件时间。三层防御：①引擎层——分配/等待分配时拒绝不可达车位、移位不可达缓冲位记 BUFFER_FAILED，杜绝 inf/nan 事件；②导入校验——布局 JSON 校验每个车位「入口可达且可返回入口」，不连通直接报错拒收；③UI 层——直方图/车辆明细表/时钟格式化对 None/nan/inf/字符串时间全部兜底。新增 `tests/test_engine_robustness.py`（2 项），pytest 51 passed、自检通过；
