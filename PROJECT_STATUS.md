@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 23
+status_version: 24
 last_updated: 2026-08-28
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: dc1a7f8
+last_verified_commit: 39936c9
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场动画、移位动画；多入口多出口已验收）；
+- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：动态路径页反馈修复已实施并验证（103 passed、自检通过），提交推送后用户 Cloud Redeploy 验收。
+- **当前唯一下一步**：等待用户提出下一项优化需求。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -82,6 +82,8 @@ superseded
 - [x] 阶段 D：交付体验第三批（布局持久化兜底：Supabase 写入失败可见 + 本地备份文件自愈；新算法接入页文件删除二次确认；反馈显示时间管理员可改并保存（新迁移 `04_feedback_display_time.sql` 需在 Supabase 执行）；权限落实 `can_export`（访客禁止下载/导出），操作员可见新算法接入说明文字但不可上传），pytest 71 passed、自检通过、AppTest 通过，已验收。
 - [x] 阶段 D：反馈显示时间提示清理（用户验收后反馈：管理员反馈列表时间行删除「（原始：…）」提示、状态由英文 pending/resolved 改为中文「待处理/已处理」、✎ 编辑面板删除「恢复原始」按钮仅保留「保存/取消」、占位提示不再回显原始时间），pytest 71 passed、自检通过，已于 2026-08-28 验收通过。
 - [x] 阶段 D：算法二 risk_scoring 接入（在线「风险感知多准则评分」：候选车位三项原始代价 min–max 归一化后加权 `C = w_d·距离 + w_r·预期移位风险 + w_p·结构惩罚`，argmin 选位；只用当前状态与预估离场，不读真实停车时长；登记注册表网页自动出现 3 个权重滑杆；并入教学文档/18 项单元测试/实验脚本+产物/4 条新文献；另修复实验暴露的引擎移位让行并发竞态并新增 2 项回归测试），pytest 91 passed、自检通过，已于 2026-08-28 验收通过。
+- [x] 阶段 D：多入口多出口改造（布局允许多个 `type="entry"`/`type="exit"` 节点，旧单入口布局兼容；`Vehicle` 增 `entry_id`/`exit_id`；`generate_demand` 用 seed 派生独立随机流（+100003/+200003）等概率分配每车入口与出口；引擎按车辆口进出、出口不可达回退入口并记 DEGRADATION；SPOT_ENTRY/DEPARTURE 事件带 entry/exit 元数据；四个策略距离语义改为「该车入口」；需求 JSON 可选 `entry_id`/`exit_id`；viz 渲染全部入口/出口；导入校验放宽为至少一个入口），pytest 101 passed、自检通过（138 文件），已于 2026-08-28 验收通过。
+- [x] 阶段 D：动态路径页反馈修复 + 移位车辆表（①入库黄色虚线按该车实际入口；②新增「③ 选择回放阶段」入库/离场/移位，离场动画车位→出口、移位动画 from→to；③离场阶段让行移位轨迹以辅助虚线绘制；另增补「🔄 移位车辆表」折叠区列出全部移位事件，并在选车下拉对移位车标记），pytest 103 passed、自检通过（139 文件），已于 2026-08-28 验收通过。
 
 ## 5. 已批准的项目级决定
 
@@ -137,7 +139,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 103 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-dynamic-path-feedback-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -184,8 +186,8 @@ superseded
 
 ## 11. 当前唯一下一步
 
-1. 动态路径页反馈修复已推送（`a770411`）；最新增补：**移位车辆表**——动态路径页列出所有参与移位的车辆（移位车辆/起止车位/让行对象/原因/回位时间），选车下拉对移位车加「🔄移位」标记（最新提交待推送）。
-2. 用户 **Cloud Redeploy 到最新 `stage-d-deliver` 验收**：动态路径页按「移位车辆表」选带 🔄 标记的车辆 → 「③ 选择回放阶段」选「移位」演示移位动画。
+1. 动态路径页反馈修复（提交 `a770411`）与移位车辆表（提交 `39936c9`）已于 2026-08-28 用户验收通过；多入口多出口改造（提交 `49a6b8b`）此前已验收。
+2. 等待用户提出下一项优化需求。
 
 ## 12. 预计后续需要用户确认
 
@@ -195,6 +197,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-28：**用户验收通过**动态路径页反馈修复（提交 `a770411`）与移位车辆表（提交 `39936c9`）；验收前打 tag `backup-before-dynamic-path-feedback-accept-20260828`；状态文档 status_version 23 → 24；阶段 D 继续，等待用户提出下一项优化需求；
 - 2026-08-28：**动态路径页增补移位车辆表**（用户反馈：移位车较少，演示移位需要知道哪些车移位）：页面在车辆选择区新增「🔄 移位车辆表」折叠区，列出全部 `shift_start` 事件（移位车辆/开始时间/从车位/到车位(缓冲)/让行对象/原因/回位时间）；「② 选择车辆」下拉对移位车加「🔄移位」标记；pytest 103 passed、自检通过、UI 模块导入正常；打 tag `backup-before-shift-table-20260828`；待用户验收；
 - 2026-08-28：**动态路径页反馈修复**（用户验收多入口多出口后反馈三问题，ExecPlan `docs/plans/stage-d-dynamic-path-feedback.md`）：①入库黄色虚线改为按该车实际入口（`spot_entry.entry` 元数据，不再写死默认入口）；②动态路径页新增「③ 选择回放阶段」（入库/离场/移位），离场动画展示车位→出口过程，移位动画展示移位车 from→to 轨迹；③离场阶段的让行移位轨迹以辅助虚线绘制；`common.py` 新增 `build_vehicle_phases`/`interp_path_segment`，`viz.py` 新增 `highlight_path_color`/`extra_paths`，引擎有阻挡 DEPARTURE 事件补 `exit` 元数据；新增 2 项测试，pytest 103 passed、自检通过（139 文件）、UI 模块导入正常；打 tag `backup-before-dynamic-path-feedback-20260828`；待用户验收；
 - 2026-08-28：**多入口多出口改造验收通过**（用户确认其余内容可验收，动态路径三问题转入反馈修复）：布局允许多个 `type="entry"`/`type="exit"` 节点（旧单入口文件兼容）；`Vehicle` 增 `entry_id`/`exit_id`；`PathEngine` 支持多入口/多出口与默认口规则（`ENTRY`/`EXIT` 优先，无出口回退入口）；`generate_demand` 用 seed 派生独立随机流（+100003/+200003）等概率分配每车入口与出口（不污染主随机流，旧单口实验完全可复现）；引擎入库按车辆入口、离场按车辆出口、出口不可达回退入口并记 DEGRADATION；SPOT_ENTRY/DEPARTURE 事件带 entry/exit 元数据；四个策略距离语义改为「该车入口」；需求 JSON 可选 `entry_id`/`exit_id`（schema 仍 v1）；导入校验放宽为至少一个入口；viz 渲染全部入口（三角）与出口（倒三角）；新增 `tests/test_multi_entry.py`（10 项），pytest 101 passed、自检通过（138 文件）；打 tag `backup-before-multi-entry-exit-20260828`；
