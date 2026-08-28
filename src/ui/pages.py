@@ -668,6 +668,29 @@ def render_path_page():
         if str(e.get("vehicle_id", "")) and e.get("type") in ("vehicle_arrival", "parking_assigned", "spot_entry")
     ), key=lambda v: int(v.split("_")[-1]) if "_" in v else v)
 
+    # 移位车辆表：收集所有 shift_start 事件（演示移位动态时按此选车）
+    shift_rows = []
+    for e in events:
+        if e.get("type") != "shift_start":
+            continue
+        meta = e.get("metadata", {}) or {}
+        vid = str(e.get("vehicle_id", ""))
+        end_time = None
+        for e2 in events:
+            if (e2.get("type") == "shift_end" and str(e2.get("vehicle_id", "")) == vid
+                    and float(e2["time"]) >= float(e["time"])):
+                end_time = float(e2["time"]); break
+        shift_rows.append({
+            "移位车辆": vid,
+            "开始(s)": round(float(e["time"]), 1),
+            "从车位": meta.get("from_spot", ""),
+            "到车位(缓冲)": meta.get("to_spot", ""),
+            "让行对象": str(meta.get("blocked_vehicle", "—")),
+            "原因": meta.get("reason", ""),
+            "回位(s)": round(end_time, 1) if end_time is not None else "未回位",
+        })
+    shift_vehicles = {r["移位车辆"] for r in shift_rows}
+
     # 按车辆序号分段（每段 20 辆），先选段再细选
     SEGMENT_SIZE = 20
     segment_labels = []
@@ -684,12 +707,21 @@ def render_path_page():
     else:
         filtered_vehs = all_vehs
 
+    with st.expander(f"🔄 移位车辆表（{len(shift_rows)} 条，演示移位动态用）", expanded=bool(shift_rows)):
+        if shift_rows:
+            st.dataframe(shift_rows, use_container_width=True)
+            st.caption("在「② 选择车辆」中选带 🔄 标记的车辆，回放阶段选「移位」即可演示；"
+                       "内层车离场时也可看到让行车的辅助虚线。")
+        else:
+            st.caption("本仿真没有发生移位（可提高需求强度或增加纵深车位比例后再运行）。")
+
     # 若已选车辆不在当前段，则重置
     if st.session_state.get("selected_vehicle") and st.session_state.selected_vehicle not in filtered_vehs:
         st.session_state.selected_vehicle = None
 
     st.selectbox("② 选择车辆", [""] + filtered_vehs, key="selected_vehicle",
-                 format_func=lambda v: f"🚙 {v}" if v else "— 选择车辆 —")
+                 format_func=lambda v: (f"🚙 {v}" if v else "— 选择车辆 —")
+                                        + (" 🔄移位" if v in shift_vehicles else ""))
 
     hl_veh = st.session_state.selected_vehicle
     if not hl_veh:
