@@ -35,6 +35,8 @@ def draw_parking_layout(
     state: Optional[dict] = None,
     highlight_vehicle: Optional[str] = None,
     highlight_path: Optional[list] = None,
+    highlight_path_color: Optional[str] = None,
+    extra_paths: Optional[list] = None,
     view_center: Optional[tuple] = None,
     view_radius: Optional[float] = None,
     height: int = 420,
@@ -42,6 +44,9 @@ def draw_parking_layout(
 ) -> go.Figure:
     """
     绘制停车场布局图。scale > 1 放大所有 marker/文字/线宽。
+
+    highlight_path_color: 高亮路径虚线颜色（默认黄色）；
+    extra_paths: 额外虚线列表 [{"path": [node_id...], "color": "#..."}]（如移位让行轨迹）。
     """
     s = scale
     fig = go.Figure()
@@ -148,18 +153,27 @@ def draw_parking_layout(
             hovertext=vhover, hoverinfo="text", showlegend=False,
         ))
 
-    # 5. 高亮路径
-    if highlight_path:
+    # 5. 高亮路径（可指定颜色；extra_paths 画移位让行等辅助虚线）
+    path_color = highlight_path_color or HIGHLIGHT_PATH
+
+    def _path_trace(nodes, color):
         px, py = [], []
-        for nid in highlight_path:
+        for nid in nodes:
             if nid in net.nodes:
                 px.append(net.nodes[nid].x); py.append(net.nodes[nid].y)
-        fig.add_trace(go.Scatter(
+        return go.Scatter(
             x=px, y=py, mode="lines+markers",
-            line=dict(color=HIGHLIGHT_PATH, width=_s("path_w",s), dash="dot"),
-            marker=dict(color=HIGHLIGHT_PATH, size=_s("path_marker",s), symbol="circle"),
+            line=dict(color=color, width=_s("path_w", s), dash="dot"),
+            marker=dict(color=color, size=_s("path_marker", s), symbol="circle"),
             showlegend=False, hoverinfo="skip",
-        ))
+        )
+
+    if highlight_path:
+        fig.add_trace(_path_trace(highlight_path, path_color))
+    for extra in (extra_paths or []):
+        ep = extra.get("path")
+        if ep:
+            fig.add_trace(_path_trace(ep, extra.get("color", HIGHLIGHT_PATH)))
 
     # 6. 道路节点
     rx, ry, rt = [], [], []

@@ -697,41 +697,58 @@ def render_path_page():
         return
 
     veh_ev = sorted([e for e in events if str(e.get("vehicle_id","")) == hl_veh], key=lambda e: e["time"])
-    t_start, t_end, spot_id = None, None, None
-    for e in veh_ev:
-        if e["type"] == "parking_assigned" and t_start is None:
-            t_start = e["time"]; spot_id = e.get("spot_id","")
-        elif e["type"] == "spot_entry" and t_start is not None and t_end is None:
-            t_end = e["time"]
+    pe = st.session_state.get("sim_pe")
+    phases = build_vehicle_phases(net, pe, events, hl_veh) if pe else {"enter": None, "leave": None, "shifts": []}
 
-    if t_start is None:
-        # 该车辆未分配到车位：展示拒绝理由
+    # 阶段选择（入库 / 离场 / 移位，只显示存在事件的阶段）
+    phase_choices = []
+    if phases.get("enter"): phase_choices.append(("enter", "🚗 入库"))
+    if phases.get("leave"): phase_choices.append(("leave", "🚪 离场"))
+    if phases.get("shifts"): phase_choices.append(("shift", "🔄 移位"))
+    if not phase_choices:
         rej = [e for e in veh_ev if e.get("type") == "rejected"]
         if rej:
             reason = (rej[0].get("metadata", {}) or {}).get("reason", "停车场无空闲车位")
             st.error(f"🚫 该车辆被拒绝：{reason}")
         else:
-            st.warning("该车辆尚未被分配车位")
+            st.warning("该车辆尚无入库/离场/移位事件")
         return
 
-    if t_end is None or t_end <= t_start:
-        path = None
-        if "sim_pe" in st.session_state and spot_id:
-            try: path = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, spot_id)
-            except: pass
-        if path:
-            total = 0.0
-            for i in range(len(path)-1):
-                fn = net.nodes.get(path[i]); tn = net.nodes.get(path[i+1])
-                if fn and tn: total += math.hypot(tn.x-fn.x, tn.y-fn.y)
-            t_end = t_start + max(total * 0.5, 3.0)
+    phase_labels = [lbl for _, lbl in phase_choices]
+    if st.session_state.get("path_phase_radio") not in phase_labels:
+        st.session_state.path_phase_radio = phase_labels[0]  # 防切换车辆后选项不匹配
+    phase_sel = st.radio("③ 选择回放阶段", phase_labels,
+                         horizontal=True, key="path_phase_radio")
+    phase_key = next(k for k, lbl in phase_choices if lbl == phase_sel)
+
+    if phase_key == "shift":
+        shifts = phases["shifts"]
+        if len(shifts) > 1:
+            shift_labels = [f"{s['from_spot']} → {s['to_spot']}" for s in shifts]
+            shift_sel = st.selectbox("选择移位段", shift_labels, key="path_shift_sel")
+            seg = shifts[shift_labels.index(shift_sel)]
         else:
-            t_end = t_start + 3.0
+            seg = shifts[0]
+        t_start, t_end = seg["t_start"], seg["t_end"]
+        path = seg["path"]
+        spot_id = f"{seg['from_spot']} → {seg['to_spot']}"
+    else:
+        seg = phases[phase_key]
+        t_start, t_end = seg["t_start"], seg["t_end"]
+        path = seg["path"]
+        spot_id = seg.get("spot_id", "")
+
+    st.session_state.path_phase_key = phase_key
+    st.session_state.path_phase_seg = seg
+    st.session_state.path_phase_path = path
+    st.session_state.path_phase_t_start = t_start
+    st.session_state.path_phase_t_end = t_end
 
     N = 20
     frames = [t_start + (t_end - t_start) * i / (N - 1) for i in range(N)]
 
-    st.caption(f"🅿️ 车位: **{spot_id}** | 行驶: {t_start:.1f}s → {t_end:.1f}s ({(t_end-t_start):.1f}s)")
+    phase_label = {"enter": "入库", "leave": "离场", "shift": "移位"}.get(phase_key, phase_key)
+    st.caption(f"🅿️ 车位: **{spot_id}** | {phase_label}: {t_start:.1f}s → {t_end:.1f}s ({(t_end-t_start):.1f}s)")
 
     # 展示该车辆的拒绝/调整理由（因客观原因无法停最优车位、或需移位/离场）
     notes = []
@@ -819,25 +836,30 @@ def _draw_charts(net, spots, events, max_time):
     """绘制停车场图表（被静态和播放模式共用）"""
     state = replay_state(events, st.session_state.replay_time, spots, net)
     hl_path, hl_center, hl_veh = None, None, st.session_state.selected_vehicle
+    hl_color, extra_paths = None, []
 
     if hl_veh:
-        veh_ev = sorted([e for e in events if str(e.get("vehicle_id","")) == hl_veh], key=lambda e: e["time"])
-        pn = []
-        for e in veh_ev:
-            if e["type"] == "parking_assigned":
-                sid = e.get("spot_id","")
-                try: pn = st.session_state.sim_pe.shortest_path(st.session_state.sim_pe.entry_id, sid)
-                except: pn = [st.session_state.sim_pe.entry_id, sid]
-                break
-        if pn: hl_path = pn
-
-        ipos = interp_vehicle_pos(net, events, hl_veh, st.session_state.replay_time)
-        hl_center = ipos
-        found = False
-        for dv in state["dv"]:
-            if str(dv.get("vid","")) == hl_veh: dv["x"],dv["y"]=ipos[0],ipos[1]; found=True; break
-        if not found:
-            state["dv"].append({"vid":hl_veh,"x":ipos[0],"y":ipos[1],"st":"行驶中","target":hl_path[-1] if hl_path else "?"})
+        phase_key = st.session_state.get("path_phase_key", "enter")
+        phase_seg = st.session_state.get("path_phase_seg")
+        if phase_seg:
+            hl_path = phase_seg.get("path") or None
+            hl_color = {"enter": "#FFEB3B", "leave": "#FF9800", "shift": "#9C27B0"}.get(phase_key, "#FFEB3B")
+            extra_paths = [{"path": h.get("path"), "color": "#9C27B0"}
+                           for h in phase_seg.get("helper_shifts", []) if h.get("path")]
+            # 高亮车位置：入库用事件插值；离场/移位按路径段插值
+            if phase_key == "enter":
+                ipos = interp_vehicle_pos(net, events, hl_veh, st.session_state.replay_time)
+            else:
+                ipos = interp_path_segment(net, hl_path or [],
+                                           phase_seg.get("t_start", 0.0),
+                                           phase_seg.get("t_end", 0.0),
+                                           st.session_state.replay_time)
+            hl_center = ipos
+            found = False
+            for dv in state["dv"]:
+                if str(dv.get("vid","")) == hl_veh: dv["x"],dv["y"]=ipos[0],ipos[1]; found=True; break
+            if not found:
+                state["dv"].append({"vid":hl_veh,"x":ipos[0],"y":ipos[1],"st":"行驶中","target":hl_path[-1] if hl_path else "?"})
 
     for dv in state["dv"]:
         vid = str(dv.get("vid",""))
@@ -856,13 +878,15 @@ def _draw_charts(net, spots, events, max_time):
         with c1:
             st.caption("🌍 全局视图")
             fig = draw_parking_layout(net, spots, state, highlight_vehicle=hl_veh,
-                                       highlight_path=hl_path, height=480, scale=sc)
+                                       highlight_path=hl_path, highlight_path_color=hl_color,
+                                       extra_paths=extra_paths, height=480, scale=sc)
             st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
         with c2:
             st.caption(f"🔍 {hl_veh} 周边")
             if hl_center:
                 fig = draw_parking_layout(net, spots, state, highlight_vehicle=hl_veh,
-                                           highlight_path=hl_path,
+                                           highlight_path=hl_path, highlight_path_color=hl_color,
+                                           extra_paths=extra_paths,
                                            view_center=hl_center, view_radius=18, height=480, scale=sc)
                 st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
             else:

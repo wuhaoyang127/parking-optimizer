@@ -363,6 +363,7 @@ class SimulationEngine:
         # 有阻挡，执行场景 A 移位让行
         self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
                   spot.spot_id, had_blocking=True, blocker_count=len(blockers),
+                  exit=self._exit_for(vehicle),
                   reason=f"被 {len(blockers)} 辆外侧车辆阻挡，需移位后离场")
 
         for blk_spot, blk_vid in blockers:
