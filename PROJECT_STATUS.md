@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 26
+status_version: 27
 last_updated: 2026-08-28
 current_stage: D
 stage_status: in_progress
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；
+- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序，已实施待验收；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：等待用户提出下一项优化需求。
+- **当前唯一下一步**：用户 Cloud Redeploy 到最新 `stage-d-deliver` 验收反馈排序（按修改后的显示时间自动升序，修改后立即重排）。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -139,7 +139,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 103 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -188,7 +188,7 @@ superseded
 
 1. 动态路径页反馈修复（提交 `a770411`）与移位车辆表（提交 `39936c9`）已于 2026-08-28 用户验收通过；多入口多出口改造（提交 `49a6b8b`）此前已验收。
 2. 布局图「内置/真实布局」回显与指标分析「选择要查看的策略」两项反馈修复（提交 `ee52637`）已于 2026-08-28 用户验收通过。
-3. 等待用户提出下一项优化需求。
+3. 用户 Cloud Redeploy 到最新 `stage-d-deliver`（提交 `d1b25ab`）验收反馈排序：反馈列表（我的反馈 / 管理员全部反馈 / CSV 导出）按「显示时间」升序排列（未设置显示时间的按原始创建时间参与排序，时间无法解析的排最后）；管理员修改某条反馈的显示时间后，列表自动按新时间重新排序。
 
 ## 12. 预计后续需要用户确认
 
@@ -198,6 +198,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-28：**反馈按修改后显示时间自动排序**（用户反馈：反馈要按修改后的时间顺序排列，改时间后自动按新顺序排）：`pages.py` 新增 `_parse_feedback_time`/`_feedback_sort_key`/`sort_feedbacks`（显示时间优先、回退创建时间、无法解析排最后，升序）；「我的反馈」「管理员全部反馈」列表与 CSV 导出统一使用该排序；管理员修改显示时间保存后 `st.rerun` 重新拉取并自动重排；pytest 103 passed、自检通过（139 文件）、AppTest 反馈页通过；打 tag `backup-before-feedback-time-sort-20260828`；状态文档 status_version 26 → 27；待用户验收；
 - 2026-08-28：**用户验收通过**布局图「内置/真实布局」回显与指标分析「选择要查看的策略」两项反馈修复（提交 `ee52637`）；验收前打 tag `backup-before-layout-metrics-follow-accept-20260828`；状态文档 status_version 25 → 26；阶段 D 继续，等待用户提出下一项优化需求；
 - 2026-08-28：**布局图 + 指标分析两项反馈修复**（用户反馈：①布局图「仿真布局」改名「内置布局」，且点内置/真实要分别回显最近一次仿真的内置/真实布局；②指标分析页需求时序分布与车辆明细应跟随所选策略，全部对比时提供策略选择控件）：`render_settings` 运行后记录 `last_builtin_sim`/`last_real_sim`；`render_layout_page` 视图模式改为「内置布局/真实布局」，按选择回显对应最近一次仿真布局；「全部对比」运行循环为每个策略保留第一个种子的事件日志与车辆列表（`sim_events_by_strategy`/`sim_vehicles_by_strategy`），指标页新增「选择要查看的策略」下拉切换需求时序与车辆明细（默认时长感知贪心），单策略模式行为不变；pytest 103 passed、自检通过（139 文件）、AppTest 两页通过；打 tag `backup-before-layout-metrics-follow-20260828`；状态文档 status_version 24 → 25；待用户验收；
 - 2026-08-28：**用户验收通过**动态路径页反馈修复（提交 `a770411`）与移位车辆表（提交 `39936c9`）；验收前打 tag `backup-before-dynamic-path-feedback-accept-20260828`；状态文档 status_version 23 → 24；阶段 D 继续，等待用户提出下一项优化需求；
