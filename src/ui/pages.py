@@ -263,6 +263,8 @@ def render_settings(role):
             if strategy_name == "compare_all":
                 all_m = []
                 main_events_raw = None
+                events_by_strategy = {}
+                vehicles_by_strategy = {}
                 all_strategies = list(StrategyRegistry.all().items())
                 total = len(all_strategies)
                 prog = st.progress(0.0, text="准备运行全部策略对比...")
@@ -276,16 +278,23 @@ def render_settings(role):
                                 else generate_demand(seed=s, **demand_kwargs))
                         m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
                         seed_metrics.append(m)
-                        # 主方法事件日志（取第一个种子），供「车辆动态路径」页展示
-                        if nm == "duration_greedy" and r == 0:
-                            main_events_raw = [{"time": e.time, "type": e.event_type.value,
-                                                "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
-                                                "metadata": dict(e.metadata)} for e in ev]
-                            sim_vehicles_candidate = list(vehs)
+                        # 每个策略都保留第一个种子的事件日志，供指标页「需求时序/车辆明细」切换查看；
+                        # 主方法（时长感知贪心）的事件日志额外供「车辆动态路径」页展示
+                        if r == 0:
+                            ev_raw = [{"time": e.time, "type": e.event_type.value,
+                                       "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
+                                       "metadata": dict(e.metadata)} for e in ev]
+                            events_by_strategy[nm] = ev_raw
+                            vehicles_by_strategy[nm] = list(vehs)
+                            if nm == "duration_greedy":
+                                main_events_raw = ev_raw
+                                sim_vehicles_candidate = list(vehs)
                     all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
+                st.session_state.sim_events_by_strategy = events_by_strategy
+                st.session_state.sim_vehicles_by_strategy = vehicles_by_strategy
                 st.session_state.sim_events_raw = main_events_raw
             else:
                 seed_metrics = []
@@ -307,6 +316,8 @@ def render_settings(role):
                 st.session_state.sim_metrics = avg_m
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
+                st.session_state.sim_events_by_strategy = {strategy_name: events_raw}
+                st.session_state.sim_vehicles_by_strategy = {strategy_name: sim_vehicles_candidate}
 
                 # 记录运行历史（每策略最多保留 5 条，超出删除最旧）
                 history = st.session_state.setdefault("run_history", {})
@@ -342,6 +353,13 @@ def render_settings(role):
             st.session_state.sim_n_runs = n_runs
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
+            # 记录最近一次仿真使用的内置/真实布局（布局图页按视图模式回显）
+            if layout in BUILTIN_LAYOUT_KEYS:
+                st.session_state.last_builtin_sim = {"layout": layout, "net": net, "spots": spots}
+                st.session_state.sim_layout_category = "builtin"
+            else:
+                st.session_state.last_real_sim = {"layout": layout, "net": net, "spots": spots}
+                st.session_state.sim_layout_category = "real"
             st.session_state.sim_strategy_params = strat_params
             st.session_state.sim_env_params = env_params
             st.session_state.sim_vehicles = sim_vehicles_candidate
@@ -609,30 +627,46 @@ def _build_custom(data):
 
 
 def render_layout_page():
-    """页面3: 停车场布局图（静态）"""
+    """页面3: 停车场布局图 — 内置布局/真实布局分别回显最近一次仿真的布局"""
     _sync_custom_layouts_to_globals()
     st.subheader("🅿️ 停车场布局图")
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    net = st.session_state.sim_net
-    spots = st.session_state.sim_spots
-
-    has_custom = bool(st.session_state.get("custom_layouts"))
-    mode = st.radio("视图模式", ["仿真布局", "真实布局"],
-                    horizontal=True,
-                    disabled=not has_custom,
-                    help="真实布局仅在有导入自定义布局后可用" if not has_custom else None)
-
-    if mode == "真实布局" and not has_custom:
-        st.info("暂无导入的自定义布局")
+    builtin_sim = st.session_state.get("last_builtin_sim")
+    real_sim = st.session_state.get("last_real_sim")
+    options = []
+    if builtin_sim:
+        options.append("内置布局")
+    if real_sim:
+        options.append("真实布局")
+    if not options:
+        st.info("暂无已仿真的布局（请先在仿真设置中运行）")
         return
 
-    if mode == "仿真布局":
-        sa = sum(1 for s in spots if s.spot_type == SpotType.STANDALONE)
-        ta = sum(1 for s in spots if s.spot_type == SpotType.TANDEM)
-        st.caption(f"{len(spots)} 车位 — {sa} 独立 + {ta} 纵深")
+    if "layout_view_mode" not in st.session_state or st.session_state.layout_view_mode not in options:
+        st.session_state.layout_view_mode = (
+            "真实布局"
+            if st.session_state.get("sim_layout_category") == "real" and real_sim
+            else "内置布局")
+    mode = st.radio(
+        "视图模式", options, horizontal=True, key="layout_view_mode",
+        help="内置布局回显最近一次仿真的内置示意布局；真实布局回显最近一次仿真的导入布局")
+
+    if mode == "真实布局":
+        sim_info = real_sim
+        st.caption(f"真实布局：{LAYOUTS.get(sim_info['layout'], sim_info['layout'])}"
+                   f"（最近一次仿真的导入布局）")
+    else:
+        sim_info = builtin_sim
+        st.caption(f"内置布局：{LAYOUTS.get(sim_info['layout'], sim_info['layout'])}"
+                   f"（最近一次仿真的内置示意布局）")
+    net = sim_info["net"]
+    spots = sim_info["spots"]
+    sa = sum(1 for s in spots if s.spot_type == SpotType.STANDALONE)
+    ta = sum(1 for s in spots if s.spot_type == SpotType.TANDEM)
+    st.caption(f"{len(spots)} 车位 — {sa} 独立 + {ta} 纵深")
 
     if "layout_zoom" not in st.session_state: st.session_state.layout_zoom = 1.0
     c_zoom, _ = st.columns([1, 5])
@@ -1074,16 +1108,48 @@ def render_metrics_page(role):
                 st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
                                    f"parking_{m.get('strategy','result')}.csv", "text/csv")
 
-    # ── 需求时序分布 + 车辆明细（反馈优化第二批）──
+    # ── 需求时序分布 + 车辆明细（跟随所选策略；「全部对比」时可切换查看）──
     st.markdown("---")
     st.markdown("### 🕒 需求时序分布与车辆明细")
-    events_raw = st.session_state.get("sim_events_raw")
     demand_source = st.session_state.get("sim_demand_source", "generated")
-    if events_raw:
-        if demand_source == "imported":
-            st.caption("事件日志来自导入的需求序列；「全部对比」模式下为当前主方法（时长感知贪心）的事件日志。")
+    events_by_strategy = st.session_state.get("sim_events_by_strategy") or {}
+    vehicles_by_strategy = st.session_state.get("sim_vehicles_by_strategy") or {}
+
+    view_strategy = None
+    if st.session_state.get("sim_all_metrics"):
+        view_options = [m.get("strategy") for m in st.session_state.sim_all_metrics
+                        if m.get("strategy") in events_by_strategy]
+        if view_options:
+            default_idx = view_options.index("duration_greedy") if "duration_greedy" in view_options else 0
+            if st.session_state.get("demand_view_strategy") not in view_options:
+                st.session_state.demand_view_strategy = view_options[default_idx]
+            view_strategy = st.selectbox(
+                "选择要查看的策略",
+                view_options,
+                format_func=lambda n: STRATEGY_LABELS.get(n, n),
+                key="demand_view_strategy",
+                help="「全部对比」模式下可切换查看各策略的需求时序与车辆明细",
+            )
+            events_raw = events_by_strategy.get(view_strategy)
+            vehs = vehicles_by_strategy.get(view_strategy)
         else:
-            st.caption("事件日志来自最近一次仿真；「全部对比」模式下为当前主方法（时长感知贪心）的事件日志。")
+            events_raw = None
+            vehs = None
+        if demand_source == "imported":
+            st.caption("事件日志来自导入的需求序列；当前展示策略："
+                       f"**{STRATEGY_LABELS.get(view_strategy, view_strategy) if view_strategy else '—'}**。")
+        else:
+            st.caption("事件日志来自最近一次仿真；当前展示策略："
+                       f"**{STRATEGY_LABELS.get(view_strategy, view_strategy) if view_strategy else '—'}**。")
+    else:
+        events_raw = st.session_state.get("sim_events_raw")
+        vehs = st.session_state.get("sim_vehicles")
+        if demand_source == "imported":
+            st.caption("事件日志来自导入的需求序列（所选策略）。")
+        else:
+            st.caption("事件日志来自最近一次仿真（所选策略）。")
+
+    if events_raw:
         hist = build_demand_histogram(events_raw)
         if hist is not None:
             st.plotly_chart(hist, use_container_width=True)
@@ -1097,7 +1163,6 @@ def render_metrics_page(role):
                 st.download_button("📥 下载车辆明细 CSV",
                                    vdf.to_csv(index=False).encode('utf-8-sig'),
                                    "parking_vehicle_details.csv", "text/csv")
-        vehs = st.session_state.get("sim_vehicles")
         if vehs:
             meta = st.session_state.get("sim_demand_meta") or {}
             json_str = export_demand_json(
