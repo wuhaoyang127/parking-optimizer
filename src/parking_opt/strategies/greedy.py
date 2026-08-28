@@ -22,6 +22,8 @@ class GreedyStrategy(BaseStrategy):
         if not available:
             return (None, "waiting")
 
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
+
         # 按优先级分组
         group1 = []  # STANDALONE
         group2 = []  # TANDEM depth=1
@@ -37,12 +39,12 @@ class GreedyStrategy(BaseStrategy):
 
         # 优先级1: 独立车位 → 选最近
         if group1:
-            best = min(group1, key=lambda s: path_engine.distance_to_spot(s.node_id))
+            best = min(group1, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
             return (best, "assigned")
 
         # 优先级2: depth=1 纵深车位 → 选最近
         if group2:
-            best = min(group2, key=lambda s: path_engine.distance_to_spot(s.node_id))
+            best = min(group2, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
             return (best, "assigned")
 
         # 优先级3: depth>1 → 选内侧车预计离场最早的
@@ -79,7 +81,8 @@ class DepartureOrderGreedy(BaseStrategy):
             return (None, "waiting")
 
         # 选最近可用 (忽略阻挡风险)
-        best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id))
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
+        best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
         return (best, "assigned")
 
 
@@ -122,13 +125,15 @@ class DurationAwareGreedy(BaseStrategy):
         if not available:
             return (None, "waiting")
 
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
+
         standalone = [s for s in available if s.spot_type == SpotType.STANDALONE]
         depth1 = [s for s in available if s.spot_type == SpotType.TANDEM and s.depth == 1]
         depth_n = [s for s in available if s.spot_type == SpotType.TANDEM and s.depth > 1]
 
         # 1. 独立车位优先（无阻挡问题），选最近
         if standalone:
-            best = min(standalone, key=lambda s: path_engine.distance_to_spot(s.node_id))
+            best = min(standalone, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
             return (best, "assigned")
 
         # 2. 纵深车位：按预估停车时长连续分流
@@ -139,7 +144,7 @@ class DurationAwareGreedy(BaseStrategy):
         if depth1 and depth_n:
             # 内外层都有空闲：短停→外层、长停→里层
             if est_dur < threshold:
-                best = min(depth1, key=lambda s: path_engine.distance_to_spot(s.node_id))
+                best = min(depth1, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
                 return (best, "assigned")
             else:
                 best = min(depth_n, key=lambda s: self._inner_estimated_departure(s, parking_lot))
@@ -147,7 +152,7 @@ class DurationAwareGreedy(BaseStrategy):
 
         # 只剩一层：直接选
         if depth1:
-            best = min(depth1, key=lambda s: path_engine.distance_to_spot(s.node_id))
+            best = min(depth1, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
             return (best, "assigned")
         if depth_n:
             best = min(depth_n, key=lambda s: self._inner_estimated_departure(s, parking_lot))

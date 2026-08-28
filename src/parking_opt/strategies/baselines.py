@@ -73,7 +73,8 @@ class NearestPath(BaseStrategy):
         available = parking_lot.get_available_spots()
         if not available:
             return (None, "waiting")
-        best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id))
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
+        best = min(available, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
         return (best, "assigned")
 
 

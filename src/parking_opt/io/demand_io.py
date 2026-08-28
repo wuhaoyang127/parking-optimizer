@@ -47,6 +47,8 @@ def export_demand_json(vehicles: list[Vehicle], seed: int | None = None,
                 "arrival_time": v.arrival_time,
                 "parking_duration": v.parking_duration,
                 "estimated_duration": v.estimated_duration,
+                **({"entry_id": v.entry_id} if v.entry_id else {}),
+                **({"exit_id": v.exit_id} if v.exit_id else {}),
             }
             for v in vehicles
         ],
@@ -106,11 +108,20 @@ def parse_demand_json(text: str) -> tuple[list[Vehicle], dict[str, Any]]:
             est = park  # 缺省回退为真实时长（与「无预估信息」的最保守处理一致）
         _require(_is_finite_nonneg(est), f"{prefix}.estimated_duration 必须是非负数字，实际为 {est!r}")
 
+        entry_id = item.get("entry_id")
+        _require(entry_id is None or (isinstance(entry_id, str) and entry_id.strip()),
+                 f"{prefix}.entry_id 必须是非空字符串或省略，实际为 {entry_id!r}")
+        exit_id = item.get("exit_id")
+        _require(exit_id is None or (isinstance(exit_id, str) and exit_id.strip()),
+                 f"{prefix}.exit_id 必须是非空字符串或省略，实际为 {exit_id!r}")
+
         vehicles.append(Vehicle(
             vehicle_id=vid,
             arrival_time=float(arr),
             parking_duration=float(park),
             estimated_duration=float(est),
+            entry_id=entry_id.strip() if entry_id else None,
+            exit_id=exit_id.strip() if exit_id else None,
         ))
 
     vehicles.sort(key=lambda v: v.arrival_time)

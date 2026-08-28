@@ -137,7 +137,9 @@ class MosaStrategy(BaseStrategy):
         self.max_wait = max_wait
         # prepare() 后生效：{vehicle_id: spot_id} 离线预分配方案；None 表示未优化（回退贪心）
         self._plan: dict[str, str] | None = None
-        self._entry_dist: dict[str, float] = {}
+        # {entry_id: {spot_id: dist}}：多入口下按车辆入口查表的预计算距离
+        self._entry_dist: dict[str, dict[str, float]] = {}
+        self._default_entry: str | None = None
         self._shift_dist_est: dict[str, float] = {}
         self._vehicles: list[Vehicle] = []
         self._spots: list[Spot] = []
@@ -158,16 +160,29 @@ class MosaStrategy(BaseStrategy):
             self._plan = None  # 超规模：跳过优化，assign 回退贪心
             return
 
-        # 预计算距离（评估器只查表，避免反复 Dijkstra）
+        # 预计算距离（评估器只查表，避免反复 Dijkstra）：按入口分表，车辆按自身入口查
+        self._default_entry = path_engine.entry_id
         self._entry_dist = {}
-        for s in self._spots:
-            d = path_engine.distance_to_spot(s.node_id)
-            self._entry_dist[s.spot_id] = d if math.isfinite(d) else float("inf")
+        entry_ids = path_engine.entry_ids or [self._default_entry]
+        for eid in entry_ids:
+            table = {}
+            for s in self._spots:
+                d = path_engine.distance_to_spot(s.node_id, eid)
+                table[s.spot_id] = d if math.isfinite(d) else float("inf")
+            self._entry_dist[eid] = table
 
         self._shift_dist_est = self._build_shift_dist_est(path_engine)
 
         scene = self._resolve_scene(vehicles)
         self._plan = self._run_nsga2(scene, path_engine)
+
+    def _dist_for(self, vehicle: Vehicle, spot_id: str) -> float:
+        """该车按其入口查预计算距离；入口非法或无表时回退默认入口表。"""
+        entry = getattr(vehicle, "entry_id", None)
+        table = self._entry_dist.get(entry) if entry else None
+        if table is None:
+            table = self._entry_dist.get(self._default_entry, {})
+        return table.get(spot_id, float("inf"))
 
     def _build_shift_dist_est(self, path_engine) -> dict[str, float]:
         """估计每个车位一次移位的往返距离（移到最近可用缓冲位再回位）。"""
@@ -291,7 +306,7 @@ class MosaStrategy(BaseStrategy):
             gene = self._pick_by_scene(feasible, chrom, idx, scene, rng)
             chrom.append(gene)
             if gene is not None:
-                dist = self._entry_dist.get(gene, 0.0)
+                dist = self._dist_for(v, gene)
                 enter = (max(v.arrival_time, occupied_until.get(gene, -1.0))
                          + dist / CAR_SPEED)
                 occupied_until[gene] = enter + v.parking_duration
@@ -308,7 +323,7 @@ class MosaStrategy(BaseStrategy):
         for v in self._vehicles:
             options = []
             for s in self._spots:
-                dist = self._entry_dist.get(s.spot_id, float("inf"))
+                dist = self._dist_for(v, s.spot_id)
                 if not math.isfinite(dist):
                     continue
                 prev_end = occupied_until.get(s.spot_id, -1.0)
@@ -346,7 +361,7 @@ class MosaStrategy(BaseStrategy):
             for j, (veh, gene) in enumerate(zip(self._vehicles, chrom)):
                 if j == idx or gene is None:
                     continue
-                dist = self._entry_dist.get(gene, float("inf"))
+                dist = self._dist_for(veh, gene)
                 if not math.isfinite(dist):
                     continue
                 prev_end = occupied_until.get(gene, -1.0)
@@ -358,7 +373,7 @@ class MosaStrategy(BaseStrategy):
 
         out = []
         for s in self._spots:
-            dist = self._entry_dist.get(s.spot_id, float("inf"))
+            dist = self._dist_for(v, s.spot_id)
             if not math.isfinite(dist):
                 continue
             prev_end = occupied_until.get(s.spot_id, -1.0)
@@ -420,7 +435,7 @@ class MosaStrategy(BaseStrategy):
             if gene is None:
                 n_rejected += 1
                 continue
-            dist = self._entry_dist.get(gene, float("inf"))
+            dist = self._dist_for(v, gene)
             if not math.isfinite(dist):
                 n_rejected += 1
                 continue
@@ -596,17 +611,18 @@ class MosaStrategy(BaseStrategy):
                 return (spot, "assigned")
             if spot is None:
                 # 计划车位不存在（理论不应发生）：回退贪心
-                return self._greedy_assign(parking_lot, path_engine)
+                return self._greedy_assign(vehicle, parking_lot, path_engine)
             # 计划车位被占：排队等待（引擎会在车位空出后重试）
             return (None, "waiting")
 
-        return self._greedy_assign(parking_lot, path_engine)
+        return self._greedy_assign(vehicle, parking_lot, path_engine)
 
-    def _greedy_assign(self, parking_lot: ParkingLot, path_engine):
+    def _greedy_assign(self, vehicle: Vehicle, parking_lot: ParkingLot, path_engine):
         """回退贪心：独立车位 → 纵深外层 → 纵深里层，同类选最近。"""
         available = parking_lot.get_available_spots()
         if not available:
             return (None, "waiting")
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
         standalone = [s for s in available if s.spot_type == SpotType.STANDALONE]
         depth1 = [s for s in available
                   if s.spot_type == SpotType.TANDEM and s.depth == 1]
@@ -614,6 +630,6 @@ class MosaStrategy(BaseStrategy):
                    if s.spot_type == SpotType.TANDEM and s.depth > 1]
         for group in (standalone, depth1, depth_n):
             if group:
-                best = min(group, key=lambda s: path_engine.distance_to_spot(s.node_id))
+                best = min(group, key=lambda s: path_engine.distance_to_spot(s.node_id, entry))
                 return (best, "assigned")
         return (available[0], "assigned")

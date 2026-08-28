@@ -33,7 +33,7 @@ def _fill_lot(lot: ParkingLot):
 class _StubPathEngine:
     """测试用路径引擎替身：策略选车位时只需 distance_to_spot"""
 
-    def distance_to_spot(self, node_id):
+    def distance_to_spot(self, node_id, entry_id=None):
         return 1.0
 
     def shortest_distance(self, a, b):

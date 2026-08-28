@@ -1,14 +1,14 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 21
+status_version: 22
 last_updated: 2026-08-28
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-risk-scoring
+current_milestone: stage-d-multi-entry-exit
 git_initialized: true
 current_branch: stage-d-deliver
 last_verified_commit: dc1a7f8
-current_exec_plan: docs/plans/stage-d-risk-scoring.md
+current_exec_plan: docs/plans/stage-d-multi-entry-exit.md
 latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-risk-scoring`（算法二「风险感知多准则评分」在线策略，已于 2026-08-28 用户验收通过）；
+- **当前里程碑**：`stage-d-multi-entry-exit`（多入口多出口改造：布局允许多个 entry/exit，需求生成按随机种子独立分配入口/出口，仿真按车辆口进出）；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：等待用户提出下一项优化需求（用户已确认准备继续询问问题）。
+- **当前唯一下一步**：多入口多出口改造已实施并验证（101 passed、自检通过），待提交推送后由用户 Cloud Redeploy 验收。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -134,7 +134,7 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`，共 91 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 101 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
 - 备份存档：git tag `backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
@@ -184,8 +184,8 @@ superseded
 
 ## 11. 当前唯一下一步
 
-1. 前两项待验收内容已于 2026-08-28 用户验收通过：**算法二 risk_scoring「风险感知多准则评分」**（提交 `dc1a7f8`）与 **反馈显示时间提示清理**（提交 `bf82cdc`）。
-2. 等待用户提出下一项优化需求（用户已确认准备继续询问问题）。
+1. 多入口多出口改造已实施（最新提交待推送）：布局允许多个 `entry`/`exit` 节点；需求生成按随机种子独立分配每辆车的入口与出口（可复现、可不同）；仿真按车辆口进出，出口不可达自动回退入口；策略距离按该车入口；网页布局图渲染全部入口/出口。
+2. 提交推送后，用户 **Cloud Redeploy 到最新 `stage-d-deliver` 验收**：导入多口布局（或下载新示例 JSON）、运行仿真查看车辆从不同入口进/不同出口出。
 
 ## 12. 预计后续需要用户确认
 
@@ -195,6 +195,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-28：**多入口多出口改造**（用户批准变更说明后实施，ExecPlan `docs/plans/stage-d-multi-entry-exit.md`）：布局允许多个 `type="entry"`/`type="exit"` 节点（旧单入口文件兼容）；`Vehicle` 增 `entry_id`/`exit_id`；`PathEngine` 支持多入口/多出口与默认口规则（`ENTRY`/`EXIT` 优先，无出口回退入口）；`generate_demand` 用 seed 派生独立随机流（+100003/+200003）等概率分配每车入口与出口（不污染主随机流，旧单口实验完全可复现）；引擎入库按车辆入口、离场按车辆出口、出口不可达回退入口并记 DEGRADATION；SPOT_ENTRY/DEPARTURE 事件带 entry/exit 元数据；四个策略距离语义改为「该车入口」；需求 JSON 可选 `entry_id`/`exit_id`（schema 仍 v1）；导入校验放宽为至少一个入口；viz 渲染全部入口（三角）与出口（倒三角）；动画按车辆实际入口；新增 `tests/test_multi_entry.py`（10 项），pytest 101 passed、自检通过（138 文件）；打 tag `backup-before-multi-entry-exit-20260828`；待用户验收；
 - 2026-08-28：**用户验收通过**算法二 risk_scoring「风险感知多准则评分」（提交 `dc1a7f8`）与反馈显示时间提示清理（提交 `bf82cdc`）；打 tag `backup-before-risk-scoring-accept-20260828`；状态文档 status_version 20 → 21；阶段 D 继续，等待用户提出下一项优化需求；
 - 2026-08-27：**算法二 risk_scoring 接入**（用户提供 `新算法接入/算法二` 快照，本会话并入 `stage-d-deliver`，主干其它内容全部保留）：新增 `src/parking_opt/strategies/risk_scoring.py`（在线「风险感知多准则评分」，候选车位内 min–max 归一化后加权 `C = w_d·距离 + w_r·预期移位风险 + w_p·结构惩罚`，argmin 选位，不读真实停车时长），登记注册表网页自动出现 3 个权重滑杆（默认 1.0/1.5/0.5）；并入 18 项单元测试、教学文档 `docs/algorithms/risk_scoring.md`、实验脚本 `scripts/exp_risk_scoring.py`（本地产出 `outputs/exp_risk_scoring_*`）、4 条新文献（bib + 文献矩阵 §11）；**修复实验暴露的引擎移位让行并发竞态**——回位 `move_vehicle` 前后加防御检查（缓冲位若已被其它进程移走则跳过回位），新增 `tests/test_engine_shift_race.py`（2 项）；实验按当前引擎重跑，文档 §11 数字与默认权重选取理由如实改写（默认保持 1.0/1.5/0.5：均值移位 0.2 次、行驶 5588m，比严格零移位组合少 92m）；pytest 91 passed、自检通过；打 tag `backup-before-risk-scoring-20260827`；待用户验收；
 - 2026-08-27：反馈显示时间提示清理（用户验收后反馈）：管理员反馈列表时间行删除「（原始：…）」提示，状态由英文 pending/resolved 改为中文「待处理/已处理」；✎ 编辑面板删除「恢复原始」按钮，仅保留「保存 / 取消」；输入框占位提示不再回显原始时间（placeholder 固定为示例格式）；pytest 71 passed、自检通过（129 文件）；打 tag `backup-before-fb-time-hint-cleanup-20260827`；待用户验收；

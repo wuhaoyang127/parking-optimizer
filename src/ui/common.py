@@ -612,7 +612,12 @@ def build_timeline(events, net, pe):
             tl["assigned_time"] = e.time; tl["spot_id"] = e.spot_id
             try: tl["path_nodes"] = pe.shortest_path(pe.entry_id, e.spot_id)
             except: tl["path_nodes"] = [pe.entry_id, e.spot_id]
-        elif et == "spot_entry": tl["spot_entry_time"] = e.time
+        elif et == "spot_entry":
+            tl["spot_entry_time"] = e.time
+            # 多入口：按该车实际入口重建入库路径（事件元数据带 entry）
+            origin = e.metadata.get("entry") or pe.entry_id
+            try: tl["path_nodes"] = pe.shortest_path(origin, e.spot_id)
+            except: tl["path_nodes"] = [origin, e.spot_id]
         elif et == "departure":
             tl["departure_start"] = e.time
             if not e.metadata.get("had_blocking"): tl["departure_end"] = e.time
@@ -670,7 +675,7 @@ def interp_vehicle_pos(net, events_raw, vid, t):
             veh_ev.append(e)
     veh_ev.sort(key=lambda e: e["time"])
 
-    assigned_t, spot_id, entry_t = None, None, None
+    assigned_t, spot_id, entry_t, origin_entry = None, None, None, None
     for e in veh_ev:
         et = e["type"]
         sid = e.get("spot_id", "")
@@ -678,8 +683,10 @@ def interp_vehicle_pos(net, events_raw, vid, t):
         if et in ("parking_assigned", "spot_entry") and assigned_t is None:
             assigned_t = e["time"]
             if sid: spot_id = sid
+            origin_entry = e.get("metadata", {}).get("entry") or origin_entry
         elif et == "spot_entry" and assigned_t is not None:
             entry_t = e["time"]
+            origin_entry = e.get("metadata", {}).get("entry") or origin_entry
             break
         elif et == "departure" and assigned_t is not None:
             break  # 后面不再需要
@@ -691,8 +698,12 @@ def interp_vehicle_pos(net, events_raw, vid, t):
             if sid:
                 assigned_t = e["time"]; spot_id = sid; break
 
-    en = next((n for n in net.nodes.values() if n.node_type == NodeType.ENTRY), None)
+    # 动画起点：该车实际入口（事件元数据），否则默认入口
+    en = net.nodes.get(origin_entry) if origin_entry else None
+    if en is None or en.node_type != NodeType.ENTRY:
+        en = next((n for n in net.nodes.values() if n.node_type == NodeType.ENTRY), None)
     ep = (en.x, en.y) if en else (0.0, 0.0)
+    entry_id = en.node_id if en else "ENTRY"
 
     # 没找到任何分配 → 入口位置
     if assigned_t is None or not spot_id:
@@ -702,16 +713,16 @@ def interp_vehicle_pos(net, events_raw, vid, t):
     if t < assigned_t:
         return ep
 
-    # 获取路径
+    # 获取路径（从该车实际入口到车位）
     path = None
     if "sim_pe" in st.session_state:
         try:
             pe = st.session_state.sim_pe
-            path = pe.shortest_path(pe.entry_id, spot_id)
+            path = pe.shortest_path(entry_id, spot_id)
         except Exception:
             path = None
     if not path:
-        path = ["ENTRY", spot_id]
+        path = [entry_id, spot_id]
 
     # 计算到达时间（如果没找到确切 entry 事件，估算）
     if entry_t is None or entry_t <= assigned_t:
@@ -756,7 +767,8 @@ def build_layout_from_json(data):
     node_map = {}
     for nd in data["nodes"]:
         nid = nd["id"]
-        ntype = {"entry": NodeType.ENTRY, "road": NodeType.ROAD_NODE, "spot": NodeType.PARKING_SPOT}[nd["type"]]
+        ntype = {"entry": NodeType.ENTRY, "exit": NodeType.EXIT,
+                 "road": NodeType.ROAD_NODE, "spot": NodeType.PARKING_SPOT}[nd["type"]]
         stype = None; sgroup = None; sdepth = None
         if nd["type"] == "spot":
             stype = SpotType.STANDALONE if nd.get("spot_type") == "standalone" else SpotType.TANDEM

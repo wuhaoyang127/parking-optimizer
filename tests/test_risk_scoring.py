@@ -23,7 +23,7 @@ class StubPathEngine:
     def __init__(self, distances=None):
         self.distances = distances or {}
 
-    def distance_to_spot(self, node_id):
+    def distance_to_spot(self, node_id, entry_id=None):
         return self.distances.get(node_id, 1.0)
 
     def shortest_distance(self, a, b):

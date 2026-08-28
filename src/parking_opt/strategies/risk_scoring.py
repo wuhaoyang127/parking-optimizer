@@ -110,11 +110,12 @@ class RiskScoringStrategy(BaseStrategy):
             return (None, "waiting")
 
         # 一趟收集三项原始代价
+        entry = getattr(vehicle, "entry_id", None)  # 多入口：按该车入口计距离
         dist_raw: list[float] = []
         risk_raw: list[float] = []
         depth_raw: list[float] = []
         for s in available:
-            dist_raw.append(path_engine.distance_to_spot(s.node_id))
+            dist_raw.append(path_engine.distance_to_spot(s.node_id, entry))
             risk_raw.append(self._risk_cost(s, vehicle, parking_lot))
             depth_raw.append(self._depth_cost(s, parking_lot))
 

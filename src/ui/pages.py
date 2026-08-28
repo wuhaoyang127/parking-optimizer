@@ -242,13 +242,16 @@ def render_settings(role):
             net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
             pe = PathEngine(net)
 
-            # 需求生成 / 引擎公共参数
+            # 需求生成 / 引擎公共参数（多入口/多出口：把布局的口列表传给生成器，
+            # 由随机种子独立分配；内置布局均为单入口且无出口，行为与旧版一致）
             demand_kwargs = dict(total_vehicles=n_vehicles,
                                  sim_duration=env_params["sim_duration"],
                                  duration_min=env_params["duration_min"],
                                  duration_max=env_params["duration_max"],
                                  peak_ratio=env_params["peak_ratio"],
-                                 error_ratio=env_params["error_ratio"])
+                                 error_ratio=env_params["error_ratio"],
+                                 entry_ids=pe.entry_ids,
+                                 exit_ids=pe.exit_ids)
             eng_kwargs = dict(car_speed=env_params["car_speed"],
                               max_wait_time=env_params["max_wait_time"])
 
@@ -516,8 +519,9 @@ def _render_import_layout():
                 st.stop()
             # 校验
             node_ids = {nd["id"] for nd in data["nodes"]}
-            if "ENTRY" not in node_ids:
-                st.error("节点中必须包含 id='ENTRY' 的入口节点")
+            entry_ids = [nd["id"] for nd in data["nodes"] if nd.get("type") == "entry"]
+            if not entry_ids:
+                st.error("节点中必须至少包含一个 type='entry' 的入口节点")
                 st.stop()
             for ed in data["edges"]:
                 if ed["from"] not in node_ids or ed["to"] not in node_ids:

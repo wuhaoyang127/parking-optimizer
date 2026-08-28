@@ -161,9 +161,9 @@ class SimulationEngine:
             self.env.process(self._wait_timeout(vehicle))
             return
 
-        # 兜底防御：分配车位在路网中从入口不可达时拒绝，
+        # 兜底防御：分配车位在路网中从该车入口不可达时拒绝，
         # 避免 inf 行驶时间传播进仿真时钟产生 nan 事件时间（真实布局导入）
-        dist_to_spot = self.path_engine.distance_to_spot(spot.node_id)
+        dist_to_spot = self.path_engine.distance_to_spot(spot.node_id, self._entry_for(vehicle))
         if not math.isfinite(dist_to_spot):
             vehicle.rejected = True
             self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
@@ -183,6 +183,32 @@ class SimulationEngine:
 
     def _vehicle_by_id(self, vehicle_id: str) -> Vehicle | None:
         return self.parking_lot.vehicles.get(vehicle_id)
+
+    def _entry_for(self, vehicle: Vehicle) -> str:
+        """该车入库入口：vehicle.entry_id 有效则用之，否则默认入口。"""
+        return self.path_engine.resolve_entry(getattr(vehicle, "entry_id", None))
+
+    def _exit_for(self, vehicle: Vehicle) -> str:
+        """该车离场出口：vehicle.exit_id 有效则用之，否则默认出口；
+        布局没有出口节点时回退默认入口（旧布局兼容）。"""
+        return self.path_engine.resolve_exit(getattr(vehicle, "exit_id", None))
+
+    def _leave_path(self, vehicle: Vehicle, spot: Spot) -> tuple[list[str], str, bool]:
+        """离场路径：优先车辆出口；出口不可达时回退入口（并标记 degraded）。
+
+        返回 (path_nodes, exit_node_used, degraded)。path_nodes 为空表示车位与
+        出口/入口均不连通（罕见坏布局，由调用方按旧行为继续，不额外崩溃）。
+        """
+        entry = self._entry_for(vehicle)
+        exit_node = self._exit_for(vehicle)
+        path = self.path_engine.shortest_path(spot.node_id, exit_node)
+        if path:
+            return path, exit_node, False
+        if exit_node != entry:
+            path = self.path_engine.shortest_path(spot.node_id, entry)
+            if path:
+                return path, entry, True
+        return [], exit_node, False
 
     def _entry_blockers(self, spot: Spot) -> list[tuple[Spot, str]]:
         """场景 B：入库目标为里层车位时，返回阻挡入位的外层车辆（从外到内）。"""
@@ -232,8 +258,9 @@ class SimulationEngine:
             shift_pairs.append((blk_spot, buffer, blk_vid))
 
         # ── 新车驶入目标车位 ──
-        drive_dist = self.path_engine.distance_to_spot(spot.node_id)
-        path_in = self.path_engine.shortest_path(self.path_engine.entry_id, spot.node_id)
+        entry = self._entry_for(vehicle)
+        drive_dist = self.path_engine.distance_to_spot(spot.node_id, entry)
+        path_in = self.path_engine.shortest_path(entry, spot.node_id)
         ok, _ = yield from self._reserve_drive(vehicle, path_in, "enter", self.env.now)
         if not ok:
             # 行驶失败（时间片冲突过多，罕见）：释放车位并拒绝
@@ -246,7 +273,7 @@ class SimulationEngine:
                 self.parking_lot.release_buffer(buffer.spot_id)
             return
         self._log(self.env.now, EventType.SPOT_ENTRY, vehicle.vehicle_id,
-                  spot.spot_id, drive_distance=drive_dist)
+                  spot.spot_id, drive_distance=drive_dist, entry=entry)
 
         # ── 外行车回位 ──
         for blk_spot, buffer, blk_vid in reversed(shift_pairs):
@@ -294,7 +321,7 @@ class SimulationEngine:
                                                 self.parking_lot, self.path_engine)
             if status == "assigned":
                 # 兜底防御：不可达车位拒绝，避免 inf/nan 时间传播
-                dist = self.path_engine.distance_to_spot(spot.node_id)
+                dist = self.path_engine.distance_to_spot(spot.node_id, self._entry_for(vehicle))
                 if not math.isfinite(dist):
                     self.waiting_queue.remove(vehicle)
                     vehicle.wait_end = self.env.now
@@ -321,12 +348,15 @@ class SimulationEngine:
         blockers = self.parking_lot.get_blockers(spot)
 
         if not blockers:
-            # 无阻挡，直接离场（时间片：车位 → 入口）
-            path_out = self.path_engine.shortest_path(spot.node_id, self.path_engine.entry_id)
+            # 无阻挡，直接离场（时间片：车位 → 该车出口；出口不可达回退入口）
+            path_out, exit_node, degraded = self._leave_path(vehicle, spot)
+            if degraded:
+                self._log(self.env.now, EventType.DEGRADATION, vehicle.vehicle_id,
+                          reason="出口不可达，离场回退入口")
             yield from self._reserve_drive(vehicle, path_out, "leave", self.env.now)
             self.parking_lot.free(spot)
             self._log(self.env.now, EventType.DEPARTURE, vehicle.vehicle_id,
-                      spot.spot_id, had_blocking=False)
+                      spot.spot_id, had_blocking=False, exit=exit_node)
             self._dispatch_waiting()  # 车位空出，调度等待队列
             return
 
@@ -371,8 +401,11 @@ class SimulationEngine:
                 continue
             self.parking_lot.move_vehicle(blk_spot, buffer)
 
-            # 被阻挡车离场（时间片：车位 → 入口）
-            path_out = self.path_engine.shortest_path(spot.node_id, self.path_engine.entry_id)
+            # 被阻挡车离场（时间片：车位 → 该车出口；出口不可达回退入口）
+            path_out, exit_node, degraded = self._leave_path(vehicle, spot)
+            if degraded:
+                self._log(self.env.now, EventType.DEGRADATION, vehicle.vehicle_id,
+                          reason="出口不可达，离场回退入口")
             ok, _ = yield from self._reserve_drive(vehicle, path_out, "leave", self.env.now)
             self.parking_lot.free(spot)
 

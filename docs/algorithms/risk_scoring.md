@@ -41,7 +41,7 @@
 
 **（1）三项原始代价（均"越小越好"）**
 
-- 距离：`D(s) = path_engine.distance_to_spot(s.node_id)`（入口到车位最短路，米）。
+- 距离：`D(s) = path_engine.distance_to_spot(s.node_id, entry)`（**该车入口**到车位最短路，米；多入口布局按车辆 `entry_id`，缺省走默认入口）。
 - 预期移位风险：
 
 $$

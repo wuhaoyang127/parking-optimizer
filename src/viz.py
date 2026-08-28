@@ -9,6 +9,7 @@ from parking_opt.domain.spot import RoadNetwork, NodeType, Spot, SpotType
 # ─── 颜色方案 ───
 ROAD_COLOR_MAIN = "#78909C"; ROAD_COLOR_SPUR = "#B0BEC5"
 ENTRY_COLOR = "#2E7D32"
+EXIT_COLOR = "#C62828"
 SPOT_FREE = "#66BB6A"; SPOT_OCCUPIED = "#EF5350"; SPOT_BLOCKED = "#FF9800"
 VEHICLE_COLOR = "#2196F3"; HIGHLIGHT_VEHICLE = "#E91E63"; HIGHLIGHT_PATH = "#FFEB3B"
 BG_COLOR = "#FAFBFC"
@@ -94,15 +95,32 @@ def draw_parking_layout(
             hovertext=sh, hoverinfo="text", showlegend=False,
         ))
 
-    # 3. 入口
-    en = next((n for n in net.nodes.values() if n.node_type==NodeType.ENTRY), None)
-    if en:
+    # 3. 入口（支持多个）与出口
+    entry_nodes = [n for n in net.nodes.values() if n.node_type == NodeType.ENTRY]
+    exit_nodes = [n for n in net.nodes.values() if n.node_type == NodeType.EXIT]
+    if entry_nodes:
         fig.add_trace(go.Scatter(
-            x=[en.x], y=[en.y], mode="markers+text",
-            marker=dict(color=ENTRY_COLOR, size=_s("entry",s), symbol="triangle-up"),
-            text=["入口"], textposition="bottom center",
-            textfont=dict(size=max(_s("entry_text",s),6), color=ENTRY_COLOR),
-            hovertext="停车场入口", hoverinfo="text", showlegend=False,
+            x=[n.x for n in entry_nodes], y=[n.y for n in entry_nodes],
+            mode="markers+text",
+            marker=dict(color=ENTRY_COLOR, size=_s("entry", s), symbol="triangle-up"),
+            text=[f"入口 {n.node_id}" if len(entry_nodes) > 1 else "入口"
+                  for n in entry_nodes],
+            textposition="bottom center",
+            textfont=dict(size=max(_s("entry_text", s), 6), color=ENTRY_COLOR),
+            hovertext=[f"停车场入口 {n.node_id}" for n in entry_nodes],
+            hoverinfo="text", showlegend=False,
+        ))
+    if exit_nodes:
+        fig.add_trace(go.Scatter(
+            x=[n.x for n in exit_nodes], y=[n.y for n in exit_nodes],
+            mode="markers+text",
+            marker=dict(color=EXIT_COLOR, size=_s("entry", s), symbol="triangle-down"),
+            text=[f"出口 {n.node_id}" if len(exit_nodes) > 1 else "出口"
+                  for n in exit_nodes],
+            textposition="top center",
+            textfont=dict(size=max(_s("entry_text", s), 6), color=EXIT_COLOR),
+            hovertext=[f"停车场出口 {n.node_id}" for n in exit_nodes],
+            hoverinfo="text", showlegend=False,
         ))
 
     # 4. 行驶中的车辆（普通车辆合并成一个 trace，高亮车辆单独一个 trace 保留描边）

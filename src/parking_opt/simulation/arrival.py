@@ -1,3 +1,4 @@
+from __future__ import annotations
 """车辆需求生成器：仿真数据"""
 
 import random
@@ -12,7 +13,9 @@ def generate_demand(total_vehicles: int = 150,
                     duration_max: float = DURATION_MAX,
                     peak_ratio: float = PEAK_RATIO,
                     error_ratio: float = ERROR_RATIO,
-                    seed: int = 42) -> list[Vehicle]:
+                    seed: int = 42,
+                    entry_ids: list[str] | None = None,
+                    exit_ids: list[str] | None = None) -> list[Vehicle]:
     """
     生成仿真车辆需求（双峰到达分布）
 
@@ -23,8 +26,19 @@ def generate_demand(total_vehicles: int = 150,
         peak_ratio: 高峰时段车辆占比
         error_ratio: 预估时长相对真实时长的误差上限（±比例）
         seed: 随机种子
+        entry_ids: 布局的全部入口节点ID（≥2 个时按种子随机等概率分配；
+                   None/≤1 个时不分配，车辆走默认入口）
+        exit_ids: 布局的全部出口节点ID（≥2 个时按种子随机等概率分配；
+                  None/≤1 个时不分配，车辆走默认出口/回退入口）
+
+    入口/出口分配使用独立派生随机流（seed+100003 / seed+200003），
+    不消耗主随机流，保证旧版单入口实验在同一 seed 下完全可复现。
     """
     random.seed(seed)
+    entries = list(entry_ids or [])
+    exits = list(exit_ids or [])
+    entry_rng = random.Random(seed + 100_003)
+    exit_rng = random.Random(seed + 200_003)
 
     vehicles = []
     # 高峰时间用仿真时长的比例（早高峰 35%，晚高峰 73%）
@@ -54,11 +68,17 @@ def generate_demand(total_vehicles: int = 150,
         error = random.uniform(-error_ratio, error_ratio)
         estimated_duration = parking_duration * (1 + error)
 
+        # 入口/出口：仅当布局有 ≥2 个可选口时才随机分配（等概率，seed 可复现）
+        entry_id = entry_rng.choice(entries) if len(entries) >= 2 else None
+        exit_id = exit_rng.choice(exits) if len(exits) >= 2 else None
+
         vehicles.append(Vehicle(
             vehicle_id=vid,
             arrival_time=arrival,
             parking_duration=parking_duration,
             estimated_duration=estimated_duration,
+            entry_id=entry_id,
+            exit_id=exit_id,
         ))
 
     return sorted(vehicles, key=lambda v: v.arrival_time)

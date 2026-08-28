@@ -49,6 +49,8 @@ class Vehicle:
     rejected: bool = False
     wait_start: Optional[float] = None
     wait_end: Optional[float] = None
+    entry_id: Optional[str] = None  # 指定入口节点ID（None=默认入口）
+    exit_id: Optional[str] = None   # 指定出口节点ID（None=默认出口/回退入口）
 
     @property
     def departure_time(self) -> float:
