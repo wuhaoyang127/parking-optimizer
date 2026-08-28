@@ -1421,16 +1421,23 @@ def render_feedback_page(role):
     st.subheader("💬 反馈")
     is_admin = role.get("can_manage_users", False)
 
+    if "feedback_sort_order" not in st.session_state:
+        st.session_state.feedback_sort_order = "正序（早→晚）"
+    st.radio("反馈排序", ["正序（早→晚）", "倒序（晚→早）"],
+             horizontal=True, key="feedback_sort_order",
+             help="按反馈显示时间排序（未修改过的用原始提交时间）")
+    sort_desc = st.session_state.feedback_sort_order.startswith("倒序")
+
     with st.expander("📝 提交反馈", expanded=True):
         _render_submit_feedback()
 
     with st.expander("📋 我的反馈", expanded=False):
-        _render_my_feedbacks()
+        _render_my_feedbacks(reverse=sort_desc)
 
     if is_admin:
         st.divider()
         st.markdown("### 🗂 全部反馈（管理员）")
-        _render_admin_feedbacks()
+        _render_admin_feedbacks(reverse=sort_desc)
 
 
 def _render_submit_feedback():
@@ -1508,14 +1515,14 @@ def _feedback_sort_key(f: dict):
     return (2, None, str(disp))
 
 
-def sort_feedbacks(items):
-    """反馈列表按显示时间升序排序（display_time 优先，回退 created_at）。"""
-    return sorted(items or [], key=_feedback_sort_key)
+def sort_feedbacks(items, reverse=False):
+    """反馈列表按显示时间排序（display_time 优先，回退 created_at）；reverse=True 为倒序（晚→早）。"""
+    return sorted(items or [], key=_feedback_sort_key, reverse=reverse)
 
 
-def _render_my_feedbacks():
+def _render_my_feedbacks(reverse=False):
     """展示当前用户自己提交的反馈及管理员回复"""
-    items = sort_feedbacks(auth_list_my_feedbacks(st.session_state.token))
+    items = sort_feedbacks(auth_list_my_feedbacks(st.session_state.token), reverse=reverse)
     if not items:
         st.caption("暂无反馈记录")
         return
@@ -1531,23 +1538,23 @@ def _render_my_feedbacks():
         st.divider()
 
 
-def _feedback_to_csv(items):
+def _feedback_to_csv(items, reverse=False):
     """把反馈列表转为 UTF-8 BOM 的 CSV 字节（Excel 可直接打开中文）"""
     import csv
     import io
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["标题", "类型", "提交人", "角色", "状态", "内容", "回复", "时间"])
-    for f in sort_feedbacks(items):
+    for f in sort_feedbacks(items, reverse=reverse):
         w.writerow([f.get("title", ""), f.get("category", ""), f.get("username", ""),
                     f.get("role", ""), f.get("status", ""), f.get("content", ""),
                     f.get("reply", ""), _feedback_display_time(f)])
     return buf.getvalue().encode("utf-8-sig")
 
 
-def _render_admin_feedbacks():
+def _render_admin_feedbacks(reverse=False):
     """管理员查看全部反馈、筛选、标记状态、回复、删除、导出"""
-    items = sort_feedbacks(auth_list_feedbacks(st.session_state.token))
+    items = sort_feedbacks(auth_list_feedbacks(st.session_state.token), reverse=reverse)
     if not items:
         st.caption("暂无反馈")
         return
@@ -1559,7 +1566,7 @@ def _render_admin_feedbacks():
     with c_f2:
         cat_filter = st.selectbox("类型筛选", ["全部", "通用", "仿真"], key="fb_cat_filter")
     with c_f3:
-        st.download_button("📥 导出反馈 CSV", _feedback_to_csv(items),
+        st.download_button("📥 导出反馈 CSV", _feedback_to_csv(items, reverse=reverse),
                            "feedback.csv", "text/csv", use_container_width=True)
 
     status_map = {"待处理": "pending", "已处理": "resolved"}
