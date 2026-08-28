@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 from ui.common import *
 from ui.common import (_avg_metrics, _plot_radar,
                       _sync_custom_layouts_to_globals, persist_custom_layouts)
@@ -1475,9 +1476,46 @@ def _feedback_display_time(f: dict) -> str:
     return f.get("display_time") or f.get("created_at", "")
 
 
+def _parse_feedback_time(value):
+    """把反馈时间解析为无时区的墙上时间；无法解析返回 None。"""
+    if value is None:
+        return None
+    s = str(value).strip()
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt.replace(tzinfo=None)
+    except ValueError:
+        pass
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _feedback_sort_key(f: dict):
+    """排序键：按显示时间升序（早→晚）；时间无法解析的排在有时间的后面。"""
+    disp = _feedback_display_time(f)
+    disp_dt = _parse_feedback_time(disp)
+    if disp_dt is not None:
+        return (0, disp_dt, str(disp))
+    created_dt = _parse_feedback_time(f.get("created_at", ""))
+    if created_dt is not None:
+        return (1, created_dt, str(disp))
+    return (2, None, str(disp))
+
+
+def sort_feedbacks(items):
+    """反馈列表按显示时间升序排序（display_time 优先，回退 created_at）。"""
+    return sorted(items or [], key=_feedback_sort_key)
+
+
 def _render_my_feedbacks():
     """展示当前用户自己提交的反馈及管理员回复"""
-    items = auth_list_my_feedbacks(st.session_state.token)
+    items = sort_feedbacks(auth_list_my_feedbacks(st.session_state.token))
     if not items:
         st.caption("暂无反馈记录")
         return
@@ -1500,7 +1538,7 @@ def _feedback_to_csv(items):
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["标题", "类型", "提交人", "角色", "状态", "内容", "回复", "时间"])
-    for f in items:
+    for f in sort_feedbacks(items):
         w.writerow([f.get("title", ""), f.get("category", ""), f.get("username", ""),
                     f.get("role", ""), f.get("status", ""), f.get("content", ""),
                     f.get("reply", ""), _feedback_display_time(f)])
@@ -1509,7 +1547,7 @@ def _feedback_to_csv(items):
 
 def _render_admin_feedbacks():
     """管理员查看全部反馈、筛选、标记状态、回复、删除、导出"""
-    items = auth_list_feedbacks(st.session_state.token)
+    items = sort_feedbacks(auth_list_feedbacks(st.session_state.token))
     if not items:
         st.caption("暂无反馈")
         return
