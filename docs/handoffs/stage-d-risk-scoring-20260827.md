@@ -1,6 +1,7 @@
 ---
 stage: D
-status: awaiting_review
+status: approved
+accepted_date: 2026-08-28
 completed_date: 2026-08-27
 source_exec_plan: docs/plans/stage-d-risk-scoring.md
 verified_commit: dc1a7f8
