@@ -1,7 +1,7 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 29
-last_updated: 2026-08-28
+status_version: 30
+last_updated: 2026-08-30
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
@@ -148,6 +148,7 @@ superseded
 |---|---|---|
 | `AGENTS.md` | 长期项目规则 | 有效 |
 | `PROJECT_STATUS.md` | 项目状态唯一入口 | 有效 |
+| `PROJECT_INDEX.md` | 项目目录索引（按需读取导航 + 需求→文件速查表） | 有效，本轮新增 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
 | `app.py` | Streamlit 多页面 Dashboard 瘦入口（~90 行） | 有效，本轮已完成拆分 |
 | `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好） | 有效 |
@@ -200,6 +201,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-30：**新增项目目录索引 `PROJECT_INDEX.md`**（全文件导航 + 需求→文件速查表，供按需读取、避免全量加载上下文）；`PROJECT_STATUS.md` 关键文件表登记该索引；打 tag `backup-before-project-index-20260830`；状态文档 status_version 29 → 30；待用户确认；
 - 2026-08-28：**用户验收通过**反馈按修改后显示时间自动排序 + 正序/倒序切换（提交 `d1b25ab`、`a45b537`）；验收前打 tag `backup-before-feedback-sort-accept-20260828`；状态文档 status_version 28 → 29；今日收工，明日继续；
 - 2026-08-28：**反馈页新增正序/倒序切换**（用户反馈：增加倒序按钮）：`render_feedback_page` 顶部新增「反馈排序」radio（正序 早→晚 / 倒序 晚→早），「我的反馈」「管理员全部反馈」与 CSV 导出统一跟随选择；`sort_feedbacks` 增加 `reverse` 参数，相关渲染函数透传；pytest 103 passed、AppTest 反馈页通过；打 tag `backup-before-feedback-sort-desc-20260828`；状态文档 status_version 27 → 28；待用户验收；
 - 2026-08-28：**反馈按修改后显示时间自动排序**（用户反馈：反馈要按修改后的时间顺序排列，改时间后自动按新顺序排）：`pages.py` 新增 `_parse_feedback_time`/`_feedback_sort_key`/`sort_feedbacks`（显示时间优先、回退创建时间、无法解析排最后，升序）；「我的反馈」「管理员全部反馈」列表与 CSV 导出统一使用该排序；管理员修改显示时间保存后 `st.rerun` 重新拉取并自动重排；pytest 103 passed、自检通过（139 文件）、AppTest 反馈页通过；打 tag `backup-before-feedback-time-sort-20260828`；状态文档 status_version 26 → 27；待用户验收；
