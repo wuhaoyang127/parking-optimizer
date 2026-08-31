@@ -139,6 +139,7 @@
 | `test_risk_scoring.py` | 算法二 risk_scoring |
 | `test_multi_entry.py` | 多入口多出口 |
 | `test_realtime_io.py` | 真实道闸流水/车位状态解析（10 项） |
+| `test_ui_helpers.py` | UI 纯函数（车辆ID排序键等，3 项） |
 
 ---
 

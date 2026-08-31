@@ -396,6 +396,12 @@ def render_settings(role):
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_timed_out_strategies = timed_out_strategies
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
+                # 主方法若首种子超时没有事件日志，回退到第一个成功策略的事件
+                # （动态路径页依赖 sim_events_raw，不能为 None）
+                if main_events_raw is None and events_by_strategy:
+                    first_nm = next(iter(events_by_strategy))
+                    main_events_raw = events_by_strategy[first_nm]
+                    sim_vehicles_candidate = vehicles_by_strategy.get(first_nm, sim_vehicles_candidate)
                 st.session_state.sim_events_by_strategy = events_by_strategy
                 st.session_state.sim_vehicles_by_strategy = vehicles_by_strategy
                 st.session_state.sim_events_raw = main_events_raw
@@ -810,6 +816,17 @@ def render_layout_page():
     st.plotly_chart(fig, use_container_width=True, config={"scrollZoom": True})
 
 
+def _vehicle_sort_key(v: str):
+    """车辆ID排序键：带下划线时按末尾数字排序，否则按字典序；
+    返回同构 (int, int, str) 元组，避免 int/str 混合比较 TypeError。"""
+    if "_" in v:
+        try:
+            return (0, int(v.rsplit("_", 1)[-1]), v)
+        except ValueError:
+            pass
+    return (1, 0, v)
+
+
 def render_path_page():
     """页面4: 车辆动态路径 — 20帧快照回放"""
     st.subheader("🚗 车辆动态路径")
@@ -819,8 +836,12 @@ def render_path_page():
 
     net = st.session_state.sim_net
     spots = st.session_state.sim_spots
-    events = st.session_state.sim_events_raw
-    max_time = max(e["time"] for e in events) if events else 30
+    events = st.session_state.get("sim_events_raw") or []
+    if not events:
+        st.info("本次仿真没有可回放的事件日志（可能因运行超时被跳过）。"
+                "请回到仿真设置重新运行仿真。")
+        return
+    max_time = max(e["time"] for e in events)
 
     if "replay_time" not in st.session_state: st.session_state.replay_time = 0.0
     if "frame_index" not in st.session_state: st.session_state.frame_index = 0
@@ -830,7 +851,7 @@ def render_path_page():
     all_vehs = sorted(set(
         str(e.get("vehicle_id", "")) for e in events
         if str(e.get("vehicle_id", "")) and e.get("type") in ("vehicle_arrival", "parking_assigned", "spot_entry")
-    ), key=lambda v: int(v.split("_")[-1]) if "_" in v else v)
+    ), key=_vehicle_sort_key)
 
     # 移位车辆表：收集所有 shift_start 事件（演示移位动态时按此选车）
     shift_rows = []
