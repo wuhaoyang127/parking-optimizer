@@ -1,0 +1,21 @@
+# 停车场优化系统 — 研发端单机部署（Docker Compose）
+# 用法：
+#   1. 复制 .env.example 为 .env 并填入 Supabase 密钥
+#   2. docker compose up -d --build
+# 说明：
+#   - Supabase 使用云服务，本 compose 只部署 Streamlit 应用；
+#   - 如需 HTTPS，请在前面加 nginx（参考 deploy/nginx.conf.example）或上云负载均衡。
+services:
+  app:
+    build: .
+    container_name: parking-rd-app
+    ports:
+      - "8501:8501"
+    environment:
+      # 密钥通过环境变量注入（也可用 .env 文件）
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+    volumes:
+      # 仅挂载本地数据目录（需求序列下载等），不覆盖代码
+      - ./data:/app/data
+    restart: unless-stopped

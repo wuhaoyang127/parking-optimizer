@@ -1,0 +1,24 @@
+# Git 与 IDE
+.git
+.gitignore
+.vscode/
+.idea/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 密钥（镜像内不要打包真实密钥；运行时通过环境变量或挂载注入）
+.streamlit/secrets.toml
+.env
+credentials.local.txt
+
+# 本地数据与实验产物
+data/
+outputs/
+logs/
+*.log
+node_modules/
