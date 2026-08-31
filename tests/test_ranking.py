@@ -3,7 +3,8 @@
 import pytest
 
 from src.parking_opt.evaluation.ranking import (DEFAULT_WEIGHTS, METRIC_DIRECTIONS,
-                                                normalize_weights, weighted_rank)
+                                                normalize_weights, weighted_rank,
+                                                below_significance_fields)
 
 
 def base_metrics():
@@ -88,3 +89,37 @@ class TestWeightedRank:
             "satisfaction_rate", "spatial_utilization", "avg_wait_time_s",
             "shift_count", "shift_distance_m", "total_drive_distance_m", "runtime_s",
         }
+
+
+class TestSignificanceEpsilon:
+    """实际意义阈值：微小差异不参与排名（防止 min-max 放大噪声）。"""
+
+    def _metrics_with_runtime(self, a: float, b: float) -> list[dict]:
+        return [
+            {"strategy": "A", "satisfaction_rate": 0.9, "spatial_utilization": 0.8,
+             "avg_wait_time_s": 300.0, "shift_count": 5, "shift_distance_m": 50.0,
+             "total_drive_distance_m": 1000.0, "runtime_s": a},
+            {"strategy": "B", "satisfaction_rate": 0.7, "spatial_utilization": 0.6,
+             "avg_wait_time_s": 100.0, "shift_count": 1, "shift_distance_m": 10.0,
+             "total_drive_distance_m": 800.0, "runtime_s": b},
+        ]
+
+    def test_runtime_below_epsilon_is_neutral(self):
+        # random 快 0.25s 这类微小差异：只给耗时权重时两者得分应相同（0.5）
+        metrics = self._metrics_with_runtime(0.05, 0.30)
+        result = weighted_rank(metrics, {"runtime_s": 100})
+        assert result[0]["weighted_score"] == pytest.approx(0.5)
+        assert result[1]["weighted_score"] == pytest.approx(0.5)
+
+    def test_runtime_above_epsilon_counts(self):
+        # 差距超过 1 秒才算真差异
+        metrics = self._metrics_with_runtime(0.2, 5.0)
+        result = weighted_rank(metrics, {"runtime_s": 100})
+        assert result[0]["strategy"] == "A"
+        assert result[0]["weighted_score"] > result[1]["weighted_score"]
+
+    def test_below_significance_fields_reports_runtime(self):
+        fields = below_significance_fields(self._metrics_with_runtime(0.05, 0.30))
+        assert "runtime_s" in fields
+        fields2 = below_significance_fields(self._metrics_with_runtime(0.2, 5.0))
+        assert "runtime_s" not in fields2

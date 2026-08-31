@@ -100,7 +100,7 @@
 | `strategies/mosa.py` | 635 | 算法一：NSGA-II 离线多目标预分配（场景权重） |
 | `strategies/risk_scoring.py` | 156 | 算法二：在线风险感知多准则评分 |
 | `evaluation/metrics.py` | 72 | 指标计算（利用率/移位/等待/行驶） |
-| `evaluation/ranking.py` | 101 | 加权多指标评分排名（归一化+方向） |
+| `evaluation/ranking.py` | 130 | 加权多指标评分排名（min–max 归一化 + 实际意义阈值防噪声） |
 | `io/demand_io.py` | 138 | 需求序列 JSON 导出/导入（schema v1） |
 | `io/road_io.py` | 117 | 布局/路网 JSON 读写 |
 | `io/realtime_io.py` | 220 | **真实数据接口预留**：道闸流水/车位状态 CSV 解析 → 需求序列（车牌脱敏） |

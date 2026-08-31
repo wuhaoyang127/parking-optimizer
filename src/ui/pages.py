@@ -1067,6 +1067,10 @@ def render_metrics_page(role):
             weights_by_label = st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL)
             st.caption("当前为加权评分模式；权重在「仿真设置 → 算法排名设置」中调整")
             wdf, ranked = weighted_rank_df(all_m, weights_by_label)
+            neutrals = neutralized_metric_labels(all_m)
+            if neutrals:
+                st.caption("⚖️ 以下指标各策略差异低于实际意义阈值，已按无区分度处理（不参与排名）："
+                           + "、".join(neutrals))
             best = ranked[0]
             st.markdown(f'> 🏆 加权推荐: **{STRATEGY_LABELS.get(best["strategy"], best["strategy"])}**'
                         f' 综合得分 {best["weighted_score"]:.3f}（满分 1.0）')

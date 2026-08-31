@@ -72,7 +72,8 @@ from parking_opt.strategies.mosa import estimate_scene as estimate_mosa_scene
 from parking_opt.strategies.mosa import resolve_scene as resolve_mosa_scene
 from parking_opt.strategies.mosa import SCENE_LABELS as MOSA_SCENE_LABELS
 from parking_opt.evaluation.metrics import compute_metrics
-from parking_opt.evaluation.ranking import weighted_rank, DEFAULT_WEIGHTS as RANK_DEFAULT_WEIGHTS
+from parking_opt.evaluation.ranking import (weighted_rank, below_significance_fields,
+                                            DEFAULT_WEIGHTS as RANK_DEFAULT_WEIGHTS)
 from parking_opt.io.demand_io import export_demand_json, parse_demand_json
 from parking_opt.optimization.cpsat_baseline import CPSatBaseline
 from viz import draw_parking_layout
@@ -495,6 +496,16 @@ def weighted_rank_df(all_m, weights_by_label):
     df.columns = ["排名", "策略", "综合得分", "满足率", "利用率", "平均等待(s)",
                   "移位次数", "移位距离(m)", "行驶距离(m)", "拒绝数", "耗时(s)"]
     return df, ranked
+
+
+def neutralized_metric_labels(metrics_list) -> list[str]:
+    """返回被「实际意义阈值」判定为无区分度的指标中文名列表（供页面提示）。"""
+    fields = below_significance_fields(metrics_list)
+    labels = []
+    for label, (field, _direction, _desc) in PRIORITY_METRICS.items():
+        if field in fields:
+            labels.append(label)
+    return labels
 
 
 def _fmt_clock(seconds):
