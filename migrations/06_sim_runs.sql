@@ -47,7 +47,7 @@ BEGIN
 
   RETURN json_build_object('success', true, 'id', v_id);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3. 查询运行记录（本人；管理员可查全部）
 CREATE OR REPLACE FUNCTION public.list_sim_runs(
@@ -76,7 +76,7 @@ BEGIN
                   ORDER BY created_at DESC LIMIT p_limit) r);
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 4. 删除运行记录（管理员可删任意；本人只能删自己的）
 CREATE OR REPLACE FUNCTION public.delete_sim_run(
@@ -101,4 +101,4 @@ BEGIN
 
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;

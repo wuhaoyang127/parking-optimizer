@@ -45,7 +45,7 @@ BEGIN
 EXCEPTION WHEN unique_violation THEN
   RETURN json_build_object('success', false, 'error', '用户名已存在');
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.2 登录（bcrypt + 旧 sha256 兼容透明升级 + 审计）
 CREATE OR REPLACE FUNCTION public.login_user(
@@ -101,7 +101,7 @@ BEGIN
     'token', v_token
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.3 验证 session token（逻辑不变，补 search_path 加固）
 CREATE OR REPLACE FUNCTION public.validate_session(
@@ -125,7 +125,7 @@ BEGIN
     'token', v_user.session_token
   );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.4 退出登录（审计）
 CREATE OR REPLACE FUNCTION public.logout_user(
@@ -143,7 +143,7 @@ BEGIN
   END IF;
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.5 更新用户角色（审计旧→新）
 CREATE OR REPLACE FUNCTION public.update_user_role(
@@ -171,7 +171,7 @@ BEGIN
           jsonb_build_object('target', p_username, 'old_role', v_old_role, 'new_role', p_role));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.6 删除用户（审计）
 CREATE OR REPLACE FUNCTION public.delete_user(
@@ -194,7 +194,7 @@ BEGIN
   VALUES (v_username, 'delete_user', jsonb_build_object('target', p_username));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.7 修改密码（bcrypt + 审计）
 CREATE OR REPLACE FUNCTION public.change_password(
@@ -229,7 +229,7 @@ BEGIN
   INSERT INTO public.audit_log(username, action) VALUES (v_user.username, 'change_password');
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.8 重置用户密码（bcrypt + 审计）
 CREATE OR REPLACE FUNCTION public.reset_user_password(
@@ -255,7 +255,7 @@ BEGIN
   VALUES (v_username, 'reset_user_password', jsonb_build_object('target', p_username));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.9 导出用户（审计）
 CREATE OR REPLACE FUNCTION public.export_users(
@@ -278,7 +278,7 @@ BEGIN
     'role', role, 'created_at', created_at
   )) FROM public.users);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 3.10 导入用户（审计）
 CREATE OR REPLACE FUNCTION public.import_users(
@@ -312,7 +312,7 @@ BEGIN
   VALUES (v_username, 'import_users', jsonb_build_object('count', json_array_length(p_users_json)));
   RETURN json_build_object('success', true, 'count', json_array_length(p_users_json));
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- ============================================
 -- 4. 反馈管理 RPC 升级（search_path + 审计）
@@ -341,7 +341,7 @@ BEGIN
           jsonb_build_object('feedback_id', p_id, 'status', p_status));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 4.2 回复反馈（审计）
 CREATE OR REPLACE FUNCTION public.reply_feedback(
@@ -365,7 +365,7 @@ BEGIN
   VALUES (v_username, 'reply_feedback', jsonb_build_object('feedback_id', p_id));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 4.3 删除反馈（审计）
 CREATE OR REPLACE FUNCTION public.delete_feedback(
@@ -388,7 +388,7 @@ BEGIN
   VALUES (v_username, 'delete_feedback', jsonb_build_object('feedback_id', p_id));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- 4.4 修改反馈显示时间（审计）
 CREATE OR REPLACE FUNCTION public.update_feedback_display_time(
@@ -415,19 +415,19 @@ BEGIN
           jsonb_build_object('feedback_id', p_id, 'display_time', p_display_time));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- ============================================
 -- 5. 其余既有 RPC 统一补 SET search_path
 -- （逻辑不变，仅防 search_path 劫持）
 -- ============================================
 
-ALTER FUNCTION public.list_users(TEXT) SET search_path = public;
-ALTER FUNCTION public.get_preference(TEXT, TEXT) SET search_path = public;
-ALTER FUNCTION public.set_preference(TEXT, TEXT, TEXT) SET search_path = public;
-ALTER FUNCTION public.submit_feedback(TEXT, TEXT, TEXT, TEXT, TEXT) SET search_path = public;
-ALTER FUNCTION public.list_my_feedbacks(TEXT) SET search_path = public;
-ALTER FUNCTION public.list_feedbacks(TEXT) SET search_path = public;
+ALTER FUNCTION public.list_users(TEXT) SET search_path = public, extensions;
+ALTER FUNCTION public.get_preference(TEXT, TEXT) SET search_path = public, extensions;
+ALTER FUNCTION public.set_preference(TEXT, TEXT, TEXT) SET search_path = public, extensions;
+ALTER FUNCTION public.submit_feedback(TEXT, TEXT, TEXT, TEXT, TEXT) SET search_path = public, extensions;
+ALTER FUNCTION public.list_my_feedbacks(TEXT) SET search_path = public, extensions;
+ALTER FUNCTION public.list_feedbacks(TEXT) SET search_path = public, extensions;
 
 -- ============================================
 -- 6. 通用审计入口（供应用层记录仿真运行等事件）
@@ -451,4 +451,4 @@ BEGIN
   VALUES (v_username, p_action, COALESCE(p_detail, '{}'::jsonb));
   RETURN json_build_object('success', true);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
