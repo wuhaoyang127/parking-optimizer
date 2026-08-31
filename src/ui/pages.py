@@ -26,11 +26,44 @@ def render_settings(role):
     imported_meta = None
     if import_mode:
         if gate_mode:
+            # 示例文件下载（给停车场运营方按格式准备数据）
+            sample_path = PROJECT_ROOT / "data" / "samples" / "道闸流水示例.csv"
+            if sample_path.exists():
+                st.download_button(
+                    "📥 下载道闸流水示例 CSV",
+                    sample_path.read_bytes(),
+                    "道闸流水示例.csv", "text/csv",
+                    disabled=not role["can_export"],
+                    help="按这个格式准备数据即可导入",
+                )
+            with st.expander("📖 道闸流水 CSV 填写说明（给停车场运营方）", expanded=False):
+                st.markdown("""
+**每一行 = 一辆车的一次完整进出记录**，需包含以下列（中英文列名均可）：
+
+| 列 | 必填 | 中文列名 | 英文列名 | 说明 |
+|---|---|---|---|---|
+| 车牌 | ✅ | `车牌` / `车牌号` | `plate` | 系统默认脱敏，原始车牌不落库 |
+| 入场时间 | ✅ | `入场时间` | `entry_time` | `2026-08-30 08:00:00` 或时间戳 |
+| 出场时间 | ✅ | `出场时间` | `exit_time` | 必须晚于入场时间 |
+| 入口编号 | ⭕ | `入口` | `entry_id` | 可不填 |
+| 出口编号 | ⭕ | `出口` | `exit_id` | 可不填 |
+
+**示例**：
+
+```csv
+车牌,入场时间,出场时间,入口,出口
+京A12345,2026-08-30 08:00:00,2026-08-30 09:30:00,entry_1,exit_1
+京B67890,2026-08-30 08:05:00,2026-08-30 08:35:00,entry_1,exit_1
+```
+
+**常见错误**：出场早于入场 / 缺列 / 空车牌 / 还在场没离场的车 / Excel 存成了 xlsx。
+详细说明见项目文档 `docs/道闸流水CSV填写说明.md`。
+""")
             up = st.file_uploader(
                 "上传道闸流水 CSV（.csv）", type=["csv"],
                 disabled=disabled,
                 help="列名支持 车牌/入场时间/出场时间（中英文），可选入口/出口编号；"
-                     "系统默认对车牌脱敏后转换为需求序列。字段规范见 docs/data/03_真实数据接口规范_v1.md",
+                     "系统默认对车牌脱敏后转换为需求序列",
             )
             if up is not None:
                 try:
