@@ -23,6 +23,7 @@ Thumbs.db
 *.pem
 *.key
 secrets.*
+!secrets.toml.example
 credentials.*
 
 # Build and packaging
