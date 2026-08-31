@@ -44,7 +44,7 @@
 | `src/ui/pages.py` | 1800+ | **9 个页面渲染函数**（见下方函数表） |
 | `src/ui/common.py` | 1350+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
 | `src/viz.py` | 212 | Plotly 绘图：`draw_parking_layout`（车位/路网/车辆/路径） |
-| `src/auth.py` | 330 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查） |
+| `src/auth.py` | 340 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值） |
 
 ### `src/ui/pages.py` 页面函数（改某页时直接按行号 offset 读）
 
@@ -153,6 +153,9 @@
 | `docs/model/*.md` | 问题定义/数学模型/移位模型/伪代码（7 篇） |
 | `docs/data/*.md` | 数据字典、输入输出模式、真实数据接口规范 v1 |
 | `docs/部署运维说明.md` | 部署/HTTPS/备份/监控/安全自查清单 |
+| `docs/道闸流水CSV填写说明.md` | 给停车场运营方的 CSV 填写指南（列名/时间格式/示例/常见错误） |
+| `docs/企业可用性检查清单.md` | 交付前三方可用性自检清单 |
+| `data/samples/道闸流水示例.csv` | 道闸流水示例文件（可直接上传测试） |
 | `docs/architecture/01_软件架构.md` | 软件架构 |
 | `docs/plans/*.md` | 各阶段执行计划 |
 | `docs/handoffs/*.md` | 阶段交接摘要 |
@@ -177,7 +180,7 @@
 | 路径 | 说明 |
 |---|---|
 | `configs/users.json` | 本地用户配置（现为 `{}`，历史遗留） |
-| `data/` | 本地数据目录（`demand_exports/` 需求序列下载等） |
+| `data/` | 本地数据目录（`demand_exports/` 需求序列下载、`samples/` 示例文件） |
 | `outputs/` | 实验产物（不入库） |
 | `references/` | 原始材料、文献 bib、论文（只读） |
 | `prompts/` | 四阶段提示词（A/B/C/D） |
@@ -195,6 +198,7 @@
 | 改反馈功能 | `src/auth.py` 反馈段 + `migrations/03/04*.sql` | `src/ui/pages.py:1419` |
 | 改运行记录/历史页 | `src/auth.py` 运行记录段 + `migrations/06_sim_runs.sql` | `src/ui/pages.py:1688`、`src/ui/common.py` persist_sim_run |
 | 改真实数据导入 | `io/realtime_io.py` + `docs/data/03_真实数据接口规范_v1.md` | `src/ui/pages.py` 需求数据源、`tests/test_realtime_io.py` |
+| 改企业 CSV 文档 | `docs/道闸流水CSV填写说明.md` + `data/samples/道闸流水示例.csv` | `io/realtime_io.py` 列名别名表 |
 | 改部署/运维 | `Dockerfile` + `docker-compose.yml` + `docs/部署运维说明.md` | `deploy/nginx.conf.example`、`.env.example` |
 | 改偏好/参数持久化 | `src/ui/common.py:902-1094` + `migrations/02_preferences.sql` | `src/auth.py` RPC 封装 |
 | 新增算法/策略 | `docs/新算法接入说明.md` + `strategies/registry.py` + `strategies/__init__.py` | 新策略文件、`tests/`、`docs/algorithms/` |

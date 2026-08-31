@@ -7,11 +7,11 @@ import streamlit as st
 from supabase import create_client, Client
 
 
-def _read_secret(key: str, default: str) -> str:
-    """读取 Supabase 配置：优先级 st.secrets > 环境变量 > 默认值（仅本地开发兜底）。
+def _read_secret(key: str) -> Optional[str]:
+    """读取 Supabase 配置：优先级 st.secrets > 环境变量。
 
-    企业部署要求：生产环境必须通过 .streamlit/secrets.toml 或平台密钥注入，
-    不要依赖代码中的默认值（该 publishable key 已进入 git 历史，需在 Supabase 控制台轮换）。
+    企业部署要求：必须通过 .streamlit/secrets.toml 或平台密钥注入，
+    代码中不再内置任何默认密钥（旧 key 已废弃并轮换）。
     """
     try:
         val = st.secrets.get("supabase", {}).get(key)
@@ -19,19 +19,26 @@ def _read_secret(key: str, default: str) -> str:
             return val
     except Exception:
         pass
-    return os.environ.get(key, default)
+    return os.environ.get(key) or None
 
 
-# Supabase 连接配置：优先 st.secrets / 环境变量（生产部署），未设置时回退默认值（本地开发）。
-SUPABASE_URL = _read_secret("SUPABASE_URL", "https://cxxoxbambqkpwpldsrnj.supabase.co")
-SUPABASE_ANON_KEY = _read_secret("SUPABASE_ANON_KEY", "sb_publishable_64MeU_WIVNWzcksKIUnWww_ywJtaEe9")
+# Supabase 连接配置：仅从 st.secrets / 环境变量读取，未配置时启动相关功能会给出明确提示。
+SUPABASE_URL = _read_secret("SUPABASE_URL") or ""
+SUPABASE_ANON_KEY = _read_secret("SUPABASE_ANON_KEY") or ""
 
 # ---------- 惰性初始化 ----------
 _supabase: Client = None
 
+_MISSING_CONFIG_MSG = (
+    "Supabase 未配置：请在 .streamlit/secrets.toml（本地）或部署平台的 Secrets 中"
+    "设置 SUPABASE_URL 与 SUPABASE_ANON_KEY")
+
+
 def get_supabase() -> Client:
     global _supabase
     if _supabase is None:
+        if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+            raise RuntimeError(_MISSING_CONFIG_MSG)
         _supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
     return _supabase
 

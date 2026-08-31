@@ -1747,6 +1747,71 @@ def _run_summary(metrics):
     return {}, ""
 
 
+# 两次运行对比的指标清单（显示名, 字段, 方向）
+COMPARE_FIELDS = [
+    ("满足率", "satisfaction_rate", "max"),
+    ("利用率", "spatial_utilization", "max"),
+    ("平均等待(s)", "avg_wait_time_s", "min"),
+    ("移位次数", "shift_count", "min"),
+    ("移位距离(m)", "shift_distance_m", "min"),
+    ("行驶距离(m)", "total_drive_distance_m", "min"),
+    ("拒绝数", "rejected_count", "min"),
+    ("运行耗时(s)", "runtime_s", "min"),
+]
+
+
+def _num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def _fmt_metric(label: str, v):
+    if v is None:
+        return "—"
+    if label in ("满足率", "利用率"):
+        return f"{v:.1%}"
+    if label in ("移位次数", "拒绝数"):
+        return f"{v:.0f}"
+    if label.endswith("(s)"):
+        return f"{v:.1f}"
+    if label.endswith("(m)"):
+        return f"{v:.0f}"
+    return f"{v:.3f}"
+
+
+def _compare_radar(rep_a: dict, rep_b: dict):
+    """两次运行的五维雷达图（每维按两者 min–max 归一化，外圈=更好）。"""
+    import plotly.graph_objects as go
+    dims = [("满足率", "satisfaction_rate", "max"),
+            ("利用率", "spatial_utilization", "max"),
+            ("平均等待", "avg_wait_time_s", "min"),
+            ("移位次数", "shift_count", "min"),
+            ("行驶距离", "total_drive_distance_m", "min")]
+    labels = [d[0] for d in dims]
+    norm_a, norm_b = [], []
+    for _, field, direction in dims:
+        a = _num(rep_a.get(field)) or 0.0
+        b = _num(rep_b.get(field)) or 0.0
+        lo, hi = min(a, b), max(a, b)
+        if hi == lo:
+            na = nb = 0.5
+        else:
+            na = (a - lo) / (hi - lo)
+            nb = (b - lo) / (hi - lo)
+            if direction == "min":
+                na, nb = 1 - na, 1 - nb
+        norm_a.append(na)
+        norm_b.append(nb)
+    fig = go.Figure()
+    fig.add_trace(go.Scatterpolar(r=norm_a + [norm_a[0]], theta=labels + [labels[0]],
+                                  name="运行 A", fill="toself", opacity=0.45))
+    fig.add_trace(go.Scatterpolar(r=norm_b + [norm_b[0]], theta=labels + [labels[0]],
+                                  name="运行 B", fill="toself", opacity=0.45))
+    fig.update_layout(height=400, margin=dict(l=60, r=60, t=50, b=50),
+                      legend=dict(orientation="h", yanchor="bottom", y=-0.15),
+                      polar=dict(radialaxis=dict(range=[0, 1], showticklabels=False)))
+    return fig
+
+
 def render_history_page(role):
     """页面: 历史运行记录（sim_runs 持久化，跨会话/跨用户可查）"""
     st.subheader("📜 历史运行")
@@ -1807,10 +1872,60 @@ def render_history_page(role):
             "parking_sim_runs.csv", "text/csv",
         )
 
-    # 删除（管理员任意 / 本人自己的）
+    # 运行标签（对比 / 删除共用）
     labels = [f"{_fmt_run_time(r.get('created_at'))} · {r.get('username','')} · "
               f"{STRATEGY_LABELS.get(r.get('strategy'), r.get('strategy'))}"
               for r in runs]
+
+    # ── 两次运行对比 ──
+    st.markdown("---")
+    st.markdown("### ⚖️ 两次运行对比")
+    if len(runs) < 2:
+        st.caption("至少需要两条运行记录才能对比（再跑一次仿真即可）。")
+    else:
+        ca, cb = st.columns(2)
+        with ca:
+            sel_a = st.selectbox("运行 A", labels, key="hist_cmp_a")
+        with cb:
+            sel_b = st.selectbox("运行 B", labels, key="hist_cmp_b",
+                                 index=min(1, len(labels) - 1))
+        if sel_a == sel_b:
+            st.warning("请选择两条不同的运行记录")
+        else:
+            run_a = runs[labels.index(sel_a)]
+            run_b = runs[labels.index(sel_b)]
+            rep_a, note_a = _run_summary(run_a.get("metrics"))
+            rep_b, note_b = _run_summary(run_b.get("metrics"))
+            if not rep_a or not rep_b:
+                st.info("所选记录没有可对比的指标数据。")
+            else:
+                for tag, note in (("运行 A", note_a), ("运行 B", note_b)):
+                    if note:
+                        st.caption(f"{tag}：{note}")
+                cmp_rows = []
+                for label, field, direction in COMPARE_FIELDS:
+                    a = _num(rep_a.get(field))
+                    b = _num(rep_b.get(field))
+                    if a is None and b is None:
+                        continue
+                    a_val = a if a is not None else 0
+                    b_val = b if b is not None else 0
+                    if direction == "max":
+                        better = ("B 更优" if b_val > a_val
+                                  else "A 更优" if a_val > b_val else "持平")
+                    else:
+                        better = ("B 更优" if b_val < a_val
+                                  else "A 更优" if a_val < b_val else "持平")
+                    cmp_rows.append({
+                        "指标": label,
+                        "运行 A": _fmt_metric(label, a),
+                        "运行 B": _fmt_metric(label, b),
+                        "更优": better,
+                    })
+                st.dataframe(pd.DataFrame(cmp_rows), use_container_width=True, hide_index=True)
+                st.plotly_chart(_compare_radar(rep_a, rep_b), use_container_width=True)
+
+    # 删除（管理员任意 / 本人自己的）
     with st.expander("🗑 删除运行记录"):
         sel = st.selectbox("选择要删除的记录", labels, key="hist_del_sel")
         if st.button("确认删除", key="hist_del_btn"):

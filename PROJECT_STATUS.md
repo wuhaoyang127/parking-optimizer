@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 31
+status_version: 32
 last_updated: 2026-08-30
 current_stage: D
 stage_status: in_progress
@@ -157,6 +157,8 @@ superseded
 | `src/parking_opt/io/realtime_io.py` | 真实道闸流水/车位状态解析（企业对接预留） | 有效，本轮新增 |
 | `docs/data/03_真实数据接口规范_v1.md` | 真实数据接口规范 v1 | 有效，本轮新增 |
 | `docs/部署运维说明.md` | 部署/HTTPS/备份/安全自查 | 有效，本轮新增 |
+| `docs/道闸流水CSV填写说明.md` | 给停车场运营方的 CSV 填写指南 + 示例文件 | 有效，本轮新增 |
+| `docs/企业可用性检查清单.md` | 交付前三方可用性自检清单 | 有效，本轮新增 |
 | `src/viz.py` | Plotly 绘图（trace 已合并提速） | 有效 |
 | `src/ui/` | 常量/布局构建器/仿真工具 + 8 页面函数 | 有效 |
 | `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效 |
@@ -206,6 +208,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-30：**企业可用化收尾**（提交 `1952d75`、本轮提交）：①修复公网真实道闸导入区 `session_state=None` 崩溃；②代码移除旧 key 兜底默认值（密钥强制走 secrets/环境变量，未配置时明确报错）；③历史运行页新增「⚖️ 两次运行对比」（8 项指标差异表 + 五维雷达图）；④新增 `docs/道闸流水CSV填写说明.md`（给停车场运营方）与 `data/samples/道闸流水示例.csv`；⑤新增 `docs/企业可用性检查清单.md`（运营方/研发/安全三方自检）；⑥迁移文件 search_path 修复为 `public, extensions`（修复线上 crypt 不可见）。pytest 113 passed、自检通过；状态文档 status_version 31 → 32；待用户验收；
 - 2026-08-30：**企业可用化四阶段改造**（提交 `bdd59f2`/`b84faa6`/`f8ec680`/`3112a3e`）：①安全与合规——bcrypt 密码哈希（旧 sha256 登录透明升级）、Supabase 密钥改走 st.secrets/环境变量、session token 改 Cookie 优先（URL 兜底自愈清理）、新增 `audit_log` 审计日志（登录/角色/反馈/仿真运行）、全部 RPC 补 `SET search_path`；②数据沉淀——新增 `sim_runs` 运行记录表与「📜 历史运行」页（跨会话/跨用户对比、CSV 导出、删除）；③部署运维——Dockerfile/docker-compose/nginx HTTPS 示例/密钥模板/`docs/部署运维说明.md`；④真实数据接口预留——`realtime_io.py` 道闸流水/车位状态解析 + `docs/data/03_真实数据接口规范_v1.md` + 仿真设置页新增「导入真实道闸流水 CSV」演示。pytest 113 passed、自检通过；状态文档 status_version 30 → 31；待用户验收；
 - 2026-08-30：**新增项目目录索引 `PROJECT_INDEX.md`**（全文件导航 + 需求→文件速查表，供按需读取、避免全量加载上下文）；`PROJECT_STATUS.md` 关键文件表登记该索引；打 tag `backup-before-project-index-20260830`；状态文档 status_version 29 → 30；待用户确认；
 - 2026-08-28：**用户验收通过**反馈按修改后显示时间自动排序 + 正序/倒序切换（提交 `d1b25ab`、`a45b537`）；验收前打 tag `backup-before-feedback-sort-accept-20260828`；状态文档 status_version 28 → 29；今日收工，明日继续；
