@@ -315,18 +315,18 @@ def render_settings(role):
                 prog = st.progress(0.0, text="准备运行全部策略对比...")
                 for i, (nm, cls) in enumerate(all_strategies):
                     prog.progress((i + 1) / total,
-                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均，限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
-                    t_strategy = time.time()
+                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均，单次限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
                     seed_metrics = []
                     strategy_timed_out = False
                     for r in range(n_runs):
-                        if time.time() - t_strategy > STRATEGY_TIME_BUDGET:
-                            strategy_timed_out = True
-                            break
                         s = seed + r
                         vehs = (list(base_vehicles) if base_vehicles is not None
                                 else generate_demand(seed=s, **demand_kwargs))
+                        t_seed = time.time()
                         m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
+                        if time.time() - t_seed > STRATEGY_TIME_BUDGET:
+                            strategy_timed_out = True
+                            break
                         seed_metrics.append(m)
                         # 每个策略都保留第一个种子的事件日志，供指标页「需求时序/车辆明细」切换查看；
                         # 主方法（时长感知贪心）的事件日志额外供「车辆动态路径」页展示
@@ -353,18 +353,18 @@ def render_settings(role):
             else:
                 seed_metrics = []
                 events_raw = None
-                t_strategy = time.time()
                 strategy_timed_out = False
                 for r in range(n_runs):
-                    if time.time() - t_strategy > STRATEGY_TIME_BUDGET:
-                        strategy_timed_out = True
-                        break
                     s = seed + r
                     vehs = (list(base_vehicles) if base_vehicles is not None
                             else generate_demand(seed=s, **demand_kwargs))
                     # 每次新建策略实例（避免有状态策略跨 run 污染）
                     strategy = StrategyRegistry.create(strategy_name, **strat_params)
+                    t_seed = time.time()
                     m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
+                    if time.time() - t_seed > STRATEGY_TIME_BUDGET:
+                        strategy_timed_out = True
+                        break
                     seed_metrics.append(m)
                     if r == 0:
                         events_raw = [{"time": e.time, "type": e.event_type.value,
@@ -374,8 +374,8 @@ def render_settings(role):
                 if strategy_timed_out:
                     st.session_state.sim_timed_out_strategies = [strategy_name]
                     st.warning(f"⏱ 策略「{STRATEGY_LABELS.get(strategy_name, strategy_name)}」"
-                               f"运行超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过（结果未保存）。"
-                               f"建议减少车辆数/仿真次数后重试。")
+                               f"单次仿真超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过（结果未保存）。"
+                               f"建议减少车辆数后重试。")
                     st.stop()
                 avg_m = _avg_metrics(seed_metrics)
                 st.session_state.sim_metrics = avg_m
@@ -1055,7 +1055,7 @@ def render_metrics_page(role):
     timed_out = st.session_state.get("sim_timed_out_strategies") or []
     if timed_out:
         names = "、".join(STRATEGY_LABELS.get(n, n) for n in timed_out)
-        st.warning(f"⏱ 以下策略运行超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过、未参与对比：{names}")
+        st.warning(f"⏱ 以下策略单次仿真超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过、未参与对比：{names}")
 
     # 排名设置展示：与仿真设置页一致（权重 / 优先级）
     rank_mode = st.session_state.get("rank_mode", "加权评分")
