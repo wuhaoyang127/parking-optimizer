@@ -53,6 +53,17 @@ class TestParkingLot:
         assert buffer is not None
         assert buffer.spot_id in ["A1", "A2", "G1-1"]
 
+    def test_available_excludes_reserved_buffer(self):
+        """已征用为缓冲位的车位不得出现在可分配列表（防移位行驶期间被抢占）。"""
+        lot = build_small_lot()
+        buffer = lot.select_buffer()
+        assert buffer is not None
+        available_ids = [s.spot_id for s in lot.get_available_spots()]
+        assert buffer.spot_id not in available_ids
+        for sid in ["A1", "A2", "G1-1", "G1-2"]:
+            if sid != buffer.spot_id:
+                assert sid in available_ids
+
 
 class TestGreedy:
     def test_prefers_standalone(self):

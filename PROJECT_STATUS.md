@@ -1,7 +1,7 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 38
-last_updated: 2026-08-30
+status_version: 39
+last_updated: 2026-08-31
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：今日（2026-08-28）已收工，全部待验收项均已验收通过；明日继续，等待用户提出下一项优化需求。
+- **当前唯一下一步**：修复线上「场景 B 入库让行竞态」AssertionError（阻挡车在移位行驶期间自行离场，导致 `move_vehicle` 对空车位断言崩溃），已在本地确定性复现并修复，118 项测试与启动包自检通过，待用户在公网 app 验收。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -140,7 +140,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 103 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -208,6 +208,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-31：**修复场景 B 入库让行竞态崩溃**（线上 AssertionError）：阻挡车移位去缓冲位的 `_reserve_drive` yield 期间，其自身离场进程可能释放原车位，随后 `move_vehicle(blk_spot, buffer)` 对空车位断言失败。修复：①场景 B 移位行驶后重新校验 `blk_spot.occupied_by == blk_vid`，已离场则跳过本次移位并释放缓冲位；②场景 A/B 均增加「缓冲位在行驶期间被占用则放弃移位」防御（记 BUFFER_FAILED）；③`ParkingLot.get_available_spots` 不再返回已征用的缓冲位，杜绝等待车辆抢占缓冲位。新增回归测试 2 项（确定性复现场景 B 竞态 + 缓冲位排除），pytest 116 → 118 passed、启动包自检通过（157 文件）；打 tag `backup-before-scene-b-shift-race-20260831`；状态文档 status_version 38 → 39；待用户在公网 app 验收；
 - 2026-08-30：**random 策略重复次数独立控制（≥100）**：仿真设置页在策略为 random 或全部对比时新增「random 策略重复次数（≥100，默认 100，上限 1000）」数字输入框，random 单独按该次数取平均，其余策略仍用「仿真次数」滑杆（1~10）；全部对比进度条与指标分析页说明会标注 random 的独立次数。pytest 116 passed；状态文档 status_version 37 → 38；待用户验收；
 - 2026-08-30：**真实道闸流水导入区新增说明与示例下载**（用户反馈网页里看不到说明文档）：「导入真实道闸流水 CSV」区域新增「📥 下载道闸流水示例 CSV」按钮（读取 `data/samples/道闸流水示例.csv`）与「📖 填写说明」折叠区（列名表/时间格式/示例/常见错误），与仓库文档 `docs/道闸流水CSV填写说明.md` 一致。pytest 116 passed；状态文档 status_version 36 → 37；待用户验收；
 - 2026-08-30：**每个种子限时 60 秒，超时跳过并在结果注明**（用户澄清口径为「每个种子」）：`common.py` 新增 `STRATEGY_TIME_BUDGET=60`；「全部对比」每个种子的 run_single 单独计时，单次超过 60 秒即跳过该策略并计入 `sim_timed_out_strategies`，指标分析页顶部黄色警告列出被跳过策略；单策略模式同样处理（提示并停止、结果不保存）；MOSA prepare 预算 120s→45s（保证 MOSA 单次仿真不超 60 秒）。pytest 116 passed；状态文档 status_version 35 → 36；待用户验收；

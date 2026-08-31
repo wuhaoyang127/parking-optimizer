@@ -49,8 +49,9 @@ class ParkingLot:
         return not spot.is_occupied
 
     def get_available_spots(self) -> list[Spot]:
-        """所有当前可分配车位"""
-        return [s for s in self.spots.values() if self.is_available(s)]
+        """所有当前可分配车位（不含已征用为缓冲位的车位，避免分配竞态）"""
+        return [s for s in self.spots.values()
+                if self.is_available(s) and s.spot_id not in self.buffer_in_use]
 
     # ========== 阻挡检测 ==========
 

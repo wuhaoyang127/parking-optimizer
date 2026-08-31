@@ -254,6 +254,17 @@ class SimulationEngine:
             if not ok:
                 self.parking_lot.release_buffer(buffer.spot_id)
                 continue
+            # 移位行驶期间，阻挡车可能已自行离场（并发竞态）：跳过移位，避免空车位断言
+            if blk_spot.occupied_by != blk_vid:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                continue
+            # 缓冲位可能在行驶期间被等待车辆分配占用：放弃本次移位，避免覆盖他人占用
+            if buffer.is_occupied:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
+                          blocked_vehicle=vehicle.vehicle_id,
+                          reason=f"缓冲位 {buffer.spot_id} 在移位行驶期间被占用")
+                continue
             self.parking_lot.move_vehicle(blk_spot, buffer)
             shift_pairs.append((blk_spot, buffer, blk_vid))
 
@@ -399,6 +410,13 @@ class SimulationEngine:
             if blk_spot.occupied_by != blk_vid:
                 self.parking_lot.free(spot)
                 self.parking_lot.release_buffer(buffer.spot_id)
+                continue
+            # 缓冲位可能在行驶期间被等待车辆分配占用：放弃本次移位，避免覆盖他人占用
+            if buffer.is_occupied:
+                self.parking_lot.release_buffer(buffer.spot_id)
+                self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
+                          blocked_vehicle=vehicle.vehicle_id,
+                          reason=f"缓冲位 {buffer.spot_id} 在移位行驶期间被占用")
                 continue
             self.parking_lot.move_vehicle(blk_spot, buffer)
 
