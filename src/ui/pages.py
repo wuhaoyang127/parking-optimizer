@@ -146,9 +146,10 @@ def render_settings(role):
                                  disabled=disabled or real_layout_mode,
                                  help=("真实布局下纵深比例由 JSON 定义，此项不生效" if real_layout_mode else None))
     with c2:
-        n_vehicles = st.slider("车辆数", 10, 200, 60,
+        n_vehicles = st.slider("车辆数", 10, 2000, 60, step=10,
                                disabled=disabled or import_mode,
-                               help="导入需求序列后以文件车辆为准，此项不再生效（变灰）")
+                               help="大型停车场节假日建议 800~2000；车辆越多仿真越慢，"
+                                    "「全部对比」在大车辆数下建议先把仿真次数调成 1")
         seed = st.number_input("随机种子", 0, 999, 42, disabled=disabled,
                                help="导入需求序列后仍影响引擎与策略随机性（不影响车辆生成）")
         n_runs = st.slider("仿真次数（多种子取平均）", 1, 10, 3, disabled=disabled,

@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 33
+status_version: 34
 last_updated: 2026-08-30
 current_stage: D
 stage_status: in_progress
@@ -208,6 +208,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-30：**车辆数上限 200→2000**（支持大型停车场节假日场景；滑杆提示大车辆数下建议降低仿真次数；CP-SAT 与 MOSA 已有规模保护自动回退贪心，不会卡死）；
 - 2026-08-30：**排名噪声修复**（提交待记）：用户发现「运行耗时」权重即使很低，random 策略也常排第一——根因是 min–max 归一化把微小耗时差异放大为 1/0 两个极端。修复：`ranking.py` 新增 `SIGNIFICANCE_EPSILON` 实际意义阈值（耗时差 <1s、满足率/利用率差 <0.5pp、等待差 <30s、移位距离差 <20m、行驶距离差 <50m 均视为无区分度，归一化记 0.5 不参与排名）；指标分析页加权模式显示被中和的指标提示；新增 3 项测试。pytest 116 passed；状态文档 status_version 32 → 33；待用户验收；
 - 2026-08-30：**企业可用化收尾**（提交 `1952d75`、本轮提交）：①修复公网真实道闸导入区 `session_state=None` 崩溃；②代码移除旧 key 兜底默认值（密钥强制走 secrets/环境变量，未配置时明确报错）；③历史运行页新增「⚖️ 两次运行对比」（8 项指标差异表 + 五维雷达图）；④新增 `docs/道闸流水CSV填写说明.md`（给停车场运营方）与 `data/samples/道闸流水示例.csv`；⑤新增 `docs/企业可用性检查清单.md`（运营方/研发/安全三方自检）；⑥迁移文件 search_path 修复为 `public, extensions`（修复线上 crypt 不可见）。pytest 113 passed、自检通过；状态文档 status_version 31 → 32；待用户验收；
 - 2026-08-30：**企业可用化四阶段改造**（提交 `bdd59f2`/`b84faa6`/`f8ec680`/`3112a3e`）：①安全与合规——bcrypt 密码哈希（旧 sha256 登录透明升级）、Supabase 密钥改走 st.secrets/环境变量、session token 改 Cookie 优先（URL 兜底自愈清理）、新增 `audit_log` 审计日志（登录/角色/反馈/仿真运行）、全部 RPC 补 `SET search_path`；②数据沉淀——新增 `sim_runs` 运行记录表与「📜 历史运行」页（跨会话/跨用户对比、CSV 导出、删除）；③部署运维——Dockerfile/docker-compose/nginx HTTPS 示例/密钥模板/`docs/部署运维说明.md`；④真实数据接口预留——`realtime_io.py` 道闸流水/车位状态解析 + `docs/data/03_真实数据接口规范_v1.md` + 仿真设置页新增「导入真实道闸流水 CSV」演示。pytest 113 passed、自检通过；状态文档 status_version 30 → 31；待用户验收；
