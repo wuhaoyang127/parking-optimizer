@@ -390,8 +390,9 @@ def render_settings(role):
                                 sim_vehicles_candidate = list(vehs)
                     if strategy_timed_out:
                         timed_out_strategies.append(nm)
-                        continue  # 超时跳过该算法，结果中注明
-                    all_m.append(_avg_metrics(seed_metrics))
+                    # 超时种子舍弃；只要有已完成（≤60 秒）的种子，就按已完成种子取平均参与对比
+                    if seed_metrics:
+                        all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_timed_out_strategies = timed_out_strategies
@@ -1123,11 +1124,17 @@ def render_metrics_page(role):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    # 超时跳过提示（每个策略限时 60 秒，超时未参与对比）
+    # 超时提示：超时种子已舍弃，其余种子仍参与对比；可勾选隐藏含超时种子的策略
     timed_out = st.session_state.get("sim_timed_out_strategies") or []
+    hide_timed_out = False
     if timed_out:
         names = "、".join(STRATEGY_LABELS.get(n, n) for n in timed_out)
-        st.warning(f"⏱ 以下策略单次仿真超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过、未参与对比：{names}")
+        st.warning(f"⏱ 以下策略有种子单次超过 {int(STRATEGY_TIME_BUDGET)} 秒（超时种子已舍弃）：{names}。"
+                   f"仍按 ≤{int(STRATEGY_TIME_BUDGET)} 秒的种子取平均参与对比；"
+                   f"若某策略所有种子都超时，则无数据、不参与对比。")
+        hide_timed_out = st.checkbox(
+            "隐藏超时策略", value=False,
+            help="勾选后，含超时种子的策略不参与排名、表格与图表展示")
 
     # 排名设置展示：与仿真设置页一致（权重 / 优先级）
     rank_mode = st.session_state.get("rank_mode", "加权评分")
@@ -1157,7 +1164,11 @@ def render_metrics_page(role):
     st.markdown("---")
 
     # 多策略对比
-    if st.session_state.get("sim_all_metrics"):
+    sim_all_metrics = st.session_state.get("sim_all_metrics") or []
+    timed_out_set = set(timed_out)
+    visible_all_m = [m for m in sim_all_metrics
+                     if not (hide_timed_out and m.get("strategy") in timed_out_set)]
+    if visible_all_m:
         st.markdown("### 🏆 多策略对比")
         n_runs = st.session_state.get("sim_n_runs", 1)
         demand_source = st.session_state.get("sim_demand_source", "generated")
@@ -1167,7 +1178,7 @@ def render_metrics_page(role):
         if random_reps:
             src_note += f"；random 策略单独取 {int(random_reps)} 次平均"
         st.caption(f"基于 {src_note}")
-        all_m = st.session_state.sim_all_metrics
+        all_m = visible_all_m
 
         # 排序模式与权重在「仿真设置 → 算法排名设置」中配置，此处按配置展示
         rank_mode = st.session_state.get("rank_mode", "加权评分")
@@ -1240,6 +1251,8 @@ def render_metrics_page(role):
         with c2: st.bar_chart(df.set_index("策略")["移位次数"], height=200)
         st.markdown("#### 📡 多维指标雷达图（外圈=更好）")
         st.plotly_chart(_plot_radar(all_m), use_container_width=True)
+    elif sim_all_metrics:
+        st.info("所有策略均含超时种子且已被隐藏。取消勾选「隐藏超时策略」即可查看。")
     else:
         # 单策略详情
         m = st.session_state.get("sim_metrics")
@@ -1280,8 +1293,8 @@ def render_metrics_page(role):
     vehicles_by_strategy = st.session_state.get("sim_vehicles_by_strategy") or {}
 
     view_strategy = None
-    if st.session_state.get("sim_all_metrics"):
-        view_options = [m.get("strategy") for m in st.session_state.sim_all_metrics
+    if visible_all_m:
+        view_options = [m.get("strategy") for m in visible_all_m
                         if m.get("strategy") in events_by_strategy]
         if view_options:
             default_idx = view_options.index("duration_greedy") if "duration_greedy" in view_options else 0
