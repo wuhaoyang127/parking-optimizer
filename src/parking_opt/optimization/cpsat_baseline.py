@@ -1,6 +1,8 @@
 from __future__ import annotations
 """CP-SAT 离线全信息基准（区间调度：允许排队等待 + 车位复用）"""
 
+import time
+
 from ortools.sat.python import cp_model
 from ..domain.spot import Vehicle
 from ..simulation.parking_lot import ParkingLot
@@ -16,27 +18,31 @@ class CPSatBaseline:
       - 同一车位上的停车区间不重叠（车位复用）
 
     这给出「忽略移位代价、允许排队等待」的满足率上界，是真正的上界（≥ 任何在线策略）。
+
+    时间熔断（非规模保护）：任何规模都会尝试建模求解；
+      - 模型构建超过 build_timeout 秒 → 返回 None（UI 显示无理论最优对照）
+      - 求解超过 timeout 秒 → CP-SAT 返回当前可行解或 None
     """
 
     name = "cpsat_oracle"
-    TIMEOUT = 10  # 秒（默认值）
+    TIMEOUT = 10  # 秒（求解时间上限）
+    MODEL_BUILD_TIMEOUT = 20  # 秒（模型构建时间上限）
     MAX_WAIT = 1800  # 等待上限（秒，默认值），与引擎 SimulationEngine.MAX_WAIT_TIME 一致
 
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
-                 timeout: float = 10, max_wait: float = 1800):
+                 timeout: float = 10, max_wait: float = 1800,
+                 build_timeout: float = MODEL_BUILD_TIMEOUT):
         self.parking_lot = parking_lot
         self.path_engine = path_engine
         self.timeout = timeout
         self.max_wait = max_wait
+        self.build_timeout = build_timeout
 
     def solve(self, vehicles: list[Vehicle]) -> dict[str, str] | None:
-        """返回 {vehicle_id: spot_id} 最优分配，或 None（超规模/无解）"""
+        """返回 {vehicle_id: spot_id} 最优分配，或 None（超时/无解）"""
         spots = list(self.parking_lot.spots.values())
         n_vehicles = len(vehicles)
         n_spots = len(spots)
-
-        if n_spots > 40 or n_vehicles > 120:
-            return None
 
         model = cp_model.CpModel()
 
@@ -44,7 +50,11 @@ class CPSatBaseline:
         x = {}
         start = {}
         intervals = {}
+        build_start = time.time()
         for v_idx, v in enumerate(vehicles):
+            # 模型构建时间熔断：规模过大时安全退出，避免网页长时间无响应
+            if time.time() - build_start > self.build_timeout:
+                return None
             s_var = model.NewIntVar(int(v.arrival_time),
                                     int(v.arrival_time) + int(self.max_wait),
                                     f'start_{v_idx}')

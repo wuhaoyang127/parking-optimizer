@@ -28,15 +28,16 @@ MOSA 是离线全信息算法：需要完整车辆需求序列做全局优化，
 
 import math
 import random
+import time
 
 from ..domain.spot import Spot, SpotType, Vehicle
 from ..simulation.parking_lot import ParkingLot
 from ..simulation.defaults import CAR_SPEED
 from .baselines import BaseStrategy
 
-# 规模保护：超过上限跳过 NSGA-II（回退贪心），保证网页交互不卡死
-MAX_SPOTS = 60
-MAX_VEHICLES = 120
+# 时间熔断（非规模保护）：任何规模都会运行 NSGA-II，
+# 但单次 prepare 超过该秒数后停止进化、返回当前种群中的最优方案，避免网页卡死。
+PREPARE_TIME_BUDGET = 120.0
 
 # 场景权重（f1 时间 / f2 距离 / f3 利用率均衡）
 SCENE_WEIGHTS = {
@@ -130,11 +131,13 @@ class MosaStrategy(BaseStrategy):
     ]
 
     def __init__(self, pop_size: int = 30, generations: int = 50,
-                 scene: str = "auto", max_wait: float = 1800.0):
+                 scene: str = "auto", max_wait: float = 1800.0,
+                 time_budget: float = PREPARE_TIME_BUDGET):
         self.pop_size = pop_size
         self.generations = generations
         self.scene = scene
         self.max_wait = max_wait
+        self._time_budget = time_budget
         # prepare() 后生效：{vehicle_id: spot_id} 离线预分配方案；None 表示未优化（回退贪心）
         self._plan: dict[str, str] | None = None
         # {entry_id: {spot_id: dist}}：多入口下按车辆入口查表的预计算距离
@@ -156,8 +159,8 @@ class MosaStrategy(BaseStrategy):
 
         n_vehicles = len(vehicles)
         n_spots = len(self._spots)
-        if n_spots == 0 or n_spots > MAX_SPOTS or n_vehicles > MAX_VEHICLES:
-            self._plan = None  # 超规模：跳过优化，assign 回退贪心
+        if n_spots == 0:
+            self._plan = None  # 无车位：跳过优化，assign 回退贪心
             return
 
         # 预计算距离（评估器只查表，避免反复 Dijkstra）：按入口分表，车辆按自身入口查
@@ -226,6 +229,7 @@ class MosaStrategy(BaseStrategy):
         Pareto 前沿（rank 0）按场景权重做 min-max 归一化加权选最优解。
         """
         rng = random.Random(42)  # 固定种子：相同需求序列可复现
+        start_time = time.time()  # 时间熔断计时
 
         # 初始种群注入高质量贪心启发式解（最早空出车位），其余按场景引导随机
         pop: list["MosaStrategy._Individual"] = []
@@ -237,6 +241,8 @@ class MosaStrategy(BaseStrategy):
             self._evaluate(ind)
 
         for _gen in range(self.generations):
+            if time.time() - start_time > self._time_budget:
+                break  # 时间熔断：停止进化，用当前种群选最优
             fronts = self._nondominated_sort(pop)
             for f in fronts:
                 self._crowding_distance(f)

@@ -142,20 +142,20 @@ class TestMosaPrepare:
         valid_ids = {sp.spot_id for sp in spots}
         assert all(sid in valid_ids for sid in s._plan.values())
 
-    def test_scale_guard_skips_optimization(self):
-        """超过规模上限时跳过 NSGA-II（回退贪心），不卡死。"""
+    def test_no_scale_guard_runs_optimization_for_large(self):
+        """取消规模保护后：70 车位也应照常运行 NSGA-II（小代数保持测试快速）。"""
         net, spots = build_net_spots(8)
-        # 构造 70 个车位的假停车场（> MAX_SPOTS=60）
+        # 构造 70 个车位的停车场（此前会触发 MAX_SPOTS=60 跳过优化，现已取消规模保护）
         big_spots = []
         for i in range(70):
             big_spots.append(Spot(f"S{i:02d}", SpotType.STANDALONE,
                                   f"S{i:02d}", f"S{i:02d}", 1))
-        pe = PathEngine(net)  # 路网不含这些车位也没关系，prepare 会提前跳过
+        pe = PathEngine(net)  # 路网不含这些车位，距离为 inf → 计划可能为空，但优化必须运行
         lot = ParkingLot(big_spots)
         vehicles = generate_demand(total_vehicles=100, seed=42)
-        s = MosaStrategy()
+        s = MosaStrategy(pop_size=4, generations=2)
         s.prepare(vehicles, lot, pe)
-        assert s._plan is None
+        assert s._plan is not None  # 优化已运行（不再因规模跳过）
 
 
 class TestPrepareHook:

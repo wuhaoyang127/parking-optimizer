@@ -140,8 +140,12 @@ def render_settings(role):
                                   format_func=lambda x: LAYOUTS.get(x, x),
                                   disabled=disabled)
         real_layout_mode = layout_source == "导入的真实布局"
-        n_spots = st.slider("车位数", 5, 50, 15, disabled=disabled or real_layout_mode,
-                            help=("真实布局下车位数由 JSON 定义，此项不生效" if real_layout_mode else None))
+        n_spots = st.number_input("车位数（可直接输入）", 5, 500, 15, step=5,
+                                  disabled=disabled or real_layout_mode,
+                                  help=("真实布局下车位数由 JSON 定义，此项不生效"
+                                        if real_layout_mode
+                                        else "小数值用 +/- 步进，大数值直接输入；"
+                                             "车位数大时所有算法都会运行（CP-SAT/MOSA 带时间熔断）"))
         tandem_ratio = st.slider("纵深比例", 0.0, 1.0, 0.5, 0.1,
                                  disabled=disabled or real_layout_mode,
                                  help=("真实布局下纵深比例由 JSON 定义，此项不生效" if real_layout_mode else None))
