@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 30
+status_version: 31
 last_updated: 2026-08-30
 current_stage: D
 stage_status: in_progress
@@ -151,7 +151,12 @@ superseded
 | `PROJECT_INDEX.md` | 项目目录索引（按需读取导航 + 需求→文件速查表） | 有效，本轮新增 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
 | `app.py` | Streamlit 多页面 Dashboard 瘦入口（~90 行） | 有效，本轮已完成拆分 |
-| `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好） | 有效 |
+| `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好/运行记录/审计） | 有效，本轮加固 |
+| `migrations/05_security_hardening.sql` | bcrypt + 审计日志 + search_path 加固 | 有效，本轮新增 |
+| `migrations/06_sim_runs.sql` | 仿真运行记录表 + RPC | 有效，本轮新增 |
+| `src/parking_opt/io/realtime_io.py` | 真实道闸流水/车位状态解析（企业对接预留） | 有效，本轮新增 |
+| `docs/data/03_真实数据接口规范_v1.md` | 真实数据接口规范 v1 | 有效，本轮新增 |
+| `docs/部署运维说明.md` | 部署/HTTPS/备份/安全自查 | 有效，本轮新增 |
 | `src/viz.py` | Plotly 绘图（trace 已合并提速） | 有效 |
 | `src/ui/` | 常量/布局构建器/仿真工具 + 8 页面函数 | 有效 |
 | `src/parking_opt/strategies/baselines.py` | 策略基类 + FCFS/最近/随机 | 有效 |
@@ -201,6 +206,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-30：**企业可用化四阶段改造**（提交 `bdd59f2`/`b84faa6`/`f8ec680`/`3112a3e`）：①安全与合规——bcrypt 密码哈希（旧 sha256 登录透明升级）、Supabase 密钥改走 st.secrets/环境变量、session token 改 Cookie 优先（URL 兜底自愈清理）、新增 `audit_log` 审计日志（登录/角色/反馈/仿真运行）、全部 RPC 补 `SET search_path`；②数据沉淀——新增 `sim_runs` 运行记录表与「📜 历史运行」页（跨会话/跨用户对比、CSV 导出、删除）；③部署运维——Dockerfile/docker-compose/nginx HTTPS 示例/密钥模板/`docs/部署运维说明.md`；④真实数据接口预留——`realtime_io.py` 道闸流水/车位状态解析 + `docs/data/03_真实数据接口规范_v1.md` + 仿真设置页新增「导入真实道闸流水 CSV」演示。pytest 113 passed、自检通过；状态文档 status_version 30 → 31；待用户验收；
 - 2026-08-30：**新增项目目录索引 `PROJECT_INDEX.md`**（全文件导航 + 需求→文件速查表，供按需读取、避免全量加载上下文）；`PROJECT_STATUS.md` 关键文件表登记该索引；打 tag `backup-before-project-index-20260830`；状态文档 status_version 29 → 30；待用户确认；
 - 2026-08-28：**用户验收通过**反馈按修改后显示时间自动排序 + 正序/倒序切换（提交 `d1b25ab`、`a45b537`）；验收前打 tag `backup-before-feedback-sort-accept-20260828`；状态文档 status_version 28 → 29；今日收工，明日继续；
 - 2026-08-28：**反馈页新增正序/倒序切换**（用户反馈：增加倒序按钮）：`render_feedback_page` 顶部新增「反馈排序」radio（正序 早→晚 / 倒序 晚→早），「我的反馈」「管理员全部反馈」与 CSV 导出统一跟随选择；`sort_feedbacks` 增加 `reverse` 参数，相关渲染函数透传；pytest 103 passed、AppTest 反馈页通过；打 tag `backup-before-feedback-sort-desc-20260828`；状态文档 status_version 27 → 28；待用户验收；

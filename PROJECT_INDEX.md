@@ -22,12 +22,18 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 8 个页面函数 |
+| `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 9 个页面函数 |
 | `.streamlit/config.toml` | — | Streamlit 主题与服务器配置 |
+| `.streamlit/secrets.toml.example` | — | Supabase 密钥模板（复制为 secrets.toml 使用，已被 gitignore） |
 | `requirements.txt` | — | 运行依赖（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase） |
 | `pyproject.toml` | — | 项目元数据 |
 | `runtime.txt` | — | Streamlit Cloud 指定 Python 版本 |
 | `credentials.local.txt` | — | 本地登录凭证（已 .gitignore，勿提交/勿分享） |
+| `Dockerfile` | — | 企业部署镜像（含健康检查） |
+| `docker-compose.yml` | — | 单机部署编排 |
+| `.dockerignore` | — | 镜像构建排除项 |
+| `.env.example` | — | Docker 环境变量模板 |
+| `deploy/nginx.conf.example` | — | HTTPS 反向代理示例 |
 
 ---
 
@@ -35,10 +41,10 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `src/ui/pages.py` | 1673 | **8 个页面渲染函数**（见下方函数表） |
-| `src/ui/common.py` | 1294 | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、登录守卫（见下方函数表） |
+| `src/ui/pages.py` | 1800+ | **9 个页面渲染函数**（见下方函数表） |
+| `src/ui/common.py` | 1350+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
 | `src/viz.py` | 212 | Plotly 绘图：`draw_parking_layout`（车位/路网/车辆/路径） |
-| `src/auth.py` | 222 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/健康检查） |
+| `src/auth.py` | 330 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查） |
 
 ### `src/ui/pages.py` 页面函数（改某页时直接按行号 offset 读）
 
@@ -52,6 +58,7 @@
 | 1294 | `render_status_page(role)` | 系统状态（健康检查） |
 | 1353 | `render_algo_import_page(role)` | 新算法接入（上传/删除文件） |
 | 1419 | `render_feedback_page(role)` | 意见反馈（提交/管理员回复/排序/CSV） |
+| 1688 | `render_history_page(role)` | 历史运行（sim_runs 持久化/对比/导出/删除） |
 
 ### `src/ui/common.py` 主要函数（改公共工具时按行号读）
 
@@ -67,6 +74,7 @@
 | 786–877 | `build_vehicle_phases` / `_helper_shift_paths` | 车辆三阶段（入库/离场/移位）与让行辅助虚线 |
 | 877 | `build_layout_from_json(data)` | 布局 JSON → 网络对象 |
 | 902–956 | `_load_priority_preference` / `_load_run_history` / `_load_last_params` / `persist_last_params` | Supabase 偏好读写（优先级/调参历史/最近参数） |
+| 972–1018 | `_json_safe` / `persist_sim_run` | 运行记录 JSON 清洗与入库 |
 | 975–1094 | `_sync_custom_layouts_to_globals` / `restore_custom_layouts` / `persist_custom_layouts` / `clear_custom_layouts` | 自定义布局持久化（Supabase + 本地备份自愈） |
 | 1103 | `check_login()` | 登录守卫与限流 |
 | 1196–1220 | `_coerce_int` / `_coerce_float` | 持久化参数类型兜底 |
@@ -95,6 +103,7 @@
 | `evaluation/ranking.py` | 101 | 加权多指标评分排名（归一化+方向） |
 | `io/demand_io.py` | 138 | 需求序列 JSON 导出/导入（schema v1） |
 | `io/road_io.py` | 117 | 布局/路网 JSON 读写 |
+| `io/realtime_io.py` | 220 | **真实数据接口预留**：道闸流水/车位状态 CSV 解析 → 需求序列（车牌脱敏） |
 | `optimization/cpsat_baseline.py` | 81 | CP-SAT 离线理论最优基准 |
 | `cli/main.py` | 123 | 命令行入口 |
 
@@ -108,6 +117,8 @@
 | `02_preferences.sql` | 65 | `user_preferences` 表 + `get/set_preference` RPC |
 | `03_feedback.sql` | 150 | `feedback` 表 + 反馈提交/列表/状态/回复/删除 RPC |
 | `04_feedback_display_time.sql` | 31 | feedback 加 `display_time` 字段 + `update_feedback_display_time` RPC |
+| `05_security_hardening.sql` | 445 | **bcrypt + audit_log + search_path 加固**（重写认证/反馈 RPC） |
+| `06_sim_runs.sql` | 104 | **sim_runs 运行记录表 + save/list/delete RPC** |
 
 > 注意：RPC 均为 `SECURITY DEFINER`，新增函数必须自己校验 token/角色。
 
@@ -127,6 +138,7 @@
 | `test_mosa.py` | 算法一 MOSA |
 | `test_risk_scoring.py` | 算法二 risk_scoring |
 | `test_multi_entry.py` | 多入口多出口 |
+| `test_realtime_io.py` | 真实道闸流水/车位状态解析（10 项） |
 
 ---
 
@@ -139,7 +151,8 @@
 | `docs/research/05_最终路线决策.md` | 阶段 A 最终路线决策（权威路线文档） |
 | `docs/algorithms/risk_scoring.md` | 算法二教学文档 |
 | `docs/model/*.md` | 问题定义/数学模型/移位模型/伪代码（7 篇） |
-| `docs/data/*.md` | 数据字典、输入输出模式 |
+| `docs/data/*.md` | 数据字典、输入输出模式、真实数据接口规范 v1 |
+| `docs/部署运维说明.md` | 部署/HTTPS/备份/监控/安全自查清单 |
 | `docs/architecture/01_软件架构.md` | 软件架构 |
 | `docs/plans/*.md` | 各阶段执行计划 |
 | `docs/handoffs/*.md` | 阶段交接摘要 |
@@ -178,7 +191,11 @@
 | 需求 | 必读文件 | 顺带检查 |
 |---|---|---|
 | 改登录/注册/角色/会话 | `src/auth.py` + `migrations/01_setup.sql` | `src/ui/pages.py:396` 系统设置页 |
+| 改密码/审计/密钥 | `src/auth.py` + `migrations/05_security_hardening.sql` | `.streamlit/secrets.toml.example` |
 | 改反馈功能 | `src/auth.py` 反馈段 + `migrations/03/04*.sql` | `src/ui/pages.py:1419` |
+| 改运行记录/历史页 | `src/auth.py` 运行记录段 + `migrations/06_sim_runs.sql` | `src/ui/pages.py:1688`、`src/ui/common.py` persist_sim_run |
+| 改真实数据导入 | `io/realtime_io.py` + `docs/data/03_真实数据接口规范_v1.md` | `src/ui/pages.py` 需求数据源、`tests/test_realtime_io.py` |
+| 改部署/运维 | `Dockerfile` + `docker-compose.yml` + `docs/部署运维说明.md` | `deploy/nginx.conf.example`、`.env.example` |
 | 改偏好/参数持久化 | `src/ui/common.py:902-1094` + `migrations/02_preferences.sql` | `src/auth.py` RPC 封装 |
 | 新增算法/策略 | `docs/新算法接入说明.md` + `strategies/registry.py` + `strategies/__init__.py` | 新策略文件、`tests/`、`docs/algorithms/` |
 | 改仿真引擎 | `simulation/engine.py` | `simulation/parking_lot.py`、`routing/path_engine.py`、`tests/test_engine_*` |
