@@ -11,71 +11,101 @@ def render_settings(role):
     disabled = not role["can_configure"]
     if disabled: st.caption("⚠️ 当前角色仅可查看，不可修改参数")
 
-    # 需求数据源：自动生成（种子）或导入 JSON 文件（上次仿真导出的需求序列可复用）
+    # 需求数据源：自动生成（种子）/ 导入 JSON 文件 / 导入真实道闸流水 CSV（企业对接演示）
     st.markdown("#### 📦 需求数据源")
     demand_source = st.radio(
         "车辆到达/离场需求来源",
-        ["自动生成（随机种子）", "导入需求序列 JSON"],
+        ["自动生成（随机种子）", "导入需求序列 JSON", "导入真实道闸流水 CSV（演示）"],
         horizontal=True,
         disabled=disabled,
         help="导入后所有策略共用同一批车辆需求（保证对比公平），相同种子/相同序列可复现结果",
     )
     import_mode = demand_source.startswith("导入")
+    gate_mode = demand_source.startswith("导入真实")
     imported_vehicles = None
     imported_meta = None
     if import_mode:
-        up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
-                              disabled=disabled,
-                              help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
-        if up is not None:
-            try:
-                imported_vehicles, imported_meta = parse_demand_json(up.getvalue().decode("utf-8"))
-                st.session_state.imported_vehicles = imported_vehicles
-                st.session_state.imported_meta = imported_meta
-                first = imported_meta.get("generated_at", "未知")
-                seed_of_file = imported_meta.get("seed", "未知")
-                st.success(f"✅ 已解析 {imported_meta.get('vehicle_count')} 辆车（生成时间 {first}，种子 {seed_of_file}）。"
-                           f"运行仿真将以该序列为准，忽略「车辆数」设置。")
-            except ValueError as exc:
-                st.error(f"❌ 导入失败：{exc}")
-        else:
-            # 从项目文件夹 data/demand_exports/ 直接选择（本地保存的需求序列）
-            local_files = list_demand_files()
-            if local_files:
-                labels = [disp for _, disp in local_files]
-                sel = st.selectbox(
-                    "或从项目文件夹选择（data/demand_exports/）",
-                    ["（不选择）"] + labels, key="local_demand_sel",
-                    disabled=disabled,
-                    help="选择后立即解析该文件作为本次需求序列；文件由「指标分析页 → 保存到项目文件夹」生成",
-                )
-                if sel != "（不选择）":
-                    path = local_files[labels.index(sel)][0]
-                    try:
-                        imported_vehicles, imported_meta = parse_demand_json(
-                            path.read_text(encoding="utf-8"))
-                        st.session_state.imported_vehicles = imported_vehicles
-                        st.session_state.imported_meta = imported_meta
-                        st.success(f"✅ 已从项目文件夹加载 {imported_meta.get('vehicle_count')} 辆车：{path.name}")
-                    except ValueError as exc:
-                        st.error(f"❌ 导入失败：{exc}")
-            elif st.session_state.get("imported_vehicles"):
-                # 本次会话之前已导入过（例如运行后回来），沿用缓存
-                imported_vehicles = st.session_state.imported_vehicles
-                imported_meta = st.session_state.get("imported_meta") or {}
-                st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
-                        f"重新上传文件可替换。")
-        if role["can_export"]:
-            st.download_button(
-                "📄 下载需求序列 JSON 示例",
-                export_demand_json(
-                    generate_demand(total_vehicles=20, seed=42),
-                    seed=42,
-                    generator_params={"total_vehicles": 20, "sim_duration": 21600},
-                ).encode("utf-8"),
-                "demand_example.json", "application/json",
-                help="示例仅 20 辆车，演示文件格式；导入前可先用它试运行",
+        if gate_mode:
+            up = st.file_uploader(
+                "上传道闸流水 CSV（.csv）", type=["csv"],
+                disabled=disabled,
+                help="列名支持 车牌/入场时间/出场时间（中英文），可选入口/出口编号；"
+                     "系统默认对车牌脱敏后转换为需求序列。字段规范见 docs/data/03_真实数据接口规范_v1.md",
             )
+            if up is not None:
+                try:
+                    from parking_opt.io.realtime_io import gate_csv_to_demand_json
+                    demand_text = gate_csv_to_demand_json(up.getvalue().decode("utf-8"))
+                    imported_vehicles, imported_meta = parse_demand_json(demand_text)
+                    st.session_state.imported_vehicles = imported_vehicles
+                    st.session_state.imported_meta = imported_meta
+                    st.success(f"✅ 已解析道闸流水 {imported_meta.get('vehicle_count')} 辆车"
+                               f"（车牌已脱敏）。运行仿真将以该真实时序为准。")
+                except ValueError as exc:
+                    st.error(f"❌ 道闸流水解析失败：{exc}")
+            if role["can_export"] and st.session_state.get("imported_meta", {}).get("source") == "real_gate":
+                st.download_button(
+                    "📄 下载转换后的需求序列 JSON",
+                    export_demand_json(
+                        st.session_state.imported_vehicles,
+                        source="real_gate",
+                    ).encode("utf-8"),
+                    "demand_from_gate_records.json", "application/json",
+                    help="把真实道闸流水转换后的需求序列下载保存，便于复现",
+                )
+        else:
+            up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
+                                  disabled=disabled,
+                                  help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
+            if up is not None:
+                try:
+                    imported_vehicles, imported_meta = parse_demand_json(up.getvalue().decode("utf-8"))
+                    st.session_state.imported_vehicles = imported_vehicles
+                    st.session_state.imported_meta = imported_meta
+                    first = imported_meta.get("generated_at", "未知")
+                    seed_of_file = imported_meta.get("seed", "未知")
+                    st.success(f"✅ 已解析 {imported_meta.get('vehicle_count')} 辆车（生成时间 {first}，种子 {seed_of_file}）。"
+                               f"运行仿真将以该序列为准，忽略「车辆数」设置。")
+                except ValueError as exc:
+                    st.error(f"❌ 导入失败：{exc}")
+            else:
+                # 从项目文件夹 data/demand_exports/ 直接选择（本地保存的需求序列）
+                local_files = list_demand_files()
+                if local_files:
+                    labels = [disp for _, disp in local_files]
+                    sel = st.selectbox(
+                        "或从项目文件夹选择（data/demand_exports/）",
+                        ["（不选择）"] + labels, key="local_demand_sel",
+                        disabled=disabled,
+                        help="选择后立即解析该文件作为本次需求序列；文件由「指标分析页 → 保存到项目文件夹」生成",
+                    )
+                    if sel != "（不选择）":
+                        path = local_files[labels.index(sel)][0]
+                        try:
+                            imported_vehicles, imported_meta = parse_demand_json(
+                                path.read_text(encoding="utf-8"))
+                            st.session_state.imported_vehicles = imported_vehicles
+                            st.session_state.imported_meta = imported_meta
+                            st.success(f"✅ 已从项目文件夹加载 {imported_meta.get('vehicle_count')} 辆车：{path.name}")
+                        except ValueError as exc:
+                            st.error(f"❌ 导入失败：{exc}")
+                elif st.session_state.get("imported_vehicles"):
+                    # 本次会话之前已导入过（例如运行后回来），沿用缓存
+                    imported_vehicles = st.session_state.imported_vehicles
+                    imported_meta = st.session_state.get("imported_meta") or {}
+                    st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
+                            f"重新上传文件可替换。")
+            if role["can_export"]:
+                st.download_button(
+                    "📄 下载需求序列 JSON 示例",
+                    export_demand_json(
+                        generate_demand(total_vehicles=20, seed=42),
+                        seed=42,
+                        generator_params={"total_vehicles": 20, "sim_duration": 21600},
+                    ).encode("utf-8"),
+                    "demand_example.json", "application/json",
+                    help="示例仅 20 辆车，演示文件格式；导入前可先用它试运行",
+                )
     else:
         st.session_state.imported_vehicles = None
         st.session_state.imported_meta = None
@@ -258,7 +288,12 @@ def render_settings(role):
 
             # 需求来源：导入序列（所有 run/策略复用同一批，保证公平）或按种子生成
             base_vehicles = list(imported_vehicles) if imported_vehicles else None
-            demand_source_used = "imported" if base_vehicles is not None else "generated"
+            if base_vehicles is not None:
+                demand_source_used = ("real_gate"
+                                      if (imported_meta or {}).get("source") == "real_gate"
+                                      else "imported")
+            else:
+                demand_source_used = "generated"
             sim_vehicles_candidate = None
 
             if strategy_name == "compare_all":
@@ -366,7 +401,7 @@ def render_settings(role):
             st.session_state.sim_vehicles = sim_vehicles_candidate
             st.session_state.sim_demand_source = demand_source_used
             st.session_state.sim_demand_meta = (imported_meta or {}
-                                                if demand_source_used == "imported"
+                                                if demand_source_used in ("imported", "real_gate")
                                                 else {"seed": seed, "generator_params": demand_kwargs})
 
             # 持久化运行记录到 Supabase sim_runs（跨会话/跨用户可查，支持导出与对比）
@@ -1018,7 +1053,7 @@ def render_metrics_page(role):
         st.markdown("### 🏆 多策略对比")
         n_runs = st.session_state.get("sim_n_runs", 1)
         demand_source = st.session_state.get("sim_demand_source", "generated")
-        src_note = ("同一导入需求序列" if demand_source == "imported"
+        src_note = ("同一导入需求序列" if demand_source in ("imported", "real_gate")
                     else f"{n_runs} 次不同随机种子的平均值（降低随机波动）")
         st.caption(f"基于 {src_note}")
         all_m = st.session_state.sim_all_metrics
@@ -1149,8 +1184,9 @@ def render_metrics_page(role):
         else:
             events_raw = None
             vehs = None
-        if demand_source == "imported":
-            st.caption("事件日志来自导入的需求序列；当前展示策略："
+        if demand_source in ("imported", "real_gate"):
+            src_label = "真实道闸流水" if demand_source == "real_gate" else "导入的需求序列"
+            st.caption(f"事件日志来自{src_label}；当前展示策略："
                        f"**{STRATEGY_LABELS.get(view_strategy, view_strategy) if view_strategy else '—'}**。")
         else:
             st.caption("事件日志来自最近一次仿真；当前展示策略："
@@ -1158,8 +1194,9 @@ def render_metrics_page(role):
     else:
         events_raw = st.session_state.get("sim_events_raw")
         vehs = st.session_state.get("sim_vehicles")
-        if demand_source == "imported":
-            st.caption("事件日志来自导入的需求序列（所选策略）。")
+        if demand_source in ("imported", "real_gate"):
+            src_label = "真实道闸流水" if demand_source == "real_gate" else "导入的需求序列"
+            st.caption(f"事件日志来自{src_label}（所选策略）。")
         else:
             st.caption("事件日志来自最近一次仿真（所选策略）。")
 
