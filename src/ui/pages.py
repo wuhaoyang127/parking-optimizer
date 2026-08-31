@@ -43,7 +43,9 @@ def render_settings(role):
                                f"（车牌已脱敏）。运行仿真将以该真实时序为准。")
                 except ValueError as exc:
                     st.error(f"❌ 道闸流水解析失败：{exc}")
-            if role["can_export"] and st.session_state.get("imported_meta", {}).get("source") == "real_gate":
+            if (role["can_export"]
+                    and (st.session_state.get("imported_meta") or {}).get("source") == "real_gate"
+                    and st.session_state.get("imported_vehicles")):
                 st.download_button(
                     "📄 下载转换后的需求序列 JSON",
                     export_demand_json(
