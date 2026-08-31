@@ -306,6 +306,7 @@ def render_settings(role):
 
             if strategy_name == "compare_all":
                 all_m = []
+                timed_out_strategies = []
                 main_events_raw = None
                 events_by_strategy = {}
                 vehicles_by_strategy = {}
@@ -314,9 +315,14 @@ def render_settings(role):
                 prog = st.progress(0.0, text="准备运行全部策略对比...")
                 for i, (nm, cls) in enumerate(all_strategies):
                     prog.progress((i + 1) / total,
-                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均）")
+                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均，限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
+                    t_strategy = time.time()
                     seed_metrics = []
+                    strategy_timed_out = False
                     for r in range(n_runs):
+                        if time.time() - t_strategy > STRATEGY_TIME_BUDGET:
+                            strategy_timed_out = True
+                            break
                         s = seed + r
                         vehs = (list(base_vehicles) if base_vehicles is not None
                                 else generate_demand(seed=s, **demand_kwargs))
@@ -333,9 +339,13 @@ def render_settings(role):
                             if nm == "duration_greedy":
                                 main_events_raw = ev_raw
                                 sim_vehicles_candidate = list(vehs)
+                    if strategy_timed_out:
+                        timed_out_strategies.append(nm)
+                        continue  # 超时跳过该算法，结果中注明
                     all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
+                st.session_state.sim_timed_out_strategies = timed_out_strategies
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
                 st.session_state.sim_events_by_strategy = events_by_strategy
                 st.session_state.sim_vehicles_by_strategy = vehicles_by_strategy
@@ -343,7 +353,12 @@ def render_settings(role):
             else:
                 seed_metrics = []
                 events_raw = None
+                t_strategy = time.time()
+                strategy_timed_out = False
                 for r in range(n_runs):
+                    if time.time() - t_strategy > STRATEGY_TIME_BUDGET:
+                        strategy_timed_out = True
+                        break
                     s = seed + r
                     vehs = (list(base_vehicles) if base_vehicles is not None
                             else generate_demand(seed=s, **demand_kwargs))
@@ -356,8 +371,15 @@ def render_settings(role):
                                        "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                        "metadata": dict(e.metadata)} for e in ev]
                         sim_vehicles_candidate = list(vehs)
+                if strategy_timed_out:
+                    st.session_state.sim_timed_out_strategies = [strategy_name]
+                    st.warning(f"⏱ 策略「{STRATEGY_LABELS.get(strategy_name, strategy_name)}」"
+                               f"运行超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过（结果未保存）。"
+                               f"建议减少车辆数/仿真次数后重试。")
+                    st.stop()
                 avg_m = _avg_metrics(seed_metrics)
                 st.session_state.sim_metrics = avg_m
+                st.session_state.sim_timed_out_strategies = []
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
                 st.session_state.sim_events_by_strategy = {strategy_name: events_raw}
@@ -1028,6 +1050,12 @@ def render_metrics_page(role):
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
+
+    # 超时跳过提示（每个策略限时 60 秒，超时未参与对比）
+    timed_out = st.session_state.get("sim_timed_out_strategies") or []
+    if timed_out:
+        names = "、".join(STRATEGY_LABELS.get(n, n) for n in timed_out)
+        st.warning(f"⏱ 以下策略运行超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过、未参与对比：{names}")
 
     # 排名设置展示：与仿真设置页一致（权重 / 优先级）
     rank_mode = st.session_state.get("rank_mode", "加权评分")

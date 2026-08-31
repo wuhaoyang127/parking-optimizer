@@ -37,7 +37,9 @@ from .baselines import BaseStrategy
 
 # 时间熔断（非规模保护）：任何规模都会运行 NSGA-II，
 # 但单次 prepare 超过该秒数后停止进化、返回当前种群中的最优方案，避免网页卡死。
-PREPARE_TIME_BUDGET = 120.0
+# 注意：需小于页面层每个策略 60 秒的总时限（ui/common.py STRATEGY_TIME_BUDGET），
+# 给仿真执行留出时间。
+PREPARE_TIME_BUDGET = 45.0
 
 # 场景权重（f1 时间 / f2 距离 / f3 利用率均衡）
 SCENE_WEIGHTS = {
