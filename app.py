@@ -10,6 +10,7 @@ from ui.common import *  # 常量 + 工具 + check_login + auth 封装
 from ui.pages import (
     render_settings, render_system, render_layout_page, render_path_page,
     render_metrics_page, render_algo_import_page, render_status_page, render_feedback_page,
+    render_history_page,
 )
 
 st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout="wide")
@@ -53,6 +54,7 @@ with st.sidebar:
         "🅿️ 停车场布局图",
         "🚗 动态路径",
         "📊 指标分析",
+        "📜 历史运行",
         "🧩 新算法接入",
         "🚨 系统状态",
         "💬 反馈",
@@ -79,8 +81,10 @@ elif page == pages[3]:
 elif page == pages[4]:
     render_metrics_page(role)
 elif page == pages[5]:
-    render_algo_import_page(role)
+    render_history_page(role)
 elif page == pages[6]:
-    render_status_page(role)
+    render_algo_import_page(role)
 elif page == pages[7]:
+    render_status_page(role)
+elif page == pages[8]:
     render_feedback_page(role)

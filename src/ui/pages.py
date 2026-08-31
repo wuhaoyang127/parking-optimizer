@@ -369,6 +369,19 @@ def render_settings(role):
                                                 if demand_source_used == "imported"
                                                 else {"seed": seed, "generator_params": demand_kwargs})
 
+            # 持久化运行记录到 Supabase sim_runs（跨会话/跨用户可查，支持导出与对比）
+            try:
+                if strategy_name == "compare_all":
+                    persist_sim_run("compare_all", strat_params, env_params,
+                                    st.session_state.sim_all_metrics,
+                                    layout, demand_source_used)
+                else:
+                    persist_sim_run(strategy_name, strat_params, env_params,
+                                    st.session_state.sim_metrics,
+                                    layout, demand_source_used)
+            except Exception:
+                pass
+
             # 计算理论最优（CP-SAT 离线全信息上界，最多约 10 秒）
             cpsat_rate = None
             with st.spinner("计算 CP-SAT 理论最优（最多约 10 秒）..."):
@@ -1669,5 +1682,105 @@ def _render_admin_feedbacks(reverse=False):
                     auth_reply_feedback(st.session_state.token, fid, reply.strip())
                     st.rerun()
         st.divider()
+
+
+def _fmt_run_time(value):
+    """把 Supabase 时间字符串格式化为易读本地时间。"""
+    if not value:
+        return ""
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            return value.replace("T", " ")[:16]
+    return str(value)[:16]
+
+
+def _run_summary(metrics):
+    """从 metrics（dict 单策略 / list 全部对比）提取代表性指标与说明。"""
+    if isinstance(metrics, dict):
+        return metrics, ""
+    if isinstance(metrics, list) and metrics:
+        best = max(metrics, key=lambda m: (m.get("satisfaction_rate", 0),
+                                           -m.get("shift_count", 0)))
+        label = STRATEGY_LABELS.get(best.get("strategy"), best.get("strategy"))
+        return best, f"全部对比 {len(metrics)} 策略；最佳：{label}"
+    return {}, ""
+
+
+def render_history_page(role):
+    """页面: 历史运行记录（sim_runs 持久化，跨会话/跨用户可查）"""
+    st.subheader("📜 历史运行")
+    is_admin = bool(role.get("can_manage_users"))
+    can_export = bool(role.get("can_export"))
+    token = st.session_state.get("token")
+    if not token:
+        st.info("未登录")
+        return
+
+    st.caption("运行仿真后自动保存；管理员可查看全部用户记录，普通用户仅查看自己的。")
+    runs = auth_list_sim_runs(token, all_users=is_admin)
+    if not runs:
+        st.info("暂无运行记录。请在「仿真设置」运行一次仿真，记录会自动保存到这里。")
+        return
+
+    rows = []
+    for r in runs:
+        rep, note = _run_summary(r.get("metrics"))
+        rows.append({
+            "id": r.get("id"),
+            "时间": _fmt_run_time(r.get("created_at")),
+            "用户": r.get("username", ""),
+            "策略": STRATEGY_LABELS.get(r.get("strategy"), r.get("strategy")),
+            "布局": r.get("layout_key") or "",
+            "需求": "导入序列" if r.get("demand_source") == "imported" else "自动生成",
+            "满足率": rep.get("satisfaction_rate"),
+            "利用率": rep.get("spatial_utilization"),
+            "移位次数": rep.get("shift_count"),
+            "平均等待(s)": rep.get("avg_wait_time_s"),
+            "说明": note,
+        })
+
+    df = pd.DataFrame(rows)
+    strategies = sorted({x for x in df["策略"] if x})
+    if strategies:
+        sel_strategy = st.selectbox("按策略筛选", ["全部"] + strategies)
+        if sel_strategy != "全部":
+            df = df[df["策略"] == sel_strategy]
+
+    show_cols = ["时间", "策略", "布局", "需求", "满足率", "利用率", "移位次数",
+                 "平均等待(s)", "说明"]
+    if is_admin:
+        show_cols = ["时间", "用户"] + show_cols[1:]
+
+    st.dataframe(
+        df[show_cols].style.format({
+            "满足率": "{:.1%}", "利用率": "{:.1%}",
+            "平均等待(s)": "{:.1f}", "移位次数": "{:.0f}",
+        }, na_rep="—"),
+        use_container_width=True, hide_index=True,
+    )
+
+    if can_export:
+        st.download_button(
+            "📥 下载历史运行 CSV",
+            df.to_csv(index=False).encode("utf-8-sig"),
+            "parking_sim_runs.csv", "text/csv",
+        )
+
+    # 删除（管理员任意 / 本人自己的）
+    labels = [f"{_fmt_run_time(r.get('created_at'))} · {r.get('username','')} · "
+              f"{STRATEGY_LABELS.get(r.get('strategy'), r.get('strategy'))}"
+              for r in runs]
+    with st.expander("🗑 删除运行记录"):
+        sel = st.selectbox("选择要删除的记录", labels, key="hist_del_sel")
+        if st.button("确认删除", key="hist_del_btn"):
+            idx = labels.index(sel)
+            res = auth_delete_sim_run(token, runs[idx].get("id"))
+            if isinstance(res, dict) and res.get("success"):
+                st.success("已删除")
+            else:
+                st.error((res or {}).get("error", "删除失败"))
+            st.rerun()
 
 

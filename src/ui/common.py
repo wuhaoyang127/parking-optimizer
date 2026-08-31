@@ -42,6 +42,20 @@ except ImportError:
     auth_delete_feedback = _fb_unavailable
     auth_update_feedback_display_time = _fb_unavailable
 
+try:
+    from auth import save_sim_run as auth_save_sim_run
+    from auth import list_sim_runs as auth_list_sim_runs
+    from auth import delete_sim_run as auth_delete_sim_run
+    from auth import log_action as auth_log_action
+except ImportError:
+    def _sim_runs_unavailable(*_a, **_k):
+        return {"success": False, "error": "运行记录功能未加载：后端代码未同步，请重新部署应用"}
+
+    auth_save_sim_run = _sim_runs_unavailable
+    auth_list_sim_runs = lambda *_a, **_k: []
+    auth_delete_sim_run = _sim_runs_unavailable
+    auth_log_action = _sim_runs_unavailable
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -965,6 +979,50 @@ def persist_last_params(strategy_name: str, params: dict):
                       json.dumps(last, ensure_ascii=False))
     except Exception:
         pass
+
+
+def _json_safe(obj):
+    """把参数/指标转成 JSON 原生类型（防 numpy/日期等脏类型导致 Supabase 写入失败）。"""
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, bool):
+        return obj
+    if isinstance(obj, (int, float, str)) or obj is None:
+        return obj
+    try:
+        import numpy as _np
+        if isinstance(obj, (_np.integer, _np.floating)):
+            return obj.item()
+    except Exception:
+        pass
+    return str(obj)
+
+
+def persist_sim_run(strategy: str, params: dict, env: dict, metrics,
+                    layout_key: str = None, demand_source: str = None) -> dict:
+    """把一次仿真运行结果持久化到 Supabase sim_runs 表（登录用户，跨会话可查）。
+
+    metrics 为 dict（单策略）或 list（全部对比）；同时写入一条审计日志。
+    """
+    token = st.session_state.get("token")
+    if not token:
+        return None
+    payload = _json_safe(metrics)
+    try:
+        res = auth_save_sim_run(token, strategy, _json_safe(params or {}),
+                                _json_safe(env or {}), payload,
+                                layout_key, demand_source)
+        try:
+            auth_log_action(token, "sim_run", {
+                "strategy": strategy, "layout_key": layout_key,
+                "demand_source": demand_source})
+        except Exception:
+            pass
+        return res
+    except Exception:
+        return None
 
 
 # 自定义布局持久化（Supabase 偏好，用户级）：布局真相源为 session_state.custom_layouts，
