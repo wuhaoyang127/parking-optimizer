@@ -200,6 +200,17 @@ def render_settings(role):
                                      format_func=lambda x: STRATEGY_LABELS[x],
                                      disabled=disabled)
 
+        # random 策略重复次数单独控制：随机性强，需 100+ 次取平均才有说服力；
+        # 其他策略仍用上方「仿真次数」滑杆（1~10），避免被迫一起跑 100+ 次。
+        random_reps = 100
+        if strategy_name in ("random", "compare_all"):
+            random_reps = st.number_input(
+                "random 策略重复次数（≥100）", 100, 1000, 100, step=10,
+                disabled=disabled,
+                help="random 随机性大，建议 100~200 次取平均；"
+                     "该次数只作用于 random 策略，其余策略仍用上方「仿真次数」",
+            )
+
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
         st.markdown(strategy_description(strategy_name))
         st.markdown("""
@@ -337,6 +348,10 @@ def render_settings(role):
                 demand_source_used = "generated"
             sim_vehicles_candidate = None
 
+            # random 策略用独立的重复次数（≥100），其余策略用「仿真次数」滑杆
+            def _n_runs_for(name: str) -> int:
+                return int(random_reps) if name == "random" else int(n_runs)
+
             if strategy_name == "compare_all":
                 all_m = []
                 timed_out_strategies = []
@@ -347,11 +362,12 @@ def render_settings(role):
                 total = len(all_strategies)
                 prog = st.progress(0.0, text="准备运行全部策略对比...")
                 for i, (nm, cls) in enumerate(all_strategies):
+                    runs_for_this = _n_runs_for(nm)
                     prog.progress((i + 1) / total,
-                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{n_runs} 次取平均，单次限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
+                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{runs_for_this} 次取平均，单次限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
                     seed_metrics = []
                     strategy_timed_out = False
-                    for r in range(n_runs):
+                    for r in range(runs_for_this):
                         s = seed + r
                         vehs = (list(base_vehicles) if base_vehicles is not None
                                 else generate_demand(seed=s, **demand_kwargs))
@@ -387,7 +403,7 @@ def render_settings(role):
                 seed_metrics = []
                 events_raw = None
                 strategy_timed_out = False
-                for r in range(n_runs):
+                for r in range(_n_runs_for(strategy_name)):
                     s = seed + r
                     vehs = (list(base_vehicles) if base_vehicles is not None
                             else generate_demand(seed=s, **demand_kwargs))
@@ -449,7 +465,9 @@ def render_settings(role):
             st.session_state.sim_n_vehicles = (len(sim_vehicles_candidate)
                                                if sim_vehicles_candidate else n_vehicles)
             st.session_state.sim_seed = seed
-            st.session_state.sim_n_runs = n_runs
+            st.session_state.sim_n_runs = (_n_runs_for(strategy_name)
+                                           if strategy_name != "compare_all" else n_runs)
+            st.session_state.sim_random_reps = int(random_reps)
             st.session_state.sim_strategy_name = strategy_name
             st.session_state.sim_layout = layout
             # 记录最近一次仿真使用的内置/真实布局（布局图页按视图模式回显）
@@ -1124,6 +1142,9 @@ def render_metrics_page(role):
         demand_source = st.session_state.get("sim_demand_source", "generated")
         src_note = ("同一导入需求序列" if demand_source in ("imported", "real_gate")
                     else f"{n_runs} 次不同随机种子的平均值（降低随机波动）")
+        random_reps = st.session_state.get("sim_random_reps")
+        if random_reps:
+            src_note += f"；random 策略单独取 {int(random_reps)} 次平均"
         st.caption(f"基于 {src_note}")
         all_m = st.session_state.sim_all_metrics
 

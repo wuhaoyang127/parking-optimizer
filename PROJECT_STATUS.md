@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 37
+status_version: 38
 last_updated: 2026-08-30
 current_stage: D
 stage_status: in_progress
@@ -208,6 +208,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-08-30：**random 策略重复次数独立控制（≥100）**：仿真设置页在策略为 random 或全部对比时新增「random 策略重复次数（≥100，默认 100，上限 1000）」数字输入框，random 单独按该次数取平均，其余策略仍用「仿真次数」滑杆（1~10）；全部对比进度条与指标分析页说明会标注 random 的独立次数。pytest 116 passed；状态文档 status_version 37 → 38；待用户验收；
 - 2026-08-30：**真实道闸流水导入区新增说明与示例下载**（用户反馈网页里看不到说明文档）：「导入真实道闸流水 CSV」区域新增「📥 下载道闸流水示例 CSV」按钮（读取 `data/samples/道闸流水示例.csv`）与「📖 填写说明」折叠区（列名表/时间格式/示例/常见错误），与仓库文档 `docs/道闸流水CSV填写说明.md` 一致。pytest 116 passed；状态文档 status_version 36 → 37；待用户验收；
 - 2026-08-30：**每个种子限时 60 秒，超时跳过并在结果注明**（用户澄清口径为「每个种子」）：`common.py` 新增 `STRATEGY_TIME_BUDGET=60`；「全部对比」每个种子的 run_single 单独计时，单次超过 60 秒即跳过该策略并计入 `sim_timed_out_strategies`，指标分析页顶部黄色警告列出被跳过策略；单策略模式同样处理（提示并停止、结果不保存）；MOSA prepare 预算 120s→45s（保证 MOSA 单次仿真不超 60 秒）。pytest 116 passed；状态文档 status_version 35 → 36；待用户验收；
 - 2026-08-30：**取消规模保护 + 车位数上限 50→500**（按用户要求大车位数下所有算法照跑）：CP-SAT 移除「>40 车位/>120 车跳过」，改为时间熔断（模型构建 20s + 求解 10s，超时返回 None=无理论最优对照）；MOSA 移除「>60 车位/>120 车回退贪心」，改为 prepare 时间熔断 120s（任意规模进化，超时返回当前种群最优方案，不回退）；车位数控件改数字输入框 5~500。pytest 116 passed；状态文档 status_version 34 → 35；待用户验收；
