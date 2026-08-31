@@ -124,7 +124,7 @@ def strategy_description(name: str) -> str:
 ADMIN_USER = "wuhaoyang127"
 LOGIN_MAX_FAILS = 3       # 连续登录失败多少次后临时锁定
 LOGIN_LOCK_SECONDS = 30   # 临时锁定时长（秒）
-STRATEGY_TIME_BUDGET = 60.0  # 每个种子单次仿真的时限（秒）：超时种子舍弃，其余种子取平均参与对比
+STRATEGY_TIME_BUDGET = 60.0  # 每个种子单次仿真的超时标记（秒）：超过仅标记，结果仍全部展示，可在指标页选择隐藏
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
               "can_export": True, "can_debug": True, "can_manage_data": True,

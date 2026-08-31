@@ -364,7 +364,7 @@ def render_settings(role):
                 for i, (nm, cls) in enumerate(all_strategies):
                     runs_for_this = _n_runs_for(nm)
                     prog.progress((i + 1) / total,
-                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{runs_for_this} 次取平均，单次限时 {int(STRATEGY_TIME_BUDGET)} 秒）")
+                                  text=f"运行策略 {i + 1}/{total}：{cls.label}（{runs_for_this} 次取平均，超过 {int(STRATEGY_TIME_BUDGET)} 秒仅标记）")
                     seed_metrics = []
                     strategy_timed_out = False
                     for r in range(runs_for_this):
@@ -373,9 +373,9 @@ def render_settings(role):
                                 else generate_demand(seed=s, **demand_kwargs))
                         t_seed = time.time()
                         m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
+                        # 60 秒仅作标记：超时种子结果仍保留、全部展示，可在指标页选择隐藏
                         if time.time() - t_seed > STRATEGY_TIME_BUDGET:
                             strategy_timed_out = True
-                            break
                         seed_metrics.append(m)
                         # 每个策略都保留第一个种子的事件日志，供指标页「需求时序/车辆明细」切换查看；
                         # 主方法（时长感知贪心）的事件日志额外供「车辆动态路径」页展示
@@ -390,9 +390,7 @@ def render_settings(role):
                                 sim_vehicles_candidate = list(vehs)
                     if strategy_timed_out:
                         timed_out_strategies.append(nm)
-                    # 超时种子舍弃；只要有已完成（≤60 秒）的种子，就按已完成种子取平均参与对比
-                    if seed_metrics:
-                        all_m.append(_avg_metrics(seed_metrics))
+                    all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_timed_out_strategies = timed_out_strategies
@@ -418,24 +416,18 @@ def render_settings(role):
                     strategy = StrategyRegistry.create(strategy_name, **strat_params)
                     t_seed = time.time()
                     m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
+                    # 60 秒仅作标记：超时种子结果仍保留、全部展示
                     if time.time() - t_seed > STRATEGY_TIME_BUDGET:
                         strategy_timed_out = True
-                        break
                     seed_metrics.append(m)
                     if r == 0:
                         events_raw = [{"time": e.time, "type": e.event_type.value,
                                        "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
                                        "metadata": dict(e.metadata)} for e in ev]
                         sim_vehicles_candidate = list(vehs)
-                if strategy_timed_out:
-                    st.session_state.sim_timed_out_strategies = [strategy_name]
-                    st.warning(f"⏱ 策略「{STRATEGY_LABELS.get(strategy_name, strategy_name)}」"
-                               f"单次仿真超过 {int(STRATEGY_TIME_BUDGET)} 秒，已跳过（结果未保存）。"
-                               f"建议减少车辆数后重试。")
-                    st.stop()
                 avg_m = _avg_metrics(seed_metrics)
                 st.session_state.sim_metrics = avg_m
-                st.session_state.sim_timed_out_strategies = []
+                st.session_state.sim_timed_out_strategies = [strategy_name] if strategy_timed_out else []
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
                 st.session_state.sim_events_by_strategy = {strategy_name: events_raw}
@@ -1124,17 +1116,17 @@ def render_metrics_page(role):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return
 
-    # 超时提示：超时种子已舍弃，其余种子仍参与对比；可勾选隐藏含超时种子的策略
+    # 超时仅作标记：结果全部展示，可勾选隐藏含超时种子的策略
     timed_out = st.session_state.get("sim_timed_out_strategies") or []
+    sim_all_metrics = st.session_state.get("sim_all_metrics") or []
     hide_timed_out = False
     if timed_out:
         names = "、".join(STRATEGY_LABELS.get(n, n) for n in timed_out)
-        st.warning(f"⏱ 以下策略有种子单次超过 {int(STRATEGY_TIME_BUDGET)} 秒（超时种子已舍弃）：{names}。"
-                   f"仍按 ≤{int(STRATEGY_TIME_BUDGET)} 秒的种子取平均参与对比；"
-                   f"若某策略所有种子都超时，则无数据、不参与对比。")
-        hide_timed_out = st.checkbox(
-            "隐藏超时策略", value=False,
-            help="勾选后，含超时种子的策略不参与排名、表格与图表展示")
+        st.warning(f"⏱ 以下策略有种子单次运行超过 {int(STRATEGY_TIME_BUDGET)} 秒（结果仍全部展示）：{names}")
+        if sim_all_metrics:
+            hide_timed_out = st.checkbox(
+                "隐藏超时策略", value=False,
+                help="勾选后，含超时种子的策略不参与排名、表格与图表展示")
 
     # 排名设置展示：与仿真设置页一致（权重 / 优先级）
     rank_mode = st.session_state.get("rank_mode", "加权评分")
@@ -1164,7 +1156,6 @@ def render_metrics_page(role):
     st.markdown("---")
 
     # 多策略对比
-    sim_all_metrics = st.session_state.get("sim_all_metrics") or []
     timed_out_set = set(timed_out)
     visible_all_m = [m for m in sim_all_metrics
                      if not (hide_timed_out and m.get("strategy") in timed_out_set)]
