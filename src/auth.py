@@ -334,3 +334,31 @@ def list_sim_runs(token: str, all_users: bool = False, limit: int = 200) -> list
 def delete_sim_run(token: str, run_id: str) -> dict:
     """删除运行记录（管理员可删任意；本人只能删自己的）。"""
     return _rpc("delete_sim_run", {"p_token": token, "p_id": run_id})
+
+
+# ---------- 本地计算任务队列（migrations/07）----------
+
+def create_compute_task(token: str, payload: dict) -> dict:
+    """云端 UI 下发本地计算任务，返回 {success, task_id}。"""
+    return _rpc("create_compute_task", {
+        "p_token": token, "p_payload": payload or {}})
+
+
+def claim_compute_task(token: str) -> dict:
+    """本机 worker 领取该用户最早的 pending 任务，返回 {success, task}。"""
+    return _rpc("claim_compute_task", {"p_token": token})
+
+
+def complete_compute_task(token: str, task_id: str, status: str,
+                          result: dict = None, error: str = None) -> dict:
+    """本机 worker 回写任务结果（status: done / failed）。"""
+    return _rpc("complete_compute_task", {
+        "p_token": token, "p_task_id": task_id, "p_status": status,
+        "p_result": result if result is not None else {},
+        "p_error": error})
+
+
+def get_compute_task(token: str, task_id: str) -> dict:
+    """云端 UI 查询任务状态，返回 {success, status, result, error}。"""
+    return _rpc("get_compute_task", {
+        "p_token": token, "p_task_id": task_id})

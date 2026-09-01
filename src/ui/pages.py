@@ -2,6 +2,7 @@ import math
 from datetime import datetime
 from ui.common import *
 from ui.common import (_avg_metrics, _plot_radar, _sync_custom_layouts_to_globals,
+                      _json_safe, vehicles_from_dicts,
                       persist_custom_layouts, restore_custom_layouts,
                       ensure_custom_layouts_loaded)
 
@@ -320,14 +321,196 @@ def render_settings(role):
                 except Exception:
                     pass
 
-    # 公网云端资源受限，大参数提前提示改本地运行（本地 Windows 桌面不提示）
-    if not is_local_desktop() and (n_vehicles >= 500 or n_spots >= 200):
-        st.info("🌐 当前在**公网云端**运行：车辆/车位较多时容易内存不足或超时。\n"
-                "大参数建议**本地计算**：在项目目录执行 `py -m streamlit run app.py`，"
-                "同一套界面与 Supabase 数据，只是计算在本机完成。")
+    # 计算位置：云端 CPU / 本机 worker（云 UI + 本地算力）
+    compute_mode = st.session_state.get("compute_mode", "cloud")
+    mode_options = ["☁️ 云端计算", "💻 本地计算（本机 CPU）"]
+    mode_sel = st.radio("计算位置", mode_options, horizontal=True,
+                        index=0 if compute_mode != "local" else 1,
+                        key="compute_mode_sel",
+                        help="本地计算：云端界面 + 本机 worker 计算，大参数不再受云端内存限制")
+    new_mode = "local" if mode_sel == mode_options[1] else "cloud"
+    if new_mode != compute_mode:
+        persist_compute_mode(new_mode)
+        st.rerun()
+    compute_mode = new_mode
+    st.session_state.compute_mode = compute_mode
 
-    if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
+    # 需求来源（导入序列所有 run/策略复用同一批，保证公平；否则按种子生成）
+    base_vehicles = list(imported_vehicles) if imported_vehicles else None
+    if base_vehicles is not None:
+        demand_source_used = ("real_gate"
+                              if (imported_meta or {}).get("source") == "real_gate"
+                              else "imported")
+    else:
+        demand_source_used = "generated"
+
+    def _apply_local_result(result):
+        """把本机 worker 返回的结果载入 session_state，等同云端跑完一次仿真。"""
+        if not isinstance(result, dict) or not result:
+            st.error("本机返回结果为空")
+            st.stop()
+        net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
+        pe = PathEngine(net)
+        st.session_state.sim_net = net
+        st.session_state.sim_spots = spots
+        st.session_state.sim_pe = pe
+        st.session_state.sim_n_spots = int(n_spots)
+        st.session_state.sim_seed = int(seed)
+        st.session_state.sim_strategy_name = strategy_name
+        st.session_state.sim_strategy_params = strat_params
+        st.session_state.sim_env_params = env_params
+        st.session_state.sim_layout = layout
+        if layout in BUILTIN_LAYOUT_KEYS:
+            st.session_state.last_builtin_sim = {"layout": layout, "net": net, "spots": spots}
+            st.session_state.sim_layout_category = "builtin"
+        else:
+            st.session_state.last_real_sim = {"layout": layout, "net": net, "spots": spots}
+            st.session_state.sim_layout_category = "real"
+        st.session_state.sim_metrics = result.get("metrics")
+        st.session_state.sim_all_metrics = result.get("all_m")
+        st.session_state.sim_timed_out_strategies = result.get("timed_out") or []
+        st.session_state.sim_failed_strategies = result.get("failed") or []
+        st.session_state.sim_cpsat_rate = result.get("cpsat_rate")
+        evs = result.get("events_by_strategy") or {}
+        vehs_raw = result.get("vehicles_by_strategy") or {}
+        st.session_state.sim_events_by_strategy = evs
+        st.session_state.sim_vehicles_by_strategy = {
+            k: vehicles_from_dicts(v) for k, v in vehs_raw.items()}
+        st.session_state.sim_events_raw = result.get("main_events")
+        st.session_state.sim_demand_source = demand_source_used
+        if demand_source_used in ("imported", "real_gate"):
+            st.session_state.sim_demand_meta = imported_meta or {}
+        else:
+            st.session_state.sim_demand_meta = {"seed": seed, "generator_params": {
+                "total_vehicles": int(n_vehicles),
+                "sim_duration": env_params["sim_duration"],
+                "duration_min": env_params["duration_min"],
+                "duration_max": env_params["duration_max"],
+                "peak_ratio": env_params["peak_ratio"],
+                "error_ratio": env_params["error_ratio"]}}
+        if strategy_name != "compare_all":
+            st.session_state.sim_vehicles = (st.session_state.sim_vehicles_by_strategy
+                                             .get(strategy_name) or [])
+        else:
+            st.session_state.sim_vehicles = (
+                st.session_state.sim_vehicles_by_strategy.get("duration_greedy")
+                or (next(iter(st.session_state.sim_vehicles_by_strategy.values()))
+                    if st.session_state.sim_vehicles_by_strategy else []))
+        st.session_state.sim_n_vehicles = len(st.session_state.sim_vehicles) or int(n_vehicles)
+        st.session_state.sim_n_runs = int(n_runs)
+        st.session_state.sim_random_reps = int(random_reps)
+        st.session_state.sim_has_run = True
+        st.session_state.replay_time = 0.0
+        st.session_state.replay_playing = False
+        st.session_state.selected_vehicle = None
+        st.session_state.page = "📊 指标分析"
+        st.rerun()
+
+    def _check_local_task_once():
+        token = st.session_state.get("token")
+        task_id = st.session_state.get("local_task_id")
+        if not token or not task_id:
+            st.info("暂无本地计算任务。请先在下方点「下发本地计算任务」。")
+            return
+        stt = auth_get_compute_task(token, task_id)
+        if isinstance(stt, dict) and stt.get("success"):
+            s = stt.get("status")
+            if s == "done":
+                st.success("✅ 本机计算完成，正在载入结果…")
+                _apply_local_result(stt.get("result") or {})
+            elif s == "failed":
+                st.error(f"❌ 本机计算失败：{stt.get('error')}")
+            else:
+                st.info(f"任务状态：{s}。请确认本机 `py local_worker.py` 正在运行。")
+        else:
+            st.info("暂无任务状态。请先运行 `py local_worker.py`，再下发任务。")
+
+    def _submit_local_task_and_wait():
+        token = st.session_state.get("token")
+        if not token:
+            st.error("未登录，无法下发本地计算任务")
+            st.stop()
+        if layout in BUILTIN_LAYOUT_KEYS:
+            layout_payload = {"source": "builtin", "builtin_key": layout,
+                              "n_spots": int(n_spots), "tandem_ratio": float(tandem_ratio)}
+        else:
+            linfo = (st.session_state.get("custom_layouts") or {}).get(layout) or {}
+            layout_payload = {"source": "custom", "custom_data": linfo.get("data")}
+        if base_vehicles is not None:
+            demand_payload = {"source": demand_source_used,
+                              "json_str": export_demand_json(base_vehicles, source=demand_source_used)}
+        else:
+            demand_payload = {"source": "generated", "generator": {
+                "total_vehicles": int(n_vehicles),
+                "sim_duration": env_params["sim_duration"],
+                "duration_min": env_params["duration_min"],
+                "duration_max": env_params["duration_max"],
+                "peak_ratio": env_params["peak_ratio"],
+                "error_ratio": env_params["error_ratio"]}}
+        payload = {
+            "layout": layout_payload,
+            "demand": demand_payload,
+            "strategy": {"name": strategy_name, "params": strat_params},
+            "engine": {"wait_policy": wait_policy,
+                       "car_speed": env_params["car_speed"],
+                       "max_wait_time": env_params["max_wait_time"],
+                       "seed": int(seed), "n_runs": int(n_runs),
+                       "random_reps": int(random_reps),
+                       "budget": float(STRATEGY_TIME_BUDGET)},
+        }
+        res = auth_create_compute_task(token, _json_safe(payload))
+        if not (isinstance(res, dict) and res.get("success")):
+            st.error(f"❌ 下发本地计算任务失败：{(res or {}).get('error', '未知错误')}\n\n"
+                     "请确认：① Supabase 已执行 migrations/07_compute_tasks.sql；"
+                     "② 本机 worker 正在运行 `py local_worker.py`。")
+            st.stop()
+        task_id = res["task_id"]
+        st.session_state.local_task_id = task_id
+        status_box = st.empty()
+        for i in range(60):
+            time.sleep(2)
+            stt = auth_get_compute_task(token, task_id)
+            if not (isinstance(stt, dict) and stt.get("success")):
+                status_box.info(f"⏳ 任务已下发（{str(task_id)[:8]}…），等待本机 worker 领取…")
+                continue
+            s = stt.get("status")
+            if s == "pending":
+                status_box.info(f"⏳ 任务排队中，等待本机 worker 领取（已等 {(i + 1) * 2}s）…")
+            elif s == "running":
+                status_box.info(f"⚙️ 本机 worker 正在计算（已等 {(i + 1) * 2}s）…")
+            elif s == "done":
+                status_box.success("✅ 本机计算完成，正在载入结果…")
+                _apply_local_result(stt.get("result") or {})
+                return
+            elif s == "failed":
+                status_box.error(f"❌ 本机计算失败：{stt.get('error')}")
+                st.stop()
+        status_box.warning("任务仍在计算中。稍后回到本页点「🔄 检查本地计算结果」查看。")
+        st.rerun()
+
+    if compute_mode == "local":
+        st.info("💻 **本地计算模式**：请在本机项目目录运行 `py local_worker.py` 保持 worker 在线。\n"
+                "点「运行仿真」会把任务下发到本机，计算完成后自动载入结果。")
+        if st.session_state.get("local_task_id"):
+            c_refresh, c_hint = st.columns([1, 3])
+            with c_refresh:
+                if st.button("🔄 检查本地计算结果", use_container_width=True):
+                    _check_local_task_once()
+            with c_hint:
+                st.caption(f"最近任务：{st.session_state.local_task_id}")
+
+    # 公网云端资源受限，大参数提前提示（本地 Windows 桌面不提示）
+    if (not is_local_desktop() and compute_mode == "cloud"
+            and (n_vehicles >= 500 or n_spots >= 200)):
+        st.info("🌐 当前在**公网云端**运行：车辆/车位较多时容易内存不足或超时。\n"
+                "可切换到上面的「💻 本地计算」，并在本机运行 `py local_worker.py`。")
+
+    run_label = "▶️ 下发本地计算任务" if compute_mode == "local" else "▶️ 运行仿真"
+    if st.button(run_label, type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):
+        if compute_mode == "local":
+            _submit_local_task_and_wait()
+            st.stop()
         with st.spinner("仿真运行中..."):
             net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
             pe = PathEngine(net)
@@ -344,15 +527,6 @@ def render_settings(role):
                                  exit_ids=pe.exit_ids)
             eng_kwargs = dict(car_speed=env_params["car_speed"],
                               max_wait_time=env_params["max_wait_time"])
-
-            # 需求来源：导入序列（所有 run/策略复用同一批，保证公平）或按种子生成
-            base_vehicles = list(imported_vehicles) if imported_vehicles else None
-            if base_vehicles is not None:
-                demand_source_used = ("real_gate"
-                                      if (imported_meta or {}).get("source") == "real_gate"
-                                      else "imported")
-            else:
-                demand_source_used = "generated"
             sim_vehicles_candidate = None
 
             # random 策略用独立的重复次数（≥100），其余策略用「仿真次数」滑杆

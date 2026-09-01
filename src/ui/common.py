@@ -56,11 +56,21 @@ except ImportError:
     auth_delete_sim_run = _sim_runs_unavailable
     auth_log_action = _sim_runs_unavailable
 
+try:
+    from auth import create_compute_task as auth_create_compute_task
+    from auth import get_compute_task as auth_get_compute_task
+except ImportError:
+    def _compute_tasks_unavailable(*_a, **_k):
+        return {"success": False, "error": "本地计算任务功能未加载：请先执行 migrations/07_compute_tasks.sql"}
+
+    auth_create_compute_task = _compute_tasks_unavailable
+    auth_get_compute_task = _compute_tasks_unavailable
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 
-from parking_opt.domain.spot import RoadNetwork, RoadNode, NodeType, Spot, SpotType
+from parking_opt.domain.spot import RoadNetwork, RoadNode, NodeType, Spot, SpotType, Vehicle
 from parking_opt.routing.path_engine import PathEngine
 from parking_opt.simulation.parking_lot import ParkingLot
 from parking_opt.simulation.engine import SimulationEngine
@@ -993,6 +1003,77 @@ def persist_last_params(strategy_name: str, params: dict):
         pass
 
 
+# 计算位置偏好：cloud = 云端 CPU；local = 本机 worker（云 UI + 本地算力）
+COMPUTE_MODE_PREF_KEY = "compute_mode_v1"
+COMPUTE_MODE_CLOUD = "cloud"
+COMPUTE_MODE_LOCAL = "local"
+
+
+def load_compute_mode():
+    """登录/恢复会话后，从 Supabase 读取计算位置偏好（cloud / local）。"""
+    mode = COMPUTE_MODE_CLOUD
+    token = st.session_state.get("token")
+    if token:
+        try:
+            val = auth_get_pref(token, COMPUTE_MODE_PREF_KEY)
+            if val == COMPUTE_MODE_LOCAL:
+                mode = COMPUTE_MODE_LOCAL
+        except Exception:
+            pass
+    st.session_state.compute_mode = mode
+
+
+def persist_compute_mode(mode: str):
+    """保存计算位置偏好（内存 + Supabase 用户偏好）。"""
+    mode = COMPUTE_MODE_LOCAL if mode == COMPUTE_MODE_LOCAL else COMPUTE_MODE_CLOUD
+    st.session_state.compute_mode = mode
+    token = st.session_state.get("token")
+    if not token:
+        return
+    try:
+        auth_set_pref(token, COMPUTE_MODE_PREF_KEY, mode)
+    except Exception:
+        pass
+
+
+def _vehicle_to_dict(v) -> dict:
+    """Vehicle → 可 JSON 序列化的 dict（本地计算任务回传用）。"""
+    return {
+        "vehicle_id": v.vehicle_id,
+        "arrival_time": float(getattr(v, "arrival_time", 0.0) or 0.0),
+        "parking_duration": float(getattr(v, "parking_duration", 0.0) or 0.0),
+        "estimated_duration": float(getattr(v, "estimated_duration", 0.0) or 0.0),
+        "assigned_spot": getattr(v, "assigned_spot", None),
+        "rejected": bool(getattr(v, "rejected", False)),
+        "wait_start": getattr(v, "wait_start", None),
+        "wait_end": getattr(v, "wait_end", None),
+        "entry_id": getattr(v, "entry_id", None),
+        "exit_id": getattr(v, "exit_id", None),
+    }
+
+
+def vehicles_from_dicts(items) -> list:
+    """dict 列表 → Vehicle 列表（本地计算结果载入云端界面用）。"""
+    out = []
+    for d in items or []:
+        if not isinstance(d, dict):
+            continue
+        out.append(Vehicle(
+            vehicle_id=d.get("vehicle_id", ""),
+            arrival_time=float(d.get("arrival_time", 0.0) or 0.0),
+            parking_duration=float(d.get("parking_duration", 0.0) or 0.0),
+            estimated_duration=float(d.get("estimated_duration",
+                                          d.get("parking_duration", 0.0) or 0.0)),
+            assigned_spot=d.get("assigned_spot"),
+            rejected=bool(d.get("rejected", False)),
+            wait_start=d.get("wait_start"),
+            wait_end=d.get("wait_end"),
+            entry_id=d.get("entry_id"),
+            exit_id=d.get("exit_id"),
+        ))
+    return out
+
+
 def _json_safe(obj):
     """把参数/指标转成 JSON 原生类型（防 numpy/日期等脏类型导致 Supabase 写入失败）。"""
     if isinstance(obj, dict):
@@ -1205,6 +1286,7 @@ def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.token = None
+        st.session_state.compute_mode = COMPUTE_MODE_CLOUD
     if not st.session_state.logged_in and not st.session_state.token:
         restored = restore_session()
         if restored:
@@ -1216,6 +1298,7 @@ def check_login():
             _load_run_history()
             _load_last_params()
             restore_custom_layouts()
+            load_compute_mode()
     if "login_fails" not in st.session_state:
         st.session_state.login_fails = 0
         st.session_state.login_blocked_until = 0.0
@@ -1246,6 +1329,7 @@ def check_login():
                         _load_run_history()
                         _load_last_params()
                         restore_custom_layouts()
+                        load_compute_mode()
                         st.rerun()
                     else:
                         st.session_state.login_fails += 1
