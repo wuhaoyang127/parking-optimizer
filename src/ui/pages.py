@@ -320,6 +320,12 @@ def render_settings(role):
                 except Exception:
                     pass
 
+    # 公网云端资源受限，大参数提前提示改本地运行（本地 Windows 桌面不提示）
+    if not is_local_desktop() and (n_vehicles >= 500 or n_spots >= 200):
+        st.info("🌐 当前在**公网云端**运行：车辆/车位较多时容易内存不足或超时。\n"
+                "大参数建议**本地计算**：在项目目录执行 `py -m streamlit run app.py`，"
+                "同一套界面与 Supabase 数据，只是计算在本机完成。")
+
     if st.button("▶️ 运行仿真", type="primary", use_container_width=True,
                  disabled=not role["can_run_simulation"]):
         with st.spinner("仿真运行中..."):
@@ -356,6 +362,7 @@ def render_settings(role):
             if strategy_name == "compare_all":
                 all_m = []
                 timed_out_strategies = []
+                failed_strategies = []
                 main_events_raw = None
                 events_by_strategy = {}
                 vehicles_by_strategy = {}
@@ -368,12 +375,18 @@ def render_settings(role):
                                   text=f"运行策略 {i + 1}/{total}：{cls.label}（{runs_for_this} 次取平均，超过 {int(STRATEGY_TIME_BUDGET)} 秒仅标记）")
                     seed_metrics = []
                     strategy_timed_out = False
+                    strategy_error = None
                     for r in range(runs_for_this):
                         s = seed + r
                         vehs = (list(base_vehicles) if base_vehicles is not None
                                 else generate_demand(seed=s, **demand_kwargs))
                         t_seed = time.time()
-                        m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
+                        try:
+                            m, ev, _ = run_single(net, spots, vehs, cls(), s, wait_policy, **eng_kwargs)
+                        except Exception as e:
+                            # 单个策略崩溃不拖垮整个对比（公网云端大参数易 OOM）
+                            strategy_error = f"{type(e).__name__}: {e}"
+                            break
                         # 60 秒仅作标记：超时种子结果仍保留、全部展示，可在指标页选择隐藏
                         if time.time() - t_seed > STRATEGY_TIME_BUDGET:
                             strategy_timed_out = True
@@ -389,12 +402,17 @@ def render_settings(role):
                             if nm == "duration_greedy":
                                 main_events_raw = ev_raw
                                 sim_vehicles_candidate = list(vehs)
+                    if strategy_error:
+                        failed_strategies.append((nm, strategy_error))
                     if strategy_timed_out:
                         timed_out_strategies.append(nm)
-                    all_m.append(_avg_metrics(seed_metrics))
+                    # 有已完成种子就取平均参与对比；全部种子失败则该策略无数据
+                    if seed_metrics:
+                        all_m.append(_avg_metrics(seed_metrics))
                 prog.empty()
                 st.session_state.sim_all_metrics = all_m
                 st.session_state.sim_timed_out_strategies = timed_out_strategies
+                st.session_state.sim_failed_strategies = failed_strategies
                 st.session_state.sim_metrics = next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
                 # 主方法若首种子超时没有事件日志，回退到第一个成功策略的事件
                 # （动态路径页依赖 sim_events_raw，不能为 None）
@@ -416,7 +434,14 @@ def render_settings(role):
                     # 每次新建策略实例（避免有状态策略跨 run 污染）
                     strategy = StrategyRegistry.create(strategy_name, **strat_params)
                     t_seed = time.time()
-                    m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
+                    try:
+                        m, ev, _ = run_single(net, spots, vehs, strategy, s, wait_policy, **eng_kwargs)
+                    except Exception as e:
+                        st.error(f"❌ 仿真运行失败：{type(e).__name__}: {e}")
+                        if not is_local_desktop():
+                            st.info("当前运行在公网云端（资源受限），车辆/车位较多时容易内存不足。\n"
+                                    "建议大参数改在本地运行：`py -m streamlit run app.py`（本机计算，云端只存数据）。")
+                        st.stop()
                     # 60 秒仅作标记：超时种子结果仍保留、全部展示
                     if time.time() - t_seed > STRATEGY_TIME_BUDGET:
                         strategy_timed_out = True
@@ -429,6 +454,7 @@ def render_settings(role):
                 avg_m = _avg_metrics(seed_metrics)
                 st.session_state.sim_metrics = avg_m
                 st.session_state.sim_timed_out_strategies = [strategy_name] if strategy_timed_out else []
+                st.session_state.sim_failed_strategies = []
                 st.session_state.sim_events_raw = events_raw
                 st.session_state.sim_all_metrics = None
                 st.session_state.sim_events_by_strategy = {strategy_name: events_raw}
@@ -1136,6 +1162,15 @@ def render_metrics_page(role):
             hide_timed_out = st.checkbox(
                 "隐藏超时策略", value=False,
                 help="勾选后，含超时种子的策略不参与排名、表格与图表展示")
+
+    # 运行失败策略（单个策略崩溃不拖垮全部对比）
+    failed = st.session_state.get("sim_failed_strategies") or []
+    if failed:
+        names = "、".join(f"{STRATEGY_LABELS.get(n, n)}（{err}）" for n, err in failed)
+        st.error(f"⚠️ 以下策略运行失败、未参与对比：{names}")
+        if not is_local_desktop():
+            st.info("公网云端资源受限（内存/CPU），大参数容易失败。\n"
+                    "建议改在本地运行：`py -m streamlit run app.py`（本机计算，云端只存数据）。")
 
     # 排名设置展示：与仿真设置页一致（权重 / 优先级）
     rank_mode = st.session_state.get("rank_mode", "加权评分")
