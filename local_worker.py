@@ -83,9 +83,12 @@ def _read_secret(key: str) -> str:
     val = os.environ.get(key)
     if val:
         return val
-    toml_path = ROOT / ".streamlit" / "secrets.toml"
+    # 操作员本地计算包：与 local_worker.py 同级的 worker_config.toml
+    cfg_path = ROOT / "worker_config.toml"
+    if not cfg_path.exists():
+        cfg_path = ROOT / ".streamlit" / "secrets.toml"
     try:
-        text = toml_path.read_text(encoding="utf-8")
+        text = cfg_path.read_text(encoding="utf-8")
         m = re.search(rf'^{key}\s*=\s*"([^"]+)"\s*$', text, re.M)
         if m:
             return m.group(1)
@@ -94,23 +97,57 @@ def _read_secret(key: str) -> str:
     return ""
 
 
-def _read_credentials(username: str, password: str):
-    if not username or not password:
-        cred_path = ROOT / "credentials.local.txt"
-        try:
-            text = cred_path.read_text(encoding="utf-8")
-            for line in text.splitlines():
-                line = line.strip()
-                if line.startswith("#") or ":" not in line:
-                    continue
-                k, v = line.split(":", 1)
-                if k.strip() == "username":
-                    username = v.strip()
-                elif k.strip() == "password":
-                    password = v.strip()
-        except Exception:
-            pass
+def _load_cached_credentials():
+    """读取本地缓存的 worker 登录凭据（交互登录成功后写入）。"""
+    p = ROOT / "worker_credentials.json"
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+        return str(data.get("username", "") or ""), str(data.get("password", "") or "")
+    except Exception:
+        return "", ""
+
+
+def _save_cached_credentials(username: str, password: str):
+    """交互登录成功后缓存凭据，下次免输入。"""
+    try:
+        (ROOT / "worker_credentials.json").write_text(
+            json.dumps({"username": username, "password": password}, ensure_ascii=False),
+            encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _prompt_credentials():
+    """交互式询问账号密码（双击启动无命令行参数时）。"""
+    print("首次使用：请输入你在停车场 App 里的账号密码（操作员/管理员均可）。")
+    username = input("用户名：").strip()
+    password = input("密码：").strip()
     return username, password
+
+
+def _read_credentials(username: str, password: str):
+    if username and password:
+        return username, password
+    cred_path = ROOT / "credentials.local.txt"
+    try:
+        text = cred_path.read_text(encoding="utf-8")
+        for line in text.splitlines():
+            line = line.strip()
+            if line.startswith("#") or ":" not in line:
+                continue
+            k, v = line.split(":", 1)
+            if k.strip() == "username":
+                username = v.strip()
+            elif k.strip() == "password":
+                password = v.strip()
+    except Exception:
+        pass
+    if username and password:
+        return username, password
+    username, password = _load_cached_credentials()
+    if username and password:
+        return username, password
+    return _prompt_credentials()
 
 
 # ---------- 本地计算 ----------
@@ -133,9 +170,9 @@ def _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs):
 
 def run_local_task(payload: dict) -> dict:
     """按任务参数在本机执行仿真，返回可 JSON 序列化的结果 dict。"""
-    from ui.common import (LAYOUT_BUILDERS, BUILTIN_LAYOUT_KEYS,
-                           build_layout_from_json, run_single, _avg_metrics,
-                           _vehicle_to_dict)
+    from local_compute import (LAYOUT_BUILDERS, BUILTIN_LAYOUT_KEYS,
+                               build_layout_from_json, run_single,
+                               _avg_metrics, _vehicle_to_dict)
     from parking_opt.routing.path_engine import PathEngine
     from parking_opt.simulation.arrival import generate_demand
     from parking_opt.io.demand_io import parse_demand_json
@@ -309,6 +346,7 @@ def main():
     token = login()
     if not token:
         sys.exit(1)
+    _save_cached_credentials(username, password)
     print(f"[✓] 登录成功（{username}，worker 独立登录态）。等待云端下发本地计算任务…（Ctrl+C 退出）")
 
     while True:

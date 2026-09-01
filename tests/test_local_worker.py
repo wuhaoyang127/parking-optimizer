@@ -80,3 +80,18 @@ def test_supabase_client_rpc_retries_transient_then_succeeds(monkeypatch):
     res = holder.rpc("claim_compute_task", {"p_token": "t"})
     assert res.data == {"success": True}
     assert calls == ["claim_compute_task", "claim_compute_task"]
+
+
+def test_worker_cached_credentials_roundtrip(monkeypatch, tmp_path):
+    """交互登录成功后凭据缓存到 worker_credentials.json，下次免输入。"""
+    monkeypatch.setattr(local_worker, "ROOT", tmp_path)
+    assert local_worker._load_cached_credentials() == ("", "")
+    local_worker._save_cached_credentials("op1", "pw1")
+    assert local_worker._load_cached_credentials() == ("op1", "pw1")
+
+
+def test_local_compute_has_no_ui_deps():
+    """操作员包只需精简依赖：local_compute 不得 import Streamlit/Pandas/Plotly。"""
+    src = (ROOT / "src" / "local_compute.py").read_text(encoding="utf-8")
+    for bad in ("streamlit", "pandas", "plotly"):
+        assert bad not in src

@@ -34,6 +34,78 @@ def _worker_bat(kind: str) -> str:
         "pause\r\n"
     )
 
+
+# 操作员本地计算包（zip）内嵌文件内容：精简依赖 + 双击启动脚本
+WORKER_REQUIREMENTS_TXT = (
+    "# 停车场 App 本机计算 worker 精简依赖（无需 Streamlit/Pandas/Plotly）\n"
+    "supabase>=2.0.0\n"
+    "httpx>=0.27.0\n"
+    "networkx>=3.0\n"
+    "simpy>=4.0\n"
+    "ortools>=9.7\n"
+)
+
+
+def _worker_operator_bat() -> str:
+    """操作员包内的启动脚本：检测 Python → 首次安装精简依赖 → 启动 worker。"""
+    return (
+        "@echo off\r\n"
+        "chcp 65001 >nul\r\n"
+        "title 停车场 App 本机计算 worker（操作员）\r\n"
+        "cd /d %~dp0\r\n"
+        "where py >nul 2>nul\r\n"
+        "if errorlevel 1 (\r\n"
+        "  echo [错误] 未检测到 Python。请先到 https://www.python.org/downloads/ 安装，\r\n"
+        "  echo        安装时务必勾选 \"Add python.exe to PATH\"。\r\n"
+        "  pause\r\n"
+        "  exit /b 1\r\n"
+        ")\r\n"
+        "if not exist \".deps_installed\" (\r\n"
+        "  echo 首次运行：正在安装精简依赖（supabase/networkx/simpy/ortools），请稍候...\r\n"
+        "  py -m pip install -r requirements_worker.txt\r\n"
+        "  if errorlevel 1 (\r\n"
+        "    echo [错误] 依赖安装失败，请检查网络后重试。\r\n"
+        "    pause\r\n"
+        "    exit /b 1\r\n"
+        "  )\r\n"
+        "  echo ok> .deps_installed\r\n"
+        ")\r\n"
+        "echo 正在启动本机计算 worker（保持本窗口开启，用完可关闭）...\r\n"
+        "py local_worker.py --poll 1\r\n"
+        "pause\r\n"
+    )
+
+
+def _worker_package_bytes(supabase_url: str = "", supabase_anon_key: str = "") -> bytes:
+    """生成「操作员本地计算包」zip：worker 代码 + 核心算法包 + 精简依赖 + 启动脚本 + 配置。
+
+    supabase_url / supabase_anon_key 缺省时从 auth 模块（st.secrets/环境变量）读取。
+    """
+    import io
+    import zipfile
+    import auth as auth_mod
+
+    sb_url = supabase_url or auth_mod.SUPABASE_URL
+    sb_key = supabase_anon_key or auth_mod.SUPABASE_ANON_KEY
+    if not sb_url or not sb_key:
+        raise RuntimeError("Supabase 未配置，无法生成操作员本地计算包")
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("local_worker.py",
+                    (PROJECT_ROOT / "local_worker.py").read_text(encoding="utf-8"))
+        zf.writestr("src/local_compute.py",
+                    (PROJECT_ROOT / "src" / "local_compute.py").read_text(encoding="utf-8"))
+        pkg = PROJECT_ROOT / "src" / "parking_opt"
+        for p in sorted(pkg.rglob("*.py")):
+            arc = str(p.relative_to(PROJECT_ROOT)).replace("\\", "/")
+            zf.writestr(arc, p.read_text(encoding="utf-8"))
+        zf.writestr("requirements_worker.txt", WORKER_REQUIREMENTS_TXT)
+        zf.writestr("start_local_worker.bat", _worker_operator_bat())
+        zf.writestr("worker_config.toml",
+                    f'SUPABASE_URL = "{sb_url}"\nSUPABASE_ANON_KEY = "{sb_key}"\n')
+    return buf.getvalue()
+
 def render_settings(role):
     """页面1: 仿真设置"""
     ensure_custom_layouts_loaded()
@@ -590,7 +662,7 @@ def render_settings(role):
         st.info("💻 **本地计算模式**：云端界面 + 本机 CPU。\n\n"
                 "① 首次使用：下载下方「一键启动脚本」，保存到项目根目录（和 `local_worker.py` 同级）后双击运行；\n"
                 "② 然后点「▶️ 下发本地计算任务」，本机算完后结果自动载入。")
-        c_dl1, c_dl2 = st.columns(2)
+        c_dl1, c_dl2, c_dl3 = st.columns(3)
         with c_dl1:
             st.download_button(
                 "📥 下载 worker 一键启动脚本",
@@ -607,6 +679,20 @@ def render_settings(role):
                 mime="application/octet-stream",
                 use_container_width=True,
                 help="保存到项目根目录双击一次：注册 Windows 登录自启，以后每次开机自动运行 worker，无需再手动打开")
+        with c_dl3:
+            try:
+                pkg_bytes = _worker_package_bytes()
+                st.download_button(
+                    "📦 下载操作员本地计算包（zip）",
+                    data=pkg_bytes,
+                    file_name="parking_worker_operator.zip",
+                    mime="application/zip",
+                    use_container_width=True,
+                    help="给其他操作员/同事的电脑用：解压后双击 start_local_worker.bat，"
+                         "首次运行自动装精简依赖并输入自己的账号密码，之后即可本地计算")
+            except Exception as exc:
+                st.button("📦 操作员包（暂不可用）", use_container_width=True,
+                          disabled=True, help=f"生成失败：{exc}")
         c_refresh, c_load = st.columns(2)
         with c_refresh:
             if st.button("🔄 检查本地计算结果", use_container_width=True,

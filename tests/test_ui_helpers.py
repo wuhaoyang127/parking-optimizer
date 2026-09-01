@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from ui.pages import _vehicle_sort_key, _worker_bat  # noqa: E402
+from ui.pages import _worker_operator_bat, _worker_package_bytes  # noqa: E402
 from ui.common import build_local_task_context  # noqa: E402
 
 
@@ -122,3 +123,28 @@ def test_build_local_task_context_imported_demand():
     assert ctx["base_vehicles"] is not None
     assert ctx["n_vehicles"] == 5
     assert ctx["imported_meta"]
+
+
+def test_worker_operator_bat_installs_deps_and_runs():
+    """操作员启动脚本：检测 Python → 安装精简依赖 → 启动 worker。"""
+    bat = _worker_operator_bat()
+    assert "where py" in bat
+    assert "py -m pip install -r requirements_worker.txt" in bat
+    assert "py local_worker.py --poll 1" in bat
+
+
+def test_worker_package_zip_contains_operator_kit():
+    """操作员本地计算包：含 worker/核心算法/精简依赖/启动脚本/连接配置。"""
+    from io import BytesIO
+    from zipfile import ZipFile
+    data = _worker_package_bytes("https://example.supabase.co", "anon-key")
+    zf = ZipFile(BytesIO(data))
+    names = set(zf.namelist())
+    for need in ("local_worker.py", "src/local_compute.py",
+                 "requirements_worker.txt", "start_local_worker.bat",
+                 "worker_config.toml"):
+        assert need in names
+    assert any(n.startswith("src/parking_opt/") and n.endswith(".py") for n in names)
+    cfg = zf.read("worker_config.toml").decode("utf-8")
+    assert 'SUPABASE_URL = "https://example.supabase.co"' in cfg
+    assert 'SUPABASE_ANON_KEY = "anon-key"' in cfg

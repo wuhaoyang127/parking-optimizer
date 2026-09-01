@@ -60,3 +60,5 @@ temp/
 # 本地计算 worker 启动脚本（公网网页下载到项目根目录，本机使用不入库）
 start_local_worker.bat
 install_local_worker_autostart.bat
+# worker 交互登录后缓存的本地凭据（本机使用不入库）
+worker_credentials.json
