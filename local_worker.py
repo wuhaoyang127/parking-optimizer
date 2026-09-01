@@ -375,10 +375,15 @@ def main():
             t0 = time.time()
             try:
                 result = run_local_task(payload)
-                sb.rpc("complete_compute_task", {
+                done_res = sb.rpc("complete_compute_task", {
                     "p_token": token, "p_task_id": task_id, "p_status": "done",
                     "p_result": result, "p_error": None})
-                print(f"[✓] 任务 {task_id} 完成（耗时 {time.time() - t0:.1f}s）")
+                ddata = getattr(done_res, "data", done_res)
+                if isinstance(ddata, dict) and not ddata.get("success"):
+                    print(f"[·] 任务 {task_id} 已被网页端删除或无法回写（{ddata}），"
+                          f"丢弃本次结果。")
+                else:
+                    print(f"[✓] 任务 {task_id} 完成（耗时 {time.time() - t0:.1f}s）")
             except Exception as e:
                 err = f"{type(e).__name__}: {e}"
                 try:

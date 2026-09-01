@@ -68,6 +68,7 @@ try:
     from auth import get_compute_task as auth_get_compute_task
     from auth import requeue_compute_task as auth_requeue_compute_task
     from auth import get_latest_compute_task as auth_get_latest_compute_task
+    from auth import delete_compute_task as auth_delete_compute_task
 except ImportError:
     def _compute_tasks_unavailable(*_a, **_k):
         return {"success": False, "error": "本地计算任务功能未加载：请先执行 migrations/07_compute_tasks.sql"}
@@ -76,6 +77,7 @@ except ImportError:
     auth_get_compute_task = _compute_tasks_unavailable
     auth_requeue_compute_task = _compute_tasks_unavailable
     auth_get_latest_compute_task = _compute_tasks_unavailable
+    auth_delete_compute_task = _compute_tasks_unavailable
 
 import streamlit as st
 import pandas as pd

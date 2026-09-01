@@ -561,6 +561,37 @@ def render_settings(role):
             st.stop()
         _apply_sim_state(task.get("result") or {}, ctx)
 
+    def _delete_local_task_with_confirm():
+        """删除本会话下发的本地计算任务（下发错了叫停用），带二次确认。"""
+        token = st.session_state.get("token")
+        task_id = st.session_state.get("local_task_id")
+        if not token or not task_id:
+            st.info("本会话没有任务 ID 可删除。请先下发任务，或点「📂 载入最近一次结果」找回后处理。")
+            return
+        if st.session_state.get("confirm_delete_task"):
+            c_yes, c_no = st.columns(2)
+            with c_yes:
+                if st.button("⚠️ 确认删除该任务", use_container_width=True):
+                    res = auth_delete_compute_task(token, task_id)
+                    if isinstance(res, dict) and res.get("success"):
+                        st.session_state.pop("local_task_id", None)
+                        st.session_state.pop("local_task_notice", None)
+                        st.session_state.pop("confirm_delete_task", None)
+                        st.success("🗑 任务已删除。若本机 worker 正在计算，回传时会自动丢弃结果。")
+                        st.rerun()
+                    else:
+                        st.error(f"❌ 删除失败：{(res or {}).get('error', '未知错误')}")
+            with c_no:
+                if st.button("取消", use_container_width=True):
+                    st.session_state.pop("confirm_delete_task", None)
+                    st.rerun()
+        else:
+            if st.button("🗑 删除该任务", use_container_width=True,
+                         help="下发错了想叫停：删除本会话任务（排队/计算中/已完成均可删）；"
+                              "worker 若正在计算，回传时自动丢弃结果"):
+                st.session_state.confirm_delete_task = True
+                st.rerun()
+
     def _check_local_task_once():
         token = st.session_state.get("token")
         task_id = st.session_state.get("local_task_id")
@@ -654,14 +685,19 @@ def render_settings(role):
         st.session_state.local_task_notice = (
             "⏳ 已等待 120 秒，任务仍在计算中。稍后点上方「🔄 检查本地计算结果」查看；"
             "若本机 worker 已关闭，请先双击 `start_local_worker.bat` 启动，"
-            "再用「♻️ 重新排队该任务」恢复。")
+            "再用「♻️ 重新排队该任务」恢复。\n\n"
+            "**下发错了想叫停？** 刷新页面（F5）回到本页后，点「🗑 删除该任务」即可删除；"
+            "worker 若正在计算，回传时会自动丢弃结果。")
         status_box.warning(st.session_state.local_task_notice)
         st.stop()
 
     if compute_mode == "local":
         st.info("💻 **本地计算模式**：云端界面 + 本机 CPU。\n\n"
-                "① 首次使用：下载下方「一键启动脚本」，保存到项目根目录（和 `local_worker.py` 同级）后双击运行；\n"
-                "② 然后点「▶️ 下发本地计算任务」，本机算完后结果自动载入。")
+                "**本机就是项目电脑（管理员）**：下载「📥 一键启动脚本」放到项目根目录双击运行；\n\n"
+                "**操作员/同事自己的电脑**：直接下载「📦 操作员本地计算包（zip）」→ 解压到任意文件夹 → "
+                "双击 `start_local_worker.bat`（首次自动装精简依赖，输入自己的账号密码）；\n\n"
+                "然后点「▶️ 下发本地计算任务」，本机算完后结果自动载入。"
+                "**下发错了？** 刷新页面后点「🗑 删除该任务」即可叫停。")
         c_dl1, c_dl2, c_dl3 = st.columns(3)
         with c_dl1:
             st.download_button(
@@ -693,7 +729,7 @@ def render_settings(role):
             except Exception as exc:
                 st.button("📦 操作员包（暂不可用）", use_container_width=True,
                           disabled=True, help=f"生成失败：{exc}")
-        c_refresh, c_load = st.columns(2)
+        c_refresh, c_load, c_delete = st.columns(3)
         with c_refresh:
             if st.button("🔄 检查本地计算结果", use_container_width=True,
                          help="按本会话下发的任务 ID 查询状态（任务跑完自动载入）"):
@@ -703,6 +739,8 @@ def render_settings(role):
                          help="从 Supabase 拉取该用户最近一次已完成的本地计算任务并载入；"
                               "刷新页面、重开浏览器或换电脑后也能找回结果"):
                 _load_latest_local_task()
+        with c_delete:
+            _delete_local_task_with_confirm()
         if st.session_state.get("local_task_id"):
             st.caption(f"最近任务：{st.session_state.local_task_id}")
         else:
