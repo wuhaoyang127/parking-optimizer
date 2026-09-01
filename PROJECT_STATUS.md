@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 46
+status_version: 47
 last_updated: 2026-09-01
 current_stage: D
 stage_status: in_progress
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：新增「本地计算」能力（云 UI + 本机 worker + Supabase 任务队列）：仿真设置页可切换「💻 本地计算」，本机运行 `py local_worker.py` 领取任务、本地 CPU 计算、结果回传云端界面；**需先在 Supabase SQL Editor 执行 `migrations/07_compute_tasks.sql`（一次性）**。121 项测试与启动包自检通过、worker 小任务端到端验证通过；待用户执行迁移后验收。
+- **当前唯一下一步**：`migrations/07_compute_tasks.sql` 已直连 Supabase 执行（compute_tasks 表 + 4 个任务 RPC 验证通过）；下一步在公网 app 重建后验收「💻 本地计算」全链路：本机 `py local_worker.py` + 仿真设置切本地计算 → 下发任务 → 自动载入结果。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -140,7 +140,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 103 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -208,7 +208,8 @@ superseded
 
 ## 13. 最近重要变更
 
-- 2026-09-01：**新增「本地计算」能力（云 UI + 本机 worker + Supabase 任务队列）**（用户需求：点一下切换为本地 CPU 计算，云端的程序、本地的算力）：①新增 `migrations/07_compute_tasks.sql`（`compute_tasks` 表 + create/claim/complete/get 四个 SECURITY DEFINER RPC，均带 search_path 加固，**需在 Supabase SQL Editor 执行一次**）；②`src/auth.py` 增加 4 个任务 RPC 封装；③`src/ui/common.py` 增加计算位置偏好 `compute_mode_v1`（cloud/local，登录/恢复会话自动加载）、`_vehicle_to_dict`/`vehicles_from_dicts` 序列化助手；④新增 `local_worker.py`（本机运行，登录后轮询领任务、用本机 CPU 跑 `run_local_task`、结果回传）；⑤仿真设置页新增「计算位置」切换（☁️ 云端 / 💻 本地），本地模式下「运行仿真」改为下发任务并轮询状态（最多 2 分钟），完成后自动载入结果并跳指标页，另有「🔄 检查本地计算结果」按钮；worker 端到端小任务验证通过（compare_all 9 策略、main_events 120 条、cpsat_rate=1.0）。pytest 121 passed、启动包自检通过；打 tag `backup-before-local-worker-20260901`；状态文档 status_version 45 → 46；待用户执行迁移后验收；
+- 2026-09-01：**执行 07 迁移**：`migrations/07_compute_tasks.sql` 已通过 Session pooler 直连 Supabase 执行，验证 `compute_tasks` 表存在、4 个任务 RPC（create/claim/complete/get）创建成功；`credentials.db.txt` 已就位（gitignore 覆盖，注意密码字段勿保留方括号）。打 tag `backup-before-migration07-executed-20260901`；状态文档 status_version 46 → 47；下一步验收本地计算全链路；
+- 2026-09-01：**新增「本地计算」能力（云 UI + 本机 worker + Supabase 任务队列）**（用户需求：点一下切换为本地 CPU 计算，云端的程序、本地的算力）：①新增 `migrations/07_compute_tasks.sql`（`compute_tasks` 表 + create/claim/complete/get 四个 SECURITY DEFINER RPC，均带 search_path 加固）；②`src/auth.py` 增加 4 个任务 RPC 封装；③`src/ui/common.py` 增加计算位置偏好 `compute_mode_v1`（cloud/local，登录/恢复会话自动加载）、`_vehicle_to_dict`/`vehicles_from_dicts` 序列化助手；④新增 `local_worker.py`（本机运行，登录后轮询领任务、用本机 CPU 跑 `run_local_task`、结果回传）；⑤仿真设置页新增「计算位置」切换（☁️ 云端 / 💻 本地），本地模式下「运行仿真」改为下发任务并轮询状态（最多 2 分钟），完成后自动载入结果并跳指标页，另有「🔄 检查本地计算结果」按钮；worker 端到端小任务验证通过（compare_all 9 策略、main_events 120 条、cpsat_rate=1.0）。pytest 121 passed、启动包自检通过；打 tag `backup-before-local-worker-20260901`；状态文档 status_version 45 → 46；待用户执行迁移后验收；
 - 2026-09-01：**公网云端大参数崩溃兜底**（用户反馈数目一大网站就崩溃，想要「本地计算」方案）：①全部对比每个种子的 `run_single` 加 try/except——单个策略崩溃（OOM/异常）记入 `sim_failed_strategies` 并跳过，其余策略照常对比；②单策略模式失败时显示友好错误 + 云端环境提示改本地运行，不再白屏崩溃；③指标分析页展示「运行失败策略」错误列表；④仿真设置页在公网云端（非本地桌面）且车辆 ≥500 或车位 ≥200 时提前提示「大参数建议本地计算 `py -m streamlit run app.py`（本机计算，云端只存数据）」。pytest 121 passed、启动包自检通过；打 tag `backup-before-cloud-crash-guard-20260901`；状态文档 status_version 44 → 45；待用户在公网 app 验收；
 - 2026-09-01：**用户验收通过**布局恢复修复（提交 `e00648f`，公网 app 确认「现在有布局了」）；验收 tag `backup-before-layout-restore-accept-20260901`；状态文档 status_version 43 → 44；阶段 D 继续，等待下一项优化需求；
 - 2026-09-01：**修复导入布局「不持久」**（用户反馈每次都要重新导入）：诊断确认布局 JSON 已正确存在 Supabase `custom_layouts_v1`（海仑宾馆停车场 27 车位、恒基地下停车库 152 车位，均可被当前代码重建），但 `restore_custom_layouts()` 把所有异常静默吞掉，网络抖动/限流时布局加载失败且无任何提示。修复：①恢复改为 3 次重试（0.6/1.2/1.8s 退避）；②新增 `ensure_custom_layouts_loaded()`——仿真设置/布局图/导入布局页渲染前若 `custom_layouts` 缺失且有 token 就自动重试恢复（失败后 30 秒节流，避免每个控件交互都打后端）；③恢复失败不再无声：记录 `layout_restore_error`，导入布局页显示警告 + 「🔄 重试加载云端布局」按钮；④退出登录清空相关恢复状态。pytest 121 passed、启动包自检通过、AppTest 登录与 token 恢复两路径验证布局均加载；打 tag `backup-before-layout-restore-hardening-20260901`；状态文档 status_version 42 → 43；待用户在公网 app 验收；
