@@ -26,6 +26,16 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from supabase import create_client  # noqa: E402
 
+# Windows 控制台/重定向输出可能使用 GBK（cp936），打印 ✓/✗/▶ 等符号会触发
+# UnicodeEncodeError 使 worker 直接崩溃。统一加 errors="replace" 兜底：
+# 保持当前终端编码不变（中文正常显示），无法编码的符号降级为 ?，不再崩溃。
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(errors="replace")
+        except Exception:
+            pass
+
 
 # ---------- 配置读取 ----------
 

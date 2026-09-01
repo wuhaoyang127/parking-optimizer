@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 235 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 260 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -23,7 +23,7 @@
 | 文件 | 行数 | 说明 |
 |---|---|---|
 | `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 9 个页面函数 |
-| `local_worker.py` | 299 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果 |
+| `local_worker.py` | 309 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果 |
 | `.streamlit/config.toml` | — | Streamlit 主题与服务器配置 |
 | `.streamlit/secrets.toml.example` | — | Supabase 密钥模板（复制为 secrets.toml 使用，已被 gitignore） |
 | `requirements.txt` | — | 运行依赖（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase） |
@@ -142,6 +142,7 @@
 | `test_multi_entry.py` | 多入口多出口 |
 | `test_realtime_io.py` | 真实道闸流水/车位状态解析（10 项） |
 | `test_ui_helpers.py` | UI 纯函数（车辆ID排序键等，3 项） |
+| `test_local_worker.py` | local_worker GBK 输出编码兜底（1 项） |
 
 ---
 
