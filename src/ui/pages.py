@@ -48,7 +48,11 @@ WORKER_REQUIREMENTS_TXT = (
 
 
 def _worker_operator_bat() -> str:
-    """操作员包内的启动脚本：检测 Python → 首次安装精简依赖 → 启动 worker。"""
+    """操作员包内的启动脚本：检测 Python → 首次安装精简依赖 → 启动 worker。
+
+    依赖安装优先走清华 PyPI 镜像（国内直连，无需 VPN，比官方源更稳），
+    失败后回退官方源（适合有稳定外网/代理的环境）。
+    """
     return (
         "@echo off\r\n"
         "chcp 65001 >nul\r\n"
@@ -62,12 +66,17 @@ def _worker_operator_bat() -> str:
         "  exit /b 1\r\n"
         ")\r\n"
         "if not exist \".deps_installed\" (\r\n"
-        "  echo 首次运行：正在安装精简依赖（supabase/networkx/simpy/ortools），请稍候...\r\n"
-        "  py -m pip install -r requirements_worker.txt\r\n"
+        "  echo 首次运行：正在安装精简依赖（supabase/networkx/simpy/ortools）...\r\n"
+        "  echo 优先使用清华 PyPI 镜像（国内直连更快，不需要 VPN）...\r\n"
+        "  py -m pip install -r requirements_worker.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60 --retries 5\r\n"
         "  if errorlevel 1 (\r\n"
-        "    echo [错误] 依赖安装失败，请检查网络后重试。\r\n"
-        "    pause\r\n"
-        "    exit /b 1\r\n"
+        "    echo [提示] 镜像源失败，改用官方源重试（需要稳定外网；若开 VPN，请确认 VPN 为全局/TUN 模式，pip 不走浏览器代理）...\r\n"
+        "    py -m pip install -r requirements_worker.txt --timeout 60 --retries 5\r\n"
+        "    if errorlevel 1 (\r\n"
+        "      echo [错误] 依赖安装失败。常见原因：① 网络问题，请换网络后重试；② Python 版本过新，ortools 尚未支持，建议安装 Python 3.10~3.12。\r\n"
+        "      pause\r\n"
+        "      exit /b 1\r\n"
+        "    )\r\n"
         "  )\r\n"
         "  echo ok> .deps_installed\r\n"
         ")\r\n"
@@ -108,8 +117,12 @@ def _worker_package_bytes(supabase_url: str = "", supabase_anon_key: str = "") -
     return buf.getvalue()
 
 
+# 操作员 zip 包版本号：包内容（启动脚本/依赖清单）变更时 +1，避免 st.cache_data 命中旧包
+_WORKER_PACKAGE_VERSION = "2"
+
+
 @st.cache_data(show_spinner=False, ttl=3600)
-def _cached_worker_package_bytes(sb_url: str, sb_key: str) -> bytes:
+def _cached_worker_package_bytes(sb_url: str, sb_key: str, pkg_version: str) -> bytes:
     """缓存操作员 zip 字节（同一小时内不重复读取/压缩 28 个核心文件）。"""
     return _worker_package_bytes(sb_url, sb_key)
 
@@ -123,7 +136,8 @@ def _worker_package_data_url() -> str:
     """
     import auth as auth_mod
     data = _cached_worker_package_bytes(
-        auth_mod.SUPABASE_URL or "", auth_mod.SUPABASE_ANON_KEY or "")
+        auth_mod.SUPABASE_URL or "", auth_mod.SUPABASE_ANON_KEY or "",
+        _WORKER_PACKAGE_VERSION)
     return "data:application/zip;base64," + base64.b64encode(data).decode("ascii")
 
 def render_settings(role):

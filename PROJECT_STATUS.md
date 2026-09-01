@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 59
+status_version: 60
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
@@ -217,6 +217,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-02：**操作员包依赖安装改清华镜像优先**（操作员反馈：装精简依赖报「检查网络再试」，开 VPN 也没用——pip 默认不走 VPN 的浏览器代理，命令行需单独配代理）：`_worker_operator_bat()` 改为优先 `-i https://pypi.tuna.tsinghua.edu.cn/simple`（国内直连，无需 VPN，`--timeout 60 --retries 5`），失败自动回退官方源并提示（VPN 需全局/TUN 模式；Python 版本建议 3.10~3.12）。同时 `_WORKER_PACKAGE_VERSION = "2"` 加入 zip 缓存 key，避免公网用户下载到 1 小时缓存里的旧包。pytest 139 passed；状态文档 status_version 59 → 60；待操作员重新下载 zip 验证；
 - 2026-09-02：**修复操作员包下载报错「Error: not connected to a server!」**（操作员账号点击 zip 下载时报错）：根因是 `st.download_button` 传 bytes 数据时，前端点击要向服务器请求下载地址，WebSocket 断开/闪断即报该错（前两个 bat 按钮传字符串走浏览器 data URL 所以正常）。修复：`src/ui/pages.py` 新增 `_worker_package_data_url()`——把 zip 转为 `data:application/zip;base64,...` 数据 URL，并用 `st.link_button` 下载（浏览器本地直接下载，不再依赖服务器连接）；同时 `_cached_worker_package_bytes`（st.cache_data，ttl 1h）避免每次渲染重复读文件压缩。pytest 139 passed、自检通过（170 关键文件）；状态文档 status_version 58 → 59；待用户在公网 app 验收；
 - 2026-09-02：**本地计算任务删除/叫停**（用户反馈：下发错了没法叫停删除）：①新增 `migrations/11_delete_compute_task.sql` 并已直连 Supabase 执行——`delete_compute_task` RPC（任务 owner 可删除任意状态任务）；②`src/auth.py` 增加 `delete_compute_task` 封装、`src/ui/common.py` 容错导入；③`src/ui/pages.py` 新增 `_delete_local_task_with_confirm`（二次确认），「💻 本地计算」区按钮改为三列：🔄 检查 / 📂 载入最近一次 / 🗑 删除该任务；本地计算模式说明与 120 秒轮询提示同步写明「下发错了刷新页面后点删除即可叫停」；④`local_worker.py` 回传时检查 complete 返回值——任务已被删除则打印「丢弃本次结果」，不再误报完成。已验证：create→delete→get 任务不存在全链路成功。pytest 138 passed；状态文档 status_version 57 → 58；待用户在公网 app 验收；
 - 2026-09-02：**操作员本地计算包（zip）+ worker 依赖解耦**（用户疑问：其他操作员用自己电脑能否本地计算——此前「一键启动脚本」依赖项目根目录/credentials/secrets，操作员电脑无法使用）：①新增 `src/local_compute.py` 纯函数模块（布局构建 `LAYOUT_BUILDERS`/`build_layout_from_json`、`run_single`/`_avg_metrics`、`_vehicle_to_dict`），不依赖 Streamlit/Pandas/Plotly；`src/ui/common.py` 改为从该模块 re-export（删除原实现，UI 行为不变）；②`local_worker.py` 改从 `local_compute` 导入（依赖链精简为 supabase/httpx/networkx/simpy/ortools）；③`local_worker.py` 新增操作员友好配置：`worker_config.toml`（与 worker 同级）读取 Supabase 配置、`worker_credentials.json` 交互登录缓存（首次双击输入自己账号密码，验证成功后缓存，下次免输入）；④`src/ui/pages.py` 新增 `_worker_package_bytes` 生成操作员 zip 包（local_worker.py + src/local_compute.py + src/parking_opt/ 全部 28 个 .py + requirements_worker.txt + 操作员版 start_local_worker.bat + worker_config.toml），「💻 本地计算」区新增「📦 下载操作员本地计算包（zip）」按钮。已验证：zip 内容完整、解耦后 `run_local_task` 端到端正常（13 指标/80 事件）、worker 依赖链无界面库。pytest 137 passed、自检通过（169 关键文件）；状态文档 status_version 56 → 57；待用户在公网 app 验收；

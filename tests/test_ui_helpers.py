@@ -127,10 +127,11 @@ def test_build_local_task_context_imported_demand():
 
 
 def test_worker_operator_bat_installs_deps_and_runs():
-    """操作员启动脚本：检测 Python → 安装精简依赖 → 启动 worker。"""
+    """操作员启动脚本：检测 Python → 安装精简依赖（清华镜像优先）→ 启动 worker。"""
     bat = _worker_operator_bat()
     assert "where py" in bat
     assert "py -m pip install -r requirements_worker.txt" in bat
+    assert "pypi.tuna.tsinghua.edu.cn" in bat
     assert "py local_worker.py --poll 1" in bat
 
 
