@@ -67,13 +67,17 @@ def _worker_operator_bat() -> str:
         ")\r\n"
         "if not exist \".deps_installed\" (\r\n"
         "  echo 首次运行：正在安装精简依赖（supabase/networkx/simpy/ortools）...\r\n"
+        "  py --version\r\n"
+        "  py -c \"import struct; print('Python 位数：64 位' if struct.calcsize('P')==8 else 'Python 位数：32 位（ortools 不支持 32 位，请到 python.org 重装 64 位 Python）')\"\r\n"
         "  echo 优先使用清华 PyPI 镜像（国内直连更快，不需要 VPN）...\r\n"
+        "  py -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60 --retries 5\r\n"
         "  py -m pip install -r requirements_worker.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --timeout 60 --retries 5\r\n"
         "  if errorlevel 1 (\r\n"
         "    echo [提示] 镜像源失败，改用官方源重试（需要稳定外网；若开 VPN，请确认 VPN 为全局/TUN 模式，pip 不走浏览器代理）...\r\n"
         "    py -m pip install -r requirements_worker.txt --timeout 60 --retries 5\r\n"
         "    if errorlevel 1 (\r\n"
-        "      echo [错误] 依赖安装失败。常见原因：① 网络问题，请换网络后重试；② Python 版本过新，ortools 尚未支持，建议安装 Python 3.10~3.12。\r\n"
+        "      echo [错误] 依赖安装失败。常见原因：① 32 位 Python（上方会提示，请重装 64 位）；② 网络问题，请换网络后重试；③ 公司网络限制，请用手机热点试试。\r\n"
+        "      echo 请把本窗口从「Python 位数」开始的全部内容截图/复制发管理员。\r\n"
         "      pause\r\n"
         "      exit /b 1\r\n"
         "    )\r\n"
@@ -118,7 +122,7 @@ def _worker_package_bytes(supabase_url: str = "", supabase_anon_key: str = "") -
 
 
 # 操作员 zip 包版本号：包内容（启动脚本/依赖清单）变更时 +1，避免 st.cache_data 命中旧包
-_WORKER_PACKAGE_VERSION = "2"
+_WORKER_PACKAGE_VERSION = "3"
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
