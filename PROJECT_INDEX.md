@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 272 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 273 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -23,7 +23,7 @@
 | 文件 | 行数 | 说明 |
 |---|---|---|
 | `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 9 个页面函数 |
-| `local_worker.py` | 356 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果（独立登录态 + 网络抖动自愈重试 + 算法进度打印） |
+| `local_worker.py` | 362 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果（独立登录态 + 网络抖动自愈重试 + 算法/逐次进度打印） |
 | `.streamlit/config.toml` | — | Streamlit 主题与服务器配置 |
 | `.streamlit/secrets.toml.example` | — | Supabase 密钥模板（复制为 secrets.toml 使用，已被 gitignore） |
 | `requirements.txt` | — | 运行依赖（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase） |

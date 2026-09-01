@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 54
+status_version: 55
 last_updated: 2026-09-01
 current_stage: D
 stage_status: in_progress
@@ -151,7 +151,7 @@ superseded
 | `PROJECT_INDEX.md` | 项目目录索引（按需读取导航 + 需求→文件速查表） | 有效，本轮新增 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
 | `app.py` | Streamlit 多页面 Dashboard 瘦入口（~90 行） | 有效，本轮已完成拆分 |
-| `local_worker.py` | 本机计算 worker（登录/领任务/本机仿真/回传；输出编码 GBK 兜底 + 网络抖动自愈重试 + 算法进度打印） | 有效，本轮加固 |
+| `local_worker.py` | 本机计算 worker（登录/领任务/本机仿真/回传；输出编码 GBK 兜底 + 网络抖动自愈重试 + 算法/逐次进度打印） | 有效，本轮加固 |
 | `tests/test_local_worker.py` | worker GBK 输出兜底 + 网络自愈重试回归测试（3 项） | 有效，本轮新增 |
 | `tests/test_auth_net.py` | 公网 app RPC 网络自愈重试回归测试（3 项） | 有效，本轮新增 |
 | `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好/运行记录/审计；只读 RPC 网络自愈重试 + 任务重新排队） | 有效，本轮加固 |
@@ -213,6 +213,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-01：**worker 逐次进度打印（随机分配等多次策略）**（用户要求：能看到随机分配 100 次跑到第几次才安心）：`local_worker.py` 在「全部对比」与单策略模式下，对需要跑多次的策略（如 random 100 次）每 10 次打印一次 `    ├─ 随机分配：第 10/100 次…`，总次数 ≤10 时逐次打印（flush=True）；磁盘上的 local_worker.py 已是最新（提交 `940466d` 已推送）。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 54 → 55；
 - 2026-09-01：**worker 算法进度打印**（用户问：本地运行到第几个算法了叫什么）：此前 worker 只在领取任务和整体完成时打日志，compare_all 模式看不到中间进度。修复：`local_worker.py` 在「全部对比」每个策略开始前打印 `[⚙️] 算法 i/N：{显示名}（{name}）…`（flush=True 实时输出），单策略模式打印 `[⚙️] 运行策略：{显示名}…`；下次运行在本地 worker 窗口即可直接看到第几个、叫什么。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 53 → 54；
 - 2026-09-01：**本地计算任务自愈 + 轮询提示修复**（用户反馈：①秒数到 100 左右状态就消失、不跳转；②worker 已关但任务卡在 running）：①轮询 120 秒结束后的提示此前被 `st.rerun()` 立即清掉——改为写入 `status_box` 后用 `st.stop()` 停留在当前页面，提示不再消失；②新增 `migrations/09_task_requeue.sql` 并已直连 Supabase 执行——`requeue_compute_task` RPC（任务 owner 可把 running 任务重新置为 pending）+ `claim_compute_task` 领取前自动把卡住超过 15 分钟的 running 任务重置为 pending；③`src/auth.py`/`src/ui/common.py` 增加 requeue 封装；④网页「🔄 检查本地计算结果」遇到 running 时显示「♻️ 重新排队该任务」按钮（worker 被关后一键恢复）。已验证：create → claim(running) → requeue(pending) → 重新 claim → complete 全链路成功。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 52 → 53；待用户在公网 app 验收；
 - 2026-09-01：**worker 独立登录态（修复「登录态失效」互踢）**（用户反馈：过一会儿本地 worker 就报登录态失效）：根因是网页与 local_worker 共用 users 表单个 `session_token`，谁后登录谁把前一个顶掉，两边互相踢。修复：新增 `migrations/08_worker_token.sql` 并已直连 Supabase 执行——`users` 表增加 `worker_token`/`worker_expires` 独立列；新增 `login_worker` RPC（worker 专用登录，只更新 worker token，不动网页 session）；计算任务 4 个 RPC（create/claim/complete/get）改为「网页 session token 或 worker token 任一有效即可」；`local_worker.py` 改调 `login_worker`。已验证：worker 登录后网页 session_token 保持不变；create/claim/complete/get 用 worker token 全链路成功。pytest 129 passed、自检通过（164 关键文件）；状态文档 status_version 51 → 52；待用户在公网 app 验收；

@@ -195,7 +195,8 @@ def run_local_task(payload: dict) -> dict:
             seed_metrics = []
             strategy_timed_out = False
             strategy_error = None
-            for r in range(_n_runs_for(nm)):
+            total_runs = _n_runs_for(nm)
+            for r in range(total_runs):
                 s = seed + r
                 vehs = (list(base_vehicles) if base_vehicles is not None
                         else generate_demand(seed=s, **demand_kwargs))
@@ -208,6 +209,8 @@ def run_local_task(payload: dict) -> dict:
                 if time.time() - t0 > budget:
                     strategy_timed_out = True
                 seed_metrics.append(m)
+                if total_runs > 1 and (total_runs <= 10 or (r + 1) % 10 == 0):
+                    print(f"    ├─ {label}：第 {r + 1}/{total_runs} 次…", flush=True)
                 if r == 0:
                     ev_raw = [{"time": e.time, "type": e.event_type.value,
                                "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
@@ -241,7 +244,8 @@ def run_local_task(payload: dict) -> dict:
         seed_metrics = []
         events_raw = None
         timed_out = False
-        for r in range(_n_runs_for(strategy_name)):
+        total_runs = _n_runs_for(strategy_name)
+        for r in range(total_runs):
             s = seed + r
             vehs = (list(base_vehicles) if base_vehicles is not None
                     else generate_demand(seed=s, **demand_kwargs))
@@ -251,6 +255,8 @@ def run_local_task(payload: dict) -> dict:
             if time.time() - t0 > budget:
                 timed_out = True
             seed_metrics.append(m)
+            if total_runs > 1 and (total_runs <= 10 or (r + 1) % 10 == 0):
+                print(f"    ├─ {label}：第 {r + 1}/{total_runs} 次…", flush=True)
             if r == 0:
                 events_raw = [{"time": e.time, "type": e.event_type.value,
                                "vehicle_id": e.vehicle_id or "", "spot_id": e.spot_id or "",
