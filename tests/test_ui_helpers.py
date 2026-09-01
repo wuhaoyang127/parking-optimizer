@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from ui.pages import _vehicle_sort_key, _worker_bat  # noqa: E402
 from ui.pages import _worker_operator_bat, _worker_package_bytes  # noqa: E402
+from ui.pages import _worker_package_data_url  # noqa: E402
 from ui.common import build_local_task_context  # noqa: E402
 
 
@@ -148,3 +149,12 @@ def test_worker_package_zip_contains_operator_kit():
     cfg = zf.read("worker_config.toml").decode("utf-8")
     assert 'SUPABASE_URL = "https://example.supabase.co"' in cfg
     assert 'SUPABASE_ANON_KEY = "anon-key"' in cfg
+
+
+def test_worker_package_data_url_is_zip_bytes():
+    """zip 下载走 data URL：前端无需服务器连接即可下载（修复 not connected 报错）。"""
+    import base64
+    url = _worker_package_data_url()
+    assert url.startswith("data:application/zip;base64,")
+    data = base64.b64decode(url.split(",", 1)[1])
+    assert data[:4] == b"PK\x03\x04"  # zip 魔数

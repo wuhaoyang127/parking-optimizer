@@ -1,3 +1,4 @@
+import base64
 import math
 from datetime import datetime
 from ui.common import *
@@ -105,6 +106,25 @@ def _worker_package_bytes(supabase_url: str = "", supabase_anon_key: str = "") -
         zf.writestr("worker_config.toml",
                     f'SUPABASE_URL = "{sb_url}"\nSUPABASE_ANON_KEY = "{sb_key}"\n')
     return buf.getvalue()
+
+
+@st.cache_data(show_spinner=False, ttl=3600)
+def _cached_worker_package_bytes(sb_url: str, sb_key: str) -> bytes:
+    """缓存操作员 zip 字节（同一小时内不重复读取/压缩 28 个核心文件）。"""
+    return _worker_package_bytes(sb_url, sb_key)
+
+
+def _worker_package_data_url() -> str:
+    """操作员 zip 的 data URL：浏览器本地直接下载，不依赖 WebSocket 服务器连接。
+
+    修复公网 app 报错「Error: not connected to a server!」：
+    st.download_button 传 bytes 时前端点击要向服务器要下载地址，WebSocket
+    一断就报该错；换成 data URL 后点击由浏览器直接处理。
+    """
+    import auth as auth_mod
+    data = _cached_worker_package_bytes(
+        auth_mod.SUPABASE_URL or "", auth_mod.SUPABASE_ANON_KEY or "")
+    return "data:application/zip;base64," + base64.b64encode(data).decode("ascii")
 
 def render_settings(role):
     """页面1: 仿真设置"""
@@ -717,12 +737,9 @@ def render_settings(role):
                 help="保存到项目根目录双击一次：注册 Windows 登录自启，以后每次开机自动运行 worker，无需再手动打开")
         with c_dl3:
             try:
-                pkg_bytes = _worker_package_bytes()
-                st.download_button(
+                st.link_button(
                     "📦 下载操作员本地计算包（zip）",
-                    data=pkg_bytes,
-                    file_name="parking_worker_operator.zip",
-                    mime="application/zip",
+                    url=_worker_package_data_url(),
                     use_container_width=True,
                     help="给其他操作员/同事的电脑用：解压后双击 start_local_worker.bat，"
                          "首次运行自动装精简依赖并输入自己的账号密码，之后即可本地计算")
