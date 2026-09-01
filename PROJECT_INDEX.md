@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 266 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 269 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -23,7 +23,7 @@
 | 文件 | 行数 | 说明 |
 |---|---|---|
 | `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 9 个页面函数 |
-| `local_worker.py` | 349 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果（含网络抖动自愈重试） |
+| `local_worker.py` | 350 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果（独立登录态 + 网络抖动自愈重试） |
 | `.streamlit/config.toml` | — | Streamlit 主题与服务器配置 |
 | `.streamlit/secrets.toml.example` | — | Supabase 密钥模板（复制为 secrets.toml 使用，已被 gitignore） |
 | `requirements.txt` | — | 运行依赖（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase） |
@@ -121,6 +121,7 @@
 | `05_security_hardening.sql` | 445 | **bcrypt + audit_log + search_path 加固**（重写认证/反馈 RPC） |
 | `06_sim_runs.sql` | 104 | **sim_runs 运行记录表 + save/list/delete RPC** |
 | `07_compute_tasks.sql` | 137 | **本地计算任务表 + create/claim/complete/get RPC** |
+| `08_worker_token.sql` | 194 | **worker 独立登录态（login_worker + 4 RPC 双 token 校验）** |
 
 > 注意：RPC 均为 `SECURITY DEFINER`，新增函数必须自己校验 token/角色。
 
@@ -202,7 +203,7 @@
 | 改密码/审计/密钥 | `src/auth.py` + `migrations/05_security_hardening.sql` | `.streamlit/secrets.toml.example` |
 | 改反馈功能 | `src/auth.py` 反馈段 + `migrations/03/04*.sql` | `src/ui/pages.py:1419` |
 | 改运行记录/历史页 | `src/auth.py` 运行记录段 + `migrations/06_sim_runs.sql` | `src/ui/pages.py:1688`、`src/ui/common.py` persist_sim_run |
-| 改本地计算任务 | `local_worker.py` + `migrations/07_compute_tasks.sql` | `src/auth.py` 任务 RPC、`src/ui/pages.py` 计算位置/下发/载入 |
+| 改本地计算任务 | `local_worker.py` + `migrations/07_compute_tasks.sql` + `migrations/08_worker_token.sql` | `src/auth.py` 任务 RPC、`src/ui/pages.py` 计算位置/下发/载入 |
 | 改真实数据导入 | `io/realtime_io.py` + `docs/data/03_真实数据接口规范_v1.md` | `src/ui/pages.py` 需求数据源、`tests/test_realtime_io.py` |
 | 改企业 CSV 文档 | `docs/道闸流水CSV填写说明.md` + `data/samples/道闸流水示例.csv` | `io/realtime_io.py` 列名别名表 |
 | 改部署/运维 | `Dockerfile` + `docker-compose.yml` + `docs/部署运维说明.md` | `deploy/nginx.conf.example`、`.env.example` |

@@ -286,7 +286,8 @@ def main():
         sys.exit(1)
 
     def login():
-        res = sb.rpc("login_user", {"p_username": username, "p_password": password})
+        # worker 使用独立登录态（login_worker），不与网页 session_token 互相顶掉
+        res = sb.rpc("login_worker", {"p_username": username, "p_password": password})
         data = res.data
         if isinstance(data, dict) and data.get("success"):
             return data.get("token")
@@ -296,7 +297,7 @@ def main():
     token = login()
     if not token:
         sys.exit(1)
-    print(f"[✓] 登录成功（{username}）。等待云端下发本地计算任务…（Ctrl+C 退出）")
+    print(f"[✓] 登录成功（{username}，worker 独立登录态）。等待云端下发本地计算任务…（Ctrl+C 退出）")
 
     while True:
         try:
