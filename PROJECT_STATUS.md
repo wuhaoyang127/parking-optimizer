@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 49
+status_version: 50
 last_updated: 2026-09-01
 current_stage: D
 stage_status: in_progress
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：本地计算后端全链路已本地验证通过；公网 app 本地计算模式已提供「📥 下载 worker 一键启动脚本 / 开机自启安装脚本」。剩余：用户在公网 app 下载脚本并双击启动 worker 后，走一遍「💻 本地计算」→ 下发任务 → 结果自动载入。
+- **当前唯一下一步**：本地计算后端全链路已本地验证通过（worker 已带网络自愈重试）；公网 app 本地计算模式已提供「📥 下载 worker 一键启动脚本 / 开机自启安装脚本」。剩余：用户在公网 app 下载脚本并双击启动 worker 后，走一遍「💻 本地计算」→ 下发任务 → 结果自动载入。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -137,7 +137,7 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`，共 124 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`，共 126 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
 - 备份存档：git tag `backup-before-worker-gbk-fix-20260901`、`backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
@@ -151,8 +151,8 @@ superseded
 | `PROJECT_INDEX.md` | 项目目录索引（按需读取导航 + 需求→文件速查表） | 有效，本轮新增 |
 | `.agent/PLANS.md` | ExecPlan 规范 | 有效 |
 | `app.py` | Streamlit 多页面 Dashboard 瘦入口（~90 行） | 有效，本轮已完成拆分 |
-| `local_worker.py` | 本机计算 worker（登录/领任务/本机仿真/回传；输出编码 GBK 兜底） | 有效，本轮修复 |
-| `tests/test_local_worker.py` | worker GBK 输出编码回归测试（1 项） | 有效，本轮新增 |
+| `local_worker.py` | 本机计算 worker（登录/领任务/本机仿真/回传；输出编码 GBK 兜底 + 网络抖动自愈重试） | 有效，本轮加固 |
+| `tests/test_local_worker.py` | worker GBK 输出兜底 + 网络自愈重试回归测试（3 项） | 有效，本轮新增 |
 | `src/auth.py` | Supabase 认证后端（登录/RPC/反馈/偏好/运行记录/审计） | 有效，本轮加固 |
 | `migrations/05_security_hardening.sql` | bcrypt + 审计日志 + search_path 加固 | 有效，本轮新增 |
 | `migrations/06_sim_runs.sql` | 仿真运行记录表 + RPC | 有效，本轮新增 |
@@ -209,6 +209,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-01：**local_worker 网络抖动自愈（修复「循环异常 10053」）**（用户反馈：本地 worker 报循环异常 10053）：公网到 Supabase 的连接可能被代理/负载均衡器重置（WinError 10053=已建立的连接被主机软件中断），此前 worker 只做最外层重试，`complete_compute_task` 一旦失败任务会卡在 running。修复：新增 `_SupabaseClient` 封装——所有 RPC（login/claim/complete）遇到瞬时网络错误（httpx 传输错误 / ConnectionError / OSError）自动退避重试（默认 4 次、1.5s 起指数退避）并重建底层连接池，避免刷屏和任务卡死；新增 `_is_transient_net` 识别瞬时错误；`tests/test_local_worker.py` 新增 2 项测试（1→3 项）。重新端到端验证：create → GBK stdout 下 worker 领取并计算 → complete → done（main_events 89 条、metrics 13 项齐全）。pytest 126 passed、自检通过（162 关键文件）；状态文档 status_version 49 → 50；待用户在公网 app 验收；
 - 2026-09-01：**本地计算 worker 一键启动脚本（公网网页下载）**（用户反馈：不想自己手动运行 `py local_worker.py`，希望点「本地计算」后第一步就自动打开 worker；公网 Cloud 网页受浏览器安全限制，无法在用户电脑上自动开进程，改为提供最接近「自动」的两步方案）：仿真设置页「💻 本地计算」模式新增两个下载按钮——`start_local_worker.bat`（保存到项目根目录双击即启动 worker）、`install_local_worker_autostart.bat`（双击一次注册 Windows 登录自启 `ParkingOptLocalWorker` 计划任务，以后每次开机自动后台运行 worker，彻底免手动）；下发失败提示同步改为引用启动脚本；新增 `_worker_bat()` 与 2 项测试（`tests/test_ui_helpers.py` 3→5 项）。pytest 124 passed、自检通过（161 关键文件）；状态文档 status_version 48 → 49；待用户在公网 app 验收；
 - 2026-09-01：**修复 local_worker.py Windows GBK 输出崩溃 + 本地计算后端全链路验证**：验收时发现 `py local_worker.py` 在 Windows GBK（cp936）控制台/重定向输出下打印 `✓` 触发 `UnicodeEncodeError` 直接崩溃（会话开头失败日志即此因）。修复：模块导入时对 stdout/stderr 设置 `errors="replace"`（保持终端编码不变，中文正常显示，符号降级 `?`，不再崩溃）；新增回归测试 `tests/test_local_worker.py`（GBK 子进程打印 ✓ 不崩溃）。随后完成本地计算后端全链路验证：`create_compute_task` 下发（duration_greedy / linear 15 车位 / 20 车 / seed 42）→ `py local_worker.py`（GBK stdout 下）领取并计算 → `complete_compute_task` 回写 → `get_compute_task` 确认 status=done、metrics 13 项齐全、main_events 85 条。pytest 122 passed、自检通过（161 关键文件）；打 tag `backup-before-worker-gbk-fix-20260901`；状态文档 status_version 47 → 48；待用户在公网 app 浏览器侧验收 UI 流程；
 - 2026-09-01：**执行 07 迁移**：`migrations/07_compute_tasks.sql` 已通过 Session pooler 直连 Supabase 执行，验证 `compute_tasks` 表存在、4 个任务 RPC（create/claim/complete/get）创建成功；`credentials.db.txt` 已就位（gitignore 覆盖，注意密码字段勿保留方括号）。打 tag `backup-before-migration07-executed-20260901`；状态文档 status_version 46 → 47；下一步验收本地计算全链路；

@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from supabase import create_client  # noqa: E402
+import httpx  # noqa: E402
 
 # Windows 控制台/重定向输出可能使用 GBK（cp936），打印 ✓/✗/▶ 等符号会触发
 # UnicodeEncodeError 使 worker 直接崩溃。统一加 errors="replace" 兜底：
@@ -35,6 +36,45 @@ for _stream in (sys.stdout, sys.stderr):
             _stream.reconfigure(errors="replace")
         except Exception:
             pass
+
+
+# ---------- 网络自愈 ----------
+
+def _is_transient_net(e: Exception) -> bool:
+    """网络瞬时错误（连接被重置/超时/断连，如 WinError 10053）。"""
+    if isinstance(e, httpx.HTTPError):
+        return True
+    return isinstance(e, (ConnectionError, TimeoutError, OSError))
+
+
+class _SupabaseClient:
+    """带网络抖动自愈的 Supabase RPC 客户端。
+
+    公网到 Supabase 的连接可能被代理/负载均衡器重置（常见 WinError 10053：
+    软件中断了已建立的连接）。RPC 调用遇到瞬时网络错误时自动退避重试，
+    并重建底层连接池，避免「循环异常 10053」刷屏或任务卡住。
+    """
+
+    def __init__(self, url: str, key: str):
+        self.url = url
+        self.key = key
+        self.client = create_client(url, key)
+
+    def rpc(self, name: str, params: dict, *, tries: int = 4, backoff: float = 1.5):
+        for i in range(tries):
+            try:
+                return self.client.rpc(name, params).execute()
+            except Exception as e:
+                if not _is_transient_net(e) or i == tries - 1:
+                    raise
+                print(f"[!] 网络抖动（{type(e).__name__}），{backoff:.0f}s 后重试"
+                      f"（{i + 1}/{tries - 1}）…")
+                time.sleep(backoff)
+                backoff *= 1.5
+                try:
+                    self.client = create_client(self.url, self.key)
+                except Exception:
+                    pass
 
 
 # ---------- 配置读取 ----------
@@ -237,7 +277,7 @@ def main():
         print("[✗] 缺少 Supabase 配置：请设置环境变量 SUPABASE_URL / SUPABASE_ANON_KEY，"
               "或在 .streamlit/secrets.toml 中配置")
         sys.exit(1)
-    sb = create_client(url, key)
+    sb = _SupabaseClient(url, key)
 
     username, password = _read_credentials(args.username, args.password)
     if not username or not password:
@@ -246,7 +286,7 @@ def main():
         sys.exit(1)
 
     def login():
-        res = sb.rpc("login_user", {"p_username": username, "p_password": password}).execute()
+        res = sb.rpc("login_user", {"p_username": username, "p_password": password})
         data = res.data
         if isinstance(data, dict) and data.get("success"):
             return data.get("token")
@@ -260,7 +300,7 @@ def main():
 
     while True:
         try:
-            res = sb.rpc("claim_compute_task", {"p_token": token}).execute()
+            res = sb.rpc("claim_compute_task", {"p_token": token})
             data = res.data
             if not isinstance(data, dict) or not data.get("success"):
                 if isinstance(data, dict) and data.get("error") == "未登录":
@@ -286,14 +326,14 @@ def main():
                 result = run_local_task(payload)
                 sb.rpc("complete_compute_task", {
                     "p_token": token, "p_task_id": task_id, "p_status": "done",
-                    "p_result": result, "p_error": None}).execute()
+                    "p_result": result, "p_error": None})
                 print(f"[✓] 任务 {task_id} 完成（耗时 {time.time() - t0:.1f}s）")
             except Exception as e:
                 err = f"{type(e).__name__}: {e}"
                 try:
                     sb.rpc("complete_compute_task", {
                         "p_token": token, "p_task_id": task_id, "p_status": "failed",
-                        "p_result": {}, "p_error": err}).execute()
+                        "p_result": {}, "p_error": err})
                 except Exception:
                     pass
                 print(f"[✗] 任务 {task_id} 失败：{err}")
