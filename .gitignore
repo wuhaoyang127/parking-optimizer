@@ -47,6 +47,8 @@ data/processed/**
 data/synthetic/generated/**
 data/demand_exports/**
 !data/demand_exports/.gitkeep
+data/local_task_results/**
+!data/local_task_results/.gitkeep
 
 # Local notebooks and temporary files
 .ipynb_checkpoints/
