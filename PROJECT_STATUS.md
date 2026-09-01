@@ -1,7 +1,7 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 55
-last_updated: 2026-09-01
+status_version: 56
+last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：本地计算后端全链路已本地验证通过（worker 独立登录态 + 两端网络自愈重试 + 卡住任务重新排队均已就位）；公网 app 本地计算模式已提供「📥 下载 worker 一键启动脚本 / 开机自启安装脚本」。剩余：用户在公网 app 下载脚本并双击启动 worker 后，走一遍「💻 本地计算」→ 下发任务 → 结果自动载入。
+- **当前唯一下一步**：公网 app 浏览器侧验收「💻 本地计算」全流程 + 新按钮「📂 载入最近一次结果」：刷新/重开浏览器后（session 里 task_id 丢失），在仿真设置页「💻 本地计算」区点该按钮即可从 Supabase 找回最近一次已完成的本地计算结果（迁移 10 已执行；已用真实 1000 车任务验证 RPC 返回完整 payload+result）。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -137,10 +137,10 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`、`tests/test_auth_net.py`，共 129 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`、`tests/test_auth_net.py`，共 133 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-migration09-20260901`、`backup-before-migration08-20260901`、`backup-before-auth-net-retry-20260901`、`backup-before-worker-net-retry-20260901`、`backup-before-worker-bat-download-20260901`、`backup-before-worker-gbk-fix-20260901`、`backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-latest-task-load-20260902`、`backup-before-local-task-archive-20260902`（2026-09-02）、`backup-before-migration09-20260901`、`backup-before-migration08-20260901`、`backup-before-auth-net-retry-20260901`、`backup-before-worker-net-retry-20260901`、`backup-before-worker-bat-download-20260901`、`backup-before-worker-gbk-fix-20260901`、`backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -160,6 +160,7 @@ superseded
 | `migrations/07_compute_tasks.sql` | 本地计算任务表 + 4 任务 RPC | 有效，本轮新增 |
 | `migrations/08_worker_token.sql` | worker 独立登录态（login_worker + 双 token 校验） | 有效，本轮新增 |
 | `migrations/09_task_requeue.sql` | 卡住任务重新排队 + claim 15 分钟自愈 | 有效，本轮新增 |
+| `migrations/10_latest_task_load.sql` | 载入最近一次本地计算结果 RPC（get_latest_compute_task，含 payload+result） | 有效，本轮新增 |
 | `src/parking_opt/io/realtime_io.py` | 真实道闸流水/车位状态解析（企业对接预留） | 有效，本轮新增 |
 | `docs/data/03_真实数据接口规范_v1.md` | 真实数据接口规范 v1 | 有效，本轮新增 |
 | `docs/部署运维说明.md` | 部署/HTTPS/备份/安全自查 | 有效，本轮新增 |
@@ -202,8 +203,9 @@ superseded
 ## 11. 当前唯一下一步
 
 1. 「💻 本地计算」后端全链路已在本地验证通过（create → worker 领取并计算 → complete → get 结果完整；worker 使用独立登录态，不再与网页互踢，详见最近变更）。
-2. 剩余浏览器侧验收：公网 app 仿真设置切「💻 本地计算」→ 下载 `start_local_worker.bat` 到项目根目录双击启动 worker（或下载『开机自启』脚本装一次，以后免手动）→ 点「▶️ 下发本地计算任务」→ 结果自动载入；若 worker 中途被关，任务卡住可点「🔄 检查本地计算结果」→「♻️ 重新排队该任务」恢复。
-3. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
+2. 浏览器侧验收：公网 app 仿真设置切「💻 本地计算」→ 下载 `start_local_worker.bat` 到项目根目录双击启动 worker（或下载『开机自启』脚本装一次，以后免手动）→ 点「▶️ 下发本地计算任务」→ 结果自动载入；若 worker 中途被关，任务卡住可点「🔄 检查本地计算结果」→「♻️ 重新排队该任务」恢复。
+3. 已新增「📂 载入最近一次结果」按钮（迁移 10 已执行）：浏览器 session 丢失 task_id（刷新/重开/换电脑）后，一键从 Supabase 找回最近一次已完成的本地计算结果，含布局/参数/结果完整恢复；待用户在公网 app 验收。
+4. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 
 ## 12. 预计后续需要用户确认
 
@@ -213,6 +215,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-02：**本地计算结果找回按钮「📂 载入最近一次结果」**（用户反馈：本地任务跑完 9000+s 后，浏览器 session 丢失 task_id，网页端无法查看已完成结果）：①新增 `migrations/10_latest_task_load.sql` 并已直连 Supabase 执行——`get_latest_compute_task` RPC 返回该用户最近一条 done 任务（含 payload+result）；②`src/auth.py` 增加 `get_latest_compute_task` 封装（走只读 RPC 重试通道）；③`src/ui/common.py` 新增 `build_local_task_context(payload)` 纯函数——从任务 payload 完整重建布局（内置/真实）/需求/策略/引擎参数与 PathEngine 上下文；④`src/ui/pages.py` 重构出 `_apply_sim_state`（本地结果载入与历史结果载入共用），「💻 本地计算」区新增「📂 载入最近一次结果」按钮（不再依赖 session 里的 local_task_id，刷新/重开浏览器/换电脑均可用）；⑤真实 1000 车任务结果已存档 `data/local_task_results/task_b1422967_20260902.json`（payload+result，目录已 gitignore）。已用真实 1000 车/400 车位任务验证 RPC 返回与上下文重建成功。pytest 133 passed、自检通过（168 关键文件）；状态文档 status_version 55 → 56；待用户在公网 app 验收；
 - 2026-09-01：**worker 逐次进度打印（随机分配等多次策略）**（用户要求：能看到随机分配 100 次跑到第几次才安心）：`local_worker.py` 在「全部对比」与单策略模式下，对需要跑多次的策略（如 random 100 次）每 10 次打印一次 `    ├─ 随机分配：第 10/100 次…`，总次数 ≤10 时逐次打印（flush=True）；磁盘上的 local_worker.py 已是最新（提交 `940466d` 已推送）。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 54 → 55；
 - 2026-09-01：**worker 算法进度打印**（用户问：本地运行到第几个算法了叫什么）：此前 worker 只在领取任务和整体完成时打日志，compare_all 模式看不到中间进度。修复：`local_worker.py` 在「全部对比」每个策略开始前打印 `[⚙️] 算法 i/N：{显示名}（{name}）…`（flush=True 实时输出），单策略模式打印 `[⚙️] 运行策略：{显示名}…`；下次运行在本地 worker 窗口即可直接看到第几个、叫什么。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 53 → 54；
 - 2026-09-01：**本地计算任务自愈 + 轮询提示修复**（用户反馈：①秒数到 100 左右状态就消失、不跳转；②worker 已关但任务卡在 running）：①轮询 120 秒结束后的提示此前被 `st.rerun()` 立即清掉——改为写入 `status_box` 后用 `st.stop()` 停留在当前页面，提示不再消失；②新增 `migrations/09_task_requeue.sql` 并已直连 Supabase 执行——`requeue_compute_task` RPC（任务 owner 可把 running 任务重新置为 pending）+ `claim_compute_task` 领取前自动把卡住超过 15 分钟的 running 任务重置为 pending；③`src/auth.py`/`src/ui/common.py` 增加 requeue 封装；④网页「🔄 检查本地计算结果」遇到 running 时显示「♻️ 重新排队该任务」按钮（worker 被关后一键恢复）。已验证：create → claim(running) → requeue(pending) → 重新 claim → complete 全链路成功。pytest 129 passed、自检通过（165 关键文件）；状态文档 status_version 52 → 53；待用户在公网 app 验收；

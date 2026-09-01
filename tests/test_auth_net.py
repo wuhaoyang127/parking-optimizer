@@ -52,3 +52,18 @@ def test_rpc_with_retry_returns_error_for_non_transient(monkeypatch):
     monkeypatch.setattr(auth, "get_supabase", lambda: BadClient())
     res = auth._rpc_with_retry("validate_session", {"p_token": "t"})
     assert res == {"success": False, "error": "boom"}
+
+
+def test_get_latest_compute_task_calls_rpc(monkeypatch):
+    """get_latest_compute_task 走只读 RPC 重试通道并原样返回。"""
+    captured = {}
+
+    def fake_rpc(name, params):
+        captured["name"] = name
+        captured["params"] = params
+        return {"success": True, "task": {"id": "x"}}
+
+    monkeypatch.setattr(auth, "_rpc_with_retry", fake_rpc)
+    res = auth.get_latest_compute_task("tok")
+    assert res == {"success": True, "task": {"id": "x"}}
+    assert captured == {"name": "get_latest_compute_task", "params": {"p_token": "tok"}}
