@@ -6,7 +6,7 @@ from pathlib import Path
 # app.py 运行时会注入 src；测试环境手动注入后即可导入 ui 包
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from ui.pages import _vehicle_sort_key  # noqa: E402
+from ui.pages import _vehicle_sort_key, _worker_bat  # noqa: E402
 
 
 def test_vehicle_sort_key_handles_mixed_ids():
@@ -31,3 +31,19 @@ def test_vehicle_sort_key_generated_ids_order():
     """生成器 ID（V0001 零填充）保持字典序即数值序。"""
     ids = ["V0002", "V0010", "V0001"]
     assert sorted(ids, key=_vehicle_sort_key) == ["V0001", "V0002", "V0010"]
+
+
+def test_worker_bat_run_script():
+    """一键启动脚本：定位项目目录并运行 local_worker.py。"""
+    bat = _worker_bat("run")
+    assert "cd /d %~dp0" in bat
+    assert "py local_worker.py --poll 1" in bat
+
+
+def test_worker_bat_autostart_script():
+    """开机自启安装脚本：注册/运行 Windows 计划任务。"""
+    bat = _worker_bat("install_autostart")
+    assert "schtasks /Create" in bat
+    assert "ParkingOptLocalWorker" in bat
+    assert "schtasks /Run" in bat
+    assert "py local_worker.py --poll 1" in bat

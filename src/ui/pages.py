@@ -6,6 +6,34 @@ from ui.common import (_avg_metrics, _plot_radar, _sync_custom_layouts_to_global
                       persist_custom_layouts, restore_custom_layouts,
                       ensure_custom_layouts_loaded)
 
+
+def _worker_bat(kind: str) -> str:
+    """生成本机 worker 启动脚本（公网网页下载后放到项目根目录双击运行）。"""
+    if kind == "install_autostart":
+        return (
+            "@echo off\r\n"
+            "chcp 65001 >nul\r\n"
+            "title 停车场 App 本机计算 worker（开机自启安装）\r\n"
+            "cd /d %~dp0\r\n"
+            "echo 正在注册 Windows 登录自启任务 ParkingOptLocalWorker ...\r\n"
+            "schtasks /Create /F /TN \"ParkingOptLocalWorker\" /SC ONLOGON /RL LIMITED "
+            "/TR \"cmd /c cd /d %~dp0 && py local_worker.py --poll 1\"\r\n"
+            "if errorlevel 1 (echo 安装失败，请右键以管理员身份运行本脚本 & pause & exit /b 1)\r\n"
+            "echo 安装成功，立即启动一次 worker ...\r\n"
+            "schtasks /Run /TN \"ParkingOptLocalWorker\"\r\n"
+            "echo 完成。以后每次登录 Windows 都会自动在后台运行 worker，无需再手动打开。\r\n"
+            "pause\r\n"
+        )
+    return (
+        "@echo off\r\n"
+        "chcp 65001 >nul\r\n"
+        "title 停车场 App 本机计算 worker\r\n"
+        "cd /d %~dp0\r\n"
+        "echo 正在启动本机计算 worker（保持本窗口开启，用完可关闭）...\r\n"
+        "py local_worker.py --poll 1\r\n"
+        "pause\r\n"
+    )
+
 def render_settings(role):
     """页面1: 仿真设置"""
     ensure_custom_layouts_loaded()
@@ -462,7 +490,8 @@ def render_settings(role):
         if not (isinstance(res, dict) and res.get("success")):
             st.error(f"❌ 下发本地计算任务失败：{(res or {}).get('error', '未知错误')}\n\n"
                      "请确认：① Supabase 已执行 migrations/07_compute_tasks.sql；"
-                     "② 本机 worker 正在运行 `py local_worker.py`。")
+                     "② 本机 worker 正在运行（项目根目录双击 `start_local_worker.bat`，"
+                     "或命令行 `py local_worker.py`）。")
             st.stop()
         task_id = res["task_id"]
         st.session_state.local_task_id = task_id
@@ -489,8 +518,26 @@ def render_settings(role):
         st.rerun()
 
     if compute_mode == "local":
-        st.info("💻 **本地计算模式**：请在本机项目目录运行 `py local_worker.py` 保持 worker 在线。\n"
-                "点「运行仿真」会把任务下发到本机，计算完成后自动载入结果。")
+        st.info("💻 **本地计算模式**：云端界面 + 本机 CPU。\n\n"
+                "① 首次使用：下载下方「一键启动脚本」，保存到项目根目录（和 `local_worker.py` 同级）后双击运行；\n"
+                "② 然后点「▶️ 下发本地计算任务」，本机算完后结果自动载入。")
+        c_dl1, c_dl2 = st.columns(2)
+        with c_dl1:
+            st.download_button(
+                "📥 下载 worker 一键启动脚本",
+                data=_worker_bat("run"),
+                file_name="start_local_worker.bat",
+                mime="application/octet-stream",
+                use_container_width=True,
+                help="保存到项目根目录（和 local_worker.py 同一个文件夹）后双击，即启动本机 worker")
+        with c_dl2:
+            st.download_button(
+                "📥 下载『开机自启』安装脚本（装一次，以后免手动）",
+                data=_worker_bat("install_autostart"),
+                file_name="install_local_worker_autostart.bat",
+                mime="application/octet-stream",
+                use_container_width=True,
+                help="保存到项目根目录双击一次：注册 Windows 登录自启，以后每次开机自动运行 worker，无需再手动打开")
         if st.session_state.get("local_task_id"):
             c_refresh, c_hint = st.columns([1, 3])
             with c_refresh:

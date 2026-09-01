@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 260 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 263 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -42,8 +42,8 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `src/ui/pages.py` | 1800+ | **9 个页面渲染函数**（见下方函数表） |
-| `src/ui/common.py` | 1350+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
+| `src/ui/pages.py` | 2300+ | **9 个页面渲染函数**（见下方函数表） |
+| `src/ui/common.py` | 1480+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
 | `src/viz.py` | 212 | Plotly 绘图：`draw_parking_layout`（车位/路网/车辆/路径） |
 | `src/auth.py` | 340 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值） |
 
@@ -51,35 +51,35 @@
 
 | 行号 | 函数 | 页面 |
 |---|---|---|
-| 7 | `render_settings(role)` | 仿真设置（布局/需求/策略/参数） |
-| 396 | `render_system(role)` | 系统设置（用户管理/导入导出） |
-| 630 | `render_layout_page()` | 布局图（内置/真实布局回显） |
-| 684 | `render_path_page()` | 动态路径（入库/离场/移位动画） |
-| 968 | `render_metrics_page(role)` | 指标分析（排名/需求时序/车辆明细） |
-| 1294 | `render_status_page(role)` | 系统状态（健康检查） |
-| 1353 | `render_algo_import_page(role)` | 新算法接入（上传/删除文件） |
-| 1419 | `render_feedback_page(role)` | 意见反馈（提交/管理员回复/排序/CSV） |
-| 1688 | `render_history_page(role)` | 历史运行（sim_runs 持久化/对比/导出/删除） |
+| 37 | `render_settings(role)` | 仿真设置（布局/需求/策略/参数） |
+| 772 | `render_system(role)` | 系统设置（用户管理/导入导出） |
+| 1014 | `render_layout_page()` | 布局图（内置/真实布局回显） |
+| 1079 | `render_path_page()` | 动态路径（入库/离场/移位动画） |
+| 1367 | `render_metrics_page(role)` | 指标分析（排名/需求时序/车辆明细） |
+| 1728 | `render_status_page(role)` | 系统状态（健康检查） |
+| 1787 | `render_algo_import_page(role)` | 新算法接入（上传/删除文件） |
+| 1853 | `render_feedback_page(role)` | 意见反馈（提交/管理员回复/排序/CSV） |
+| 2197 | `render_history_page(role)` | 历史运行（sim_runs 持久化/对比/导出/删除） |
 
 ### `src/ui/common.py` 主要函数（改公共工具时按行号读）
 
 | 行号 | 函数 | 用途 |
 |---|---|---|
-| 200–299 | `build_linear/rectangle/lshape/triangle/circle` | 内置示意布局构建 |
-| 300 | `run_single(...)` | 单次仿真运行封装 |
-| 334–356 | `_plot_radar` / `_avg_metrics` | 雷达图与均值 |
-| 359–468 | `save_demand_*` / `list_demand_files` / `render_save_as_button` | 需求序列保存（项目文件夹/浏览器/自定义路径） |
-| 470 | `weighted_rank_df` | 加权评分排名 |
-| 511–597 | `build_vehicle_detail_rows` / `build_demand_histogram` | 车辆明细表 / 需求时序直方图 |
-| 599–777 | `build_timeline` / `replay_state` / `interp_vehicle_pos` / `interp_path_segment` | 动态路径时间轴与插值 |
-| 786–877 | `build_vehicle_phases` / `_helper_shift_paths` | 车辆三阶段（入库/离场/移位）与让行辅助虚线 |
-| 877 | `build_layout_from_json(data)` | 布局 JSON → 网络对象 |
-| 902–956 | `_load_priority_preference` / `_load_run_history` / `_load_last_params` / `persist_last_params` | Supabase 偏好读写（优先级/调参历史/最近参数） |
-| 972–1018 | `_json_safe` / `persist_sim_run` | 运行记录 JSON 清洗与入库 |
-| 975–1094 | `_sync_custom_layouts_to_globals` / `restore_custom_layouts` / `persist_custom_layouts` / `clear_custom_layouts` | 自定义布局持久化（Supabase + 本地备份自愈） |
-| 1103 | `check_login()` | 登录守卫与限流 |
-| 1196–1220 | `_coerce_int` / `_coerce_float` | 持久化参数类型兜底 |
-| 1220–1282 | `_render_param_widget` / `render_strategy_params` / `render_env_params` | 参数控件动态渲染（含 locked/initial 回填） |
+| 226–299 | `build_linear/rectangle/lshape/triangle/circle` | 内置示意布局构建 |
+| 326 | `run_single(...)` | 单次仿真运行封装 |
+| 344–384 | `_avg_metrics` / `_plot_radar` | 均值与雷达图 |
+| 385–508 | `save_demand_*` / `render_save_as_button` / `list_demand_files` | 需求序列保存（项目文件夹/浏览器/自定义路径） |
+| 496 | `weighted_rank_df` | 加权评分排名 |
+| 547–634 | `build_vehicle_detail_rows` / `build_demand_histogram` | 车辆明细表 / 需求时序直方图 |
+| 635–821 | `build_timeline` / `replay_state` / `interp_vehicle_pos` / `interp_path_segment` | 动态路径时间轴与插值 |
+| 822–912 | `build_vehicle_phases` / `_helper_shift_paths` | 车辆三阶段（入库/离场/移位）与让行辅助虚线 |
+| 913 | `build_layout_from_json(data)` | 布局 JSON → 网络对象 |
+| 938–1076 | `_load_priority_preference` / `_load_run_history` / `_load_last_params` / `persist_last_params` | Supabase 偏好读写（优先级/调参历史/最近参数） |
+| 1077–1125 | `_json_safe` / `persist_sim_run` | 运行记录 JSON 清洗与入库 |
+| 1126–1284 | `_sync_custom_layouts_to_globals` / `restore_custom_layouts` / `persist_custom_layouts` / `clear_custom_layouts` | 自定义布局持久化（Supabase + 本地备份自愈） |
+| 1285 | `check_login()` | 登录守卫与限流 |
+| 1381–1404 | `_coerce_int` / `_coerce_float` | 持久化参数类型兜底 |
+| 1405–1479 | `_render_param_widget` / `render_strategy_params` / `render_env_params` | 参数控件动态渲染（含 locked/initial 回填） |
 
 ---
 
@@ -141,7 +141,7 @@
 | `test_risk_scoring.py` | 算法二 risk_scoring |
 | `test_multi_entry.py` | 多入口多出口 |
 | `test_realtime_io.py` | 真实道闸流水/车位状态解析（10 项） |
-| `test_ui_helpers.py` | UI 纯函数（车辆ID排序键等，3 项） |
+| `test_ui_helpers.py` | UI 纯函数（车辆ID排序键 3 项 + worker 启动脚本 2 项） |
 | `test_local_worker.py` | local_worker GBK 输出编码兜底（1 项） |
 
 ---
