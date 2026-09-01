@@ -187,7 +187,11 @@ def run_local_task(payload: dict) -> dict:
         all_m, timed_out, failed = [], [], []
         events_by_strategy, vehicles_by_strategy = {}, {}
         main_events_raw = None
-        for nm, cls in StrategyRegistry.all().items():
+        all_strategies = StrategyRegistry.all()
+        total = len(all_strategies)
+        for idx, (nm, cls) in enumerate(all_strategies.items(), 1):
+            label = getattr(cls, "label", nm)
+            print(f"[⚙️] 算法 {idx}/{total}：{label}（{nm}）…", flush=True)
             seed_metrics = []
             strategy_timed_out = False
             strategy_error = None
@@ -232,6 +236,8 @@ def run_local_task(payload: dict) -> dict:
         cls = StrategyRegistry.get(strategy_name)
         if cls is None:
             raise ValueError(f"未知策略：{strategy_name}")
+        label = getattr(cls, "label", strategy_name)
+        print(f"[⚙️] 运行策略：{label}（{strategy_name}）…", flush=True)
         seed_metrics = []
         events_raw = None
         timed_out = False
