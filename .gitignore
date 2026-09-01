@@ -54,3 +54,7 @@ tmp/
 temp/
 *.tmp
 ~$*
+
+# 本地计算 worker 启动脚本（公网网页下载到项目根目录，本机使用不入库）
+start_local_worker.bat
+install_local_worker_autostart.bat
