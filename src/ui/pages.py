@@ -448,6 +448,16 @@ def render_settings(role):
                 _apply_local_result(stt.get("result") or {})
             elif s == "failed":
                 st.error(f"❌ 本机计算失败：{stt.get('error')}")
+            elif s == "running":
+                st.warning("⚙️ 任务仍在计算中。若本机 worker 已关闭或崩溃，可把任务重新排队，"
+                           "重启 worker 后继续计算。")
+                if st.button("♻️ 重新排队该任务（worker 已关闭时用）"):
+                    rq = auth_requeue_compute_task(token, task_id)
+                    if isinstance(rq, dict) and rq.get("success"):
+                        st.success("✅ 已重新排队。请启动本机 worker（双击 start_local_worker.bat），"
+                                   "稍后再点「🔄 检查本地计算结果」。")
+                    else:
+                        st.error(f"❌ 重新排队失败：{(rq or {}).get('error', '未知错误')}")
             else:
                 st.info(f"任务状态：{s}。请确认本机 `py local_worker.py` 正在运行。")
         else:
@@ -514,8 +524,12 @@ def render_settings(role):
             elif s == "failed":
                 status_box.error(f"❌ 本机计算失败：{stt.get('error')}")
                 st.stop()
-        status_box.warning("任务仍在计算中。稍后回到本页点「🔄 检查本地计算结果」查看。")
-        st.rerun()
+        st.session_state.local_task_notice = (
+            "⏳ 已等待 120 秒，任务仍在计算中。稍后点上方「🔄 检查本地计算结果」查看；"
+            "若本机 worker 已关闭，请先双击 `start_local_worker.bat` 启动，"
+            "再用「♻️ 重新排队该任务」恢复。")
+        status_box.warning(st.session_state.local_task_notice)
+        st.stop()
 
     if compute_mode == "local":
         st.info("💻 **本地计算模式**：云端界面 + 本机 CPU。\n\n"

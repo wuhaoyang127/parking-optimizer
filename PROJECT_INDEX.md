@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 269 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 271 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -42,24 +42,24 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `src/ui/pages.py` | 2300+ | **9 个页面渲染函数**（见下方函数表） |
+| `src/ui/pages.py` | 2336 | **9 个页面渲染函数**（见下方函数表） |
 | `src/ui/common.py` | 1480+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
 | `src/viz.py` | 212 | Plotly 绘图：`draw_parking_layout`（车位/路网/车辆/路径） |
-| `src/auth.py` | 395 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值；只读 RPC 网络自愈重试） |
+| `src/auth.py` | 401 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值；只读 RPC 网络自愈重试 + 任务重新排队） |
 
 ### `src/ui/pages.py` 页面函数（改某页时直接按行号 offset 读）
 
 | 行号 | 函数 | 页面 |
 |---|---|---|
 | 37 | `render_settings(role)` | 仿真设置（布局/需求/策略/参数） |
-| 772 | `render_system(role)` | 系统设置（用户管理/导入导出） |
-| 1014 | `render_layout_page()` | 布局图（内置/真实布局回显） |
-| 1079 | `render_path_page()` | 动态路径（入库/离场/移位动画） |
-| 1367 | `render_metrics_page(role)` | 指标分析（排名/需求时序/车辆明细） |
-| 1728 | `render_status_page(role)` | 系统状态（健康检查） |
-| 1787 | `render_algo_import_page(role)` | 新算法接入（上传/删除文件） |
-| 1853 | `render_feedback_page(role)` | 意见反馈（提交/管理员回复/排序/CSV） |
-| 2197 | `render_history_page(role)` | 历史运行（sim_runs 持久化/对比/导出/删除） |
+| 786 | `render_system(role)` | 系统设置（用户管理/导入导出） |
+| 1028 | `render_layout_page()` | 布局图（内置/真实布局回显） |
+| 1093 | `render_path_page()` | 动态路径（入库/离场/移位动画） |
+| 1381 | `render_metrics_page(role)` | 指标分析（排名/需求时序/车辆明细） |
+| 1742 | `render_status_page(role)` | 系统状态（健康检查） |
+| 1801 | `render_algo_import_page(role)` | 新算法接入（上传/删除文件） |
+| 1867 | `render_feedback_page(role)` | 意见反馈（提交/管理员回复/排序/CSV） |
+| 2211 | `render_history_page(role)` | 历史运行（sim_runs 持久化/对比/导出/删除） |
 
 ### `src/ui/common.py` 主要函数（改公共工具时按行号读）
 
@@ -122,6 +122,7 @@
 | `06_sim_runs.sql` | 104 | **sim_runs 运行记录表 + save/list/delete RPC** |
 | `07_compute_tasks.sql` | 137 | **本地计算任务表 + create/claim/complete/get RPC** |
 | `08_worker_token.sql` | 194 | **worker 独立登录态（login_worker + 4 RPC 双 token 校验）** |
+| `09_task_requeue.sql` | 74 | **卡住任务重新排队 + claim 15 分钟自愈** |
 
 > 注意：RPC 均为 `SECURITY DEFINER`，新增函数必须自己校验 token/角色。
 
@@ -203,7 +204,7 @@
 | 改密码/审计/密钥 | `src/auth.py` + `migrations/05_security_hardening.sql` | `.streamlit/secrets.toml.example` |
 | 改反馈功能 | `src/auth.py` 反馈段 + `migrations/03/04*.sql` | `src/ui/pages.py:1419` |
 | 改运行记录/历史页 | `src/auth.py` 运行记录段 + `migrations/06_sim_runs.sql` | `src/ui/pages.py:1688`、`src/ui/common.py` persist_sim_run |
-| 改本地计算任务 | `local_worker.py` + `migrations/07_compute_tasks.sql` + `migrations/08_worker_token.sql` | `src/auth.py` 任务 RPC、`src/ui/pages.py` 计算位置/下发/载入 |
+| 改本地计算任务 | `local_worker.py` + `migrations/07_compute_tasks.sql` + `migrations/08_worker_token.sql` + `migrations/09_task_requeue.sql` | `src/auth.py` 任务 RPC、`src/ui/pages.py` 计算位置/下发/载入 |
 | 改真实数据导入 | `io/realtime_io.py` + `docs/data/03_真实数据接口规范_v1.md` | `src/ui/pages.py` 需求数据源、`tests/test_realtime_io.py` |
 | 改企业 CSV 文档 | `docs/道闸流水CSV填写说明.md` + `data/samples/道闸流水示例.csv` | `io/realtime_io.py` 列名别名表 |
 | 改部署/运维 | `Dockerfile` + `docker-compose.yml` + `docs/部署运维说明.md` | `deploy/nginx.conf.example`、`.env.example` |
