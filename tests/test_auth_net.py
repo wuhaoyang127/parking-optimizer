@@ -1,0 +1,54 @@
+"""auth.py 网络自愈回归测试。"""
+
+import sys
+from pathlib import Path
+
+import httpx
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+import auth  # noqa: E402
+
+
+def test_is_transient_net_detects_connection_reset():
+    """WinError 10053（连接被重置）与 httpx 传输错误应视为瞬时网络错误。"""
+    assert auth._is_transient_net(ConnectionResetError(10053, "连接被重置"))
+    assert auth._is_transient_net(httpx.RemoteProtocolError("Server disconnected"))
+    assert not auth._is_transient_net(ValueError("业务参数错误"))
+
+
+def test_rpc_with_retry_recovers_after_transient_error(monkeypatch):
+    """瞬时网络错误时重建连接池并退避重试，最终成功。"""
+    calls = []
+
+    class FakeResponse:
+        data = {"success": True, "status": "done"}
+
+    class FlakyClient:
+        def rpc(self, name, params):
+            calls.append(name)
+            if len(calls) == 1:
+                raise httpx.RemoteProtocolError("Server disconnected")
+            return FakeRequest()
+
+    class FakeRequest:
+        def execute(self):
+            return FakeResponse()
+
+    monkeypatch.setattr(auth, "get_supabase", lambda: FlakyClient())
+    res = auth._rpc_with_retry("get_compute_task", {"p_token": "t"})
+    assert res == {"success": True, "status": "done"}
+    assert calls == ["get_compute_task", "get_compute_task"]
+
+
+def test_rpc_with_retry_returns_error_for_non_transient(monkeypatch):
+    """非瞬时错误按原契约返回错误 dict，不重试。"""
+
+    class BadClient:
+        def rpc(self, name, params):
+            raise ValueError("boom")
+
+    monkeypatch.setattr(auth, "get_supabase", lambda: BadClient())
+    res = auth._rpc_with_retry("validate_session", {"p_token": "t"})
+    assert res == {"success": False, "error": "boom"}

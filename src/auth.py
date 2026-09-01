@@ -2,9 +2,11 @@
 
 import json
 import os
+import time
 from typing import Optional
 import streamlit as st
 from supabase import create_client, Client
+import httpx
 
 
 def _read_secret(key: str) -> Optional[str]:
@@ -45,6 +47,13 @@ def get_supabase() -> Client:
 
 # ---------- RPC 封装 ----------
 
+def _is_transient_net(e: Exception) -> bool:
+    """网络瞬时错误（连接被重置/超时/断连，如 WinError 10053）。"""
+    if isinstance(e, httpx.HTTPError):
+        return True
+    return isinstance(e, (ConnectionError, TimeoutError, OSError))
+
+
 def _rpc(name: str, params: dict):
     """调用 Supabase RPC 并原样返回 data（list 或 dict，不做类型改写）。
 
@@ -61,6 +70,28 @@ def _rpc(name: str, params: dict):
         return {"success": False, "error": str(e)}
 
 
+def _rpc_with_retry(name: str, params: dict, *, tries: int = 4, backoff: float = 1.0):
+    """带网络自愈的 RPC（仅用于只读/幂等调用）。
+
+    公网到 Supabase 的连接可能被代理/负载均衡器重置（WinError 10053），
+    遇到瞬时网络错误自动退避重试并重建连接池；非瞬时错误按原契约返回错误 dict。
+    """
+    global _supabase
+    for i in range(tries):
+        try:
+            res = get_supabase().rpc(name, params).execute()
+            data = res.data
+            if data is None:
+                return {"success": False, "error": "无响应"}
+            return data
+        except Exception as e:
+            if not _is_transient_net(e) or i == tries - 1:
+                return {"success": False, "error": str(e)}
+            time.sleep(backoff)
+            backoff *= 1.5
+            _supabase = None
+
+
 def login(username: str, password: str) -> dict:
     """登录，返回 {success, username, role, token} 或 {success:False, error}"""
     return _rpc("login_user", {"p_username": username, "p_password": password})
@@ -71,7 +102,7 @@ def register(username: str, password: str) -> dict:
 
 
 def validate_session(token: str) -> dict:
-    return _rpc("validate_session", {"p_token": token})
+    return _rpc_with_retry("validate_session", {"p_token": token})
 
 
 def logout(token: str) -> dict:
@@ -114,7 +145,7 @@ def import_users(token: str, users: list) -> dict:
 
 def get_preference(token: str, key: str) -> Optional[str]:
     """读取用户偏好值，未设置返回 None"""
-    res = _rpc("get_preference", {"p_token": token, "p_key": key})
+    res = _rpc_with_retry("get_preference", {"p_token": token, "p_key": key})
     if isinstance(res, dict) and res.get("success"):
         return res.get("value")
     return None
@@ -360,5 +391,5 @@ def complete_compute_task(token: str, task_id: str, status: str,
 
 def get_compute_task(token: str, task_id: str) -> dict:
     """云端 UI 查询任务状态，返回 {success, status, result, error}。"""
-    return _rpc("get_compute_task", {
+    return _rpc_with_retry("get_compute_task", {
         "p_token": token, "p_task_id": task_id})

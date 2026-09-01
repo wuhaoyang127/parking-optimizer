@@ -11,7 +11,7 @@
 
 | 文件 | 行数 | 说明 |
 |---|---|---|
-| `PROJECT_STATUS.md` | 264 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
+| `PROJECT_STATUS.md` | 266 | 项目状态唯一入口：阶段、里程碑、唯一下一步、最近变更。每次会话必读 |
 | `AGENTS.md` | — | 长期项目规则（tag 纪律、向后兼容、命令约定） |
 | `README.md` | — | 项目简介 |
 | `PROJECT_INDEX.md` | — | 本索引：按需读文件的导航 |
@@ -45,7 +45,7 @@
 | `src/ui/pages.py` | 2300+ | **9 个页面渲染函数**（见下方函数表） |
 | `src/ui/common.py` | 1480+ | UI 公共逻辑：布局构建、参数控件、回放插值、偏好持久化、运行记录、登录守卫（见下方函数表） |
 | `src/viz.py` | 212 | Plotly 绘图：`draw_parking_layout`（车位/路网/车辆/路径） |
-| `src/auth.py` | 340 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值） |
+| `src/auth.py` | 395 | Supabase 认证与 RPC 封装（登录/注册/偏好/反馈/运行记录/审计/健康检查；密钥仅走 secrets/环境变量，无内置默认值；只读 RPC 网络自愈重试） |
 
 ### `src/ui/pages.py` 页面函数（改某页时直接按行号 offset 读）
 
@@ -143,6 +143,7 @@
 | `test_realtime_io.py` | 真实道闸流水/车位状态解析（10 项） |
 | `test_ui_helpers.py` | UI 纯函数（车辆ID排序键 3 项 + worker 启动脚本 2 项） |
 | `test_local_worker.py` | local_worker GBK 输出兜底 + 网络自愈重试（3 项） |
+| `test_auth_net.py` | 公网 app RPC 网络自愈重试（3 项） |
 
 ---
 
