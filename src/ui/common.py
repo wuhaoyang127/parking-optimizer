@@ -1109,34 +1109,63 @@ def _write_local_layout_backup(items):
 
 
 def restore_custom_layouts():
-    """登录/恢复会话后，从 Supabase 恢复自定义布局列表。
+    """登录/恢复会话后，从 Supabase 恢复自定义布局列表（带重试，防网络抖动）。
 
     云端无记录但本地备份存在时（仅桌面运行时），回退本地备份并自愈回写云端。
+    恢复失败时不写入 session_state.custom_layouts（保持缺失），由页面渲染时的
+    ``ensure_custom_layouts_loaded()`` 自动重试，避免一次网络抖动就丢布局。
     """
     token = st.session_state.get("token")
     if not token:
         return
     customs = {}
     cloud_ok = False
-    try:
-        val = auth_get_pref(token, CUSTOM_LAYOUTS_PREF_KEY)
-        if val:
-            items = json.loads(val)
-            if isinstance(items, list):
-                customs = _build_customs_from_items(items)
-                cloud_ok = True
-    except Exception:
-        pass
+    last_err = None
+    for attempt in range(3):
+        try:
+            val = auth_get_pref(token, CUSTOM_LAYOUTS_PREF_KEY)
+            if val:
+                items = json.loads(val)
+                if isinstance(items, list):
+                    customs = _build_customs_from_items(items)
+                    cloud_ok = True
+            last_err = None
+            break
+        except Exception as e:
+            last_err = str(e)
+            time.sleep(0.6 * (attempt + 1))
     if not customs:
         local_items = _load_layout_items_from_local_backup()
         if local_items:
             customs = _build_customs_from_items(local_items)
     if customs:
         st.session_state.custom_layouts = customs
+        st.session_state.pop("layout_restore_error", None)
+        st.session_state.pop("layout_restore_retry_at", None)
         _sync_custom_layouts_to_globals()
         if not cloud_ok:
             # 云端没有记录但本地备份有：回写云端（自愈）
             persist_custom_layouts()
+    else:
+        # 云端和本地都没有可恢复的布局；若因异常导致，记下来供 UI 提示重试
+        if last_err:
+            st.session_state.layout_restore_error = last_err
+            # 失败后 30 秒内不自动重试，避免每个控件交互都打一次后端
+            st.session_state.layout_restore_retry_at = time.time() + 30
+        _sync_custom_layouts_to_globals()
+
+
+def ensure_custom_layouts_loaded():
+    """页面渲染前确保自定义布局已加载。
+
+    登录/会话恢复时若云端读取失败（网络抖动），本函数会在后续页面渲染时
+    自动重试恢复（失败后 30 秒节流），避免用户看到空列表后被迫重新导入。
+    """
+    if "custom_layouts" not in st.session_state and st.session_state.get("token"):
+        retry_at = st.session_state.get("layout_restore_retry_at", 0.0) or 0.0
+        if time.time() >= retry_at:
+            restore_custom_layouts()
+    _sync_custom_layouts_to_globals()
 
 
 def persist_custom_layouts():
@@ -1164,6 +1193,8 @@ def persist_custom_layouts():
 def clear_custom_layouts():
     """退出登录时清空当前会话的自定义布局（session_state 与全局镜像）。"""
     st.session_state.pop("custom_layouts", None)
+    st.session_state.pop("layout_restore_error", None)
+    st.session_state.pop("layout_restore_retry_at", None)
     for k in [k for k in LAYOUT_BUILDERS if k not in BUILTIN_LAYOUT_KEYS]:
         LAYOUT_BUILDERS.pop(k, None)
     for k in [k for k in LAYOUTS if k not in BUILTIN_LAYOUT_KEYS]:

@@ -1,12 +1,13 @@
 import math
 from datetime import datetime
 from ui.common import *
-from ui.common import (_avg_metrics, _plot_radar,
-                      _sync_custom_layouts_to_globals, persist_custom_layouts)
+from ui.common import (_avg_metrics, _plot_radar, _sync_custom_layouts_to_globals,
+                      persist_custom_layouts, restore_custom_layouts,
+                      ensure_custom_layouts_loaded)
 
 def render_settings(role):
     """页面1: 仿真设置"""
-    _sync_custom_layouts_to_globals()
+    ensure_custom_layouts_loaded()
     st.subheader("⚙️ 仿真参数配置")
     disabled = not role["can_configure"]
     if disabled: st.caption("⚠️ 当前角色仅可查看，不可修改参数")
@@ -653,7 +654,15 @@ def _load_layout_doc() -> str:
 
 def _render_import_layout():
     """上传自定义停车场布局（仅管理员调用；说明文档在 tab3 公共区展示）"""
-    _sync_custom_layouts_to_globals()
+    ensure_custom_layouts_loaded()
+    if st.session_state.get("layout_restore_error"):
+        st.warning(f"⚠️ 上次从云端恢复布局失败：{st.session_state.layout_restore_error}")
+        if st.button("🔄 重试加载云端布局", key="retry_layout_restore"):
+            st.session_state.pop("layout_restore_error", None)
+            st.session_state.pop("layout_restore_retry_at", None)
+            st.session_state.pop("custom_layouts", None)
+            restore_custom_layouts()
+            st.rerun()
     if "custom_layouts" not in st.session_state:
         st.session_state.custom_layouts = {}
 
@@ -757,7 +766,7 @@ def _build_custom(data):
 
 def render_layout_page():
     """页面3: 停车场布局图 — 内置布局/真实布局分别回显最近一次仿真的布局"""
-    _sync_custom_layouts_to_globals()
+    ensure_custom_layouts_loaded()
     st.subheader("🅿️ 停车场布局图")
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")

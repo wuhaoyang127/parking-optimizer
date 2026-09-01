@@ -1,7 +1,7 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 42
-last_updated: 2026-08-31
+status_version: 43
+last_updated: 2026-09-01
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：按用户澄清修正 60 秒语义——60 秒只作标记，所有种子都跑完、结果全部展示，指标分析页可勾选「隐藏超时策略」隐藏超过 60 秒的策略，121 项测试与启动包自检通过，待用户在公网 app 验收。
+- **当前唯一下一步**：修复导入布局「不持久」问题——诊断确认布局已存在 Supabase，但恢复路径把网络异常静默吞掉，抖动时布局不加载；已加恢复重试（3 次）+ 页面渲染自愈（30 秒节流）+ 失败可见与「重试加载云端布局」按钮，121 项测试与启动包自检通过，待用户在公网 app 验收。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -140,7 +140,7 @@ superseded
 - 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`，共 103 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -208,6 +208,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-01：**修复导入布局「不持久」**（用户反馈每次都要重新导入）：诊断确认布局 JSON 已正确存在 Supabase `custom_layouts_v1`（海仑宾馆停车场 27 车位、恒基地下停车库 152 车位，均可被当前代码重建），但 `restore_custom_layouts()` 把所有异常静默吞掉，网络抖动/限流时布局加载失败且无任何提示。修复：①恢复改为 3 次重试（0.6/1.2/1.8s 退避）；②新增 `ensure_custom_layouts_loaded()`——仿真设置/布局图/导入布局页渲染前若 `custom_layouts` 缺失且有 token 就自动重试恢复（失败后 30 秒节流，避免每个控件交互都打后端）；③恢复失败不再无声：记录 `layout_restore_error`，导入布局页显示警告 + 「🔄 重试加载云端布局」按钮；④退出登录清空相关恢复状态。pytest 121 passed、启动包自检通过、AppTest 登录与 token 恢复两路径验证布局均加载；打 tag `backup-before-layout-restore-hardening-20260901`；状态文档 status_version 42 → 43；待用户在公网 app 验收；
 - 2026-08-31：**修正 60 秒语义（用户澄清：不是选 ≤60 秒展示，而是全部展示 + 可选隐藏 >60 秒）**：「全部对比」与单策略模式都**不再因超时 break 或 st.stop**——所有种子照常跑完、结果全部取平均展示，60 秒只把该策略标记进 `sim_timed_out_strategies`；指标分析页提示改为「有种子单次运行超过 60 秒（结果仍全部展示）」，仅全部对比模式显示「隐藏超时策略」勾选框（勾选后含超时种子的策略不参与排名/表格/图表与需求时序切换）；进度条文案改为「超过 60 秒仅标记」。pytest 121 passed、启动包自检通过；打 tag `backup-before-timeout-mark-only-20260831`；状态文档 status_version 41 → 42；待用户在公网 app 验收；
 - 2026-08-31：**调整 60 秒熔断语义（用户反馈：先跑再选 ≤60 秒的种子，结果都展示，可选隐藏超时策略）**：「全部对比」循环不再因某个种子超时就把整个策略从结果中剔除——超时种子舍弃，只要有 ≤60 秒的种子就按已完成种子取平均参与对比（所有种子都超时则无数据不参与对比）；指标分析页超时提示改为「超时种子已舍弃、其余种子参与对比」，并新增「隐藏超时策略」勾选框（勾选后含超时种子的策略不参与排名/表格/图表与需求时序策略切换，全部被隐藏时给出提示）；`STRATEGY_TIME_BUDGET` 注释同步更新。pytest 121 passed、启动包自检通过；打 tag `backup-before-timeout-show-all-20260831`；状态文档 status_version 40 → 41；待用户在公网 app 验收；
 - 2026-08-31：**修复动态路径页 TypeError**（线上报错，页面 line 830 `sorted(set(...))`）：①`sim_events_raw` 可能为 None（「全部对比」主方法首种子超时被跳过时无事件日志），页面直接迭代 None 崩溃——动态路径页增加空事件日志守卫（提示回设置页重跑），全部对比主方法无事件时回退到第一个成功策略的事件；②车辆 ID 排序键在「含 `_` 数字后缀 ID」与「无 `_` ID」混用时返回 int/str 混合，`sorted` 比较崩溃——新增 `_vehicle_sort_key` 返回同构 `(int, int, str)` 元组（带下划线按末尾数字、否则字典序，后缀非数字回退）。新增 `tests/test_ui_helpers.py`（3 项），pytest 118 → 121 passed、启动包自检通过（157 文件）；打 tag `backup-before-path-page-typeerror-20260831`；状态文档 status_version 39 → 40；待用户在公网 app 验收；
