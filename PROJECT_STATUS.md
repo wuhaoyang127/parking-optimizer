@@ -7,7 +7,7 @@ stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: 0029d5a
+last_verified_commit: eb68626
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
