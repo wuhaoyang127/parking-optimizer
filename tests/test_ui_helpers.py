@@ -143,10 +143,11 @@ def test_worker_package_zip_contains_operator_kit():
     data = _worker_package_bytes("https://example.supabase.co", "anon-key")
     zf = ZipFile(BytesIO(data))
     names = set(zf.namelist())
-    for need in ("local_worker.py", "src/local_compute.py",
+    for need in ("local_worker.py", "worker_net.py", "worker_compute.py",
                  "requirements_worker.txt", "start_local_worker.bat",
                  "worker_config.toml"):
         assert need in names
+    assert any(n.startswith("src/local_compute/") and n.endswith(".py") for n in names)
     assert any(n.startswith("src/parking_opt/") and n.endswith(".py") for n in names)
     cfg = zf.read("worker_config.toml").decode("utf-8")
     assert 'SUPABASE_URL = "https://example.supabase.co"' in cfg

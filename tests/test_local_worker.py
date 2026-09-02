@@ -1,4 +1,4 @@
-"""local_worker.py 回归测试。
+"""local_worker 回归测试。
 
 覆盖：
 1. Windows GBK（cp936）stdout 下打印 Unicode 符号不崩溃；
@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import local_worker  # noqa: E402
+import worker_net  # noqa: E402
 
 
 def test_local_worker_unicode_print_survives_gbk_stdout():
@@ -43,9 +44,9 @@ def test_local_worker_unicode_print_survives_gbk_stdout():
 
 def test_is_transient_net_detects_connection_reset():
     """WinError 10053（连接被重置）与 httpx 传输错误应视为瞬时网络错误。"""
-    assert local_worker._is_transient_net(ConnectionResetError(10053, "连接被重置"))
-    assert local_worker._is_transient_net(httpx.RemoteProtocolError("Server disconnected"))
-    assert not local_worker._is_transient_net(ValueError("业务参数错误"))
+    assert worker_net._is_transient_net(ConnectionResetError(10053, "连接被重置"))
+    assert worker_net._is_transient_net(httpx.RemoteProtocolError("Server disconnected"))
+    assert not worker_net._is_transient_net(ValueError("业务参数错误"))
 
 
 def test_supabase_client_rpc_retries_transient_then_succeeds(monkeypatch):
@@ -71,8 +72,8 @@ def test_supabase_client_rpc_retries_transient_then_succeeds(monkeypatch):
         def execute(self):
             return FakeResponse()
 
-    monkeypatch.setattr(local_worker, "create_client", lambda url, key: GoodClient())
-    holder = local_worker._SupabaseClient.__new__(local_worker._SupabaseClient)
+    monkeypatch.setattr(worker_net, "create_client", lambda url, key: GoodClient())
+    holder = worker_net._SupabaseClient.__new__(worker_net._SupabaseClient)
     holder.url = "https://example.supabase.co"
     holder.key = "x" * 32
     holder.client = FlakyClient()
@@ -84,14 +85,15 @@ def test_supabase_client_rpc_retries_transient_then_succeeds(monkeypatch):
 
 def test_worker_cached_credentials_roundtrip(monkeypatch, tmp_path):
     """交互登录成功后凭据缓存到 worker_credentials.json，下次免输入。"""
-    monkeypatch.setattr(local_worker, "ROOT", tmp_path)
-    assert local_worker._load_cached_credentials() == ("", "")
-    local_worker._save_cached_credentials("op1", "pw1")
-    assert local_worker._load_cached_credentials() == ("op1", "pw1")
+    monkeypatch.setattr(worker_net, "ROOT", tmp_path)
+    assert worker_net._load_cached_credentials() == ("", "")
+    worker_net._save_cached_credentials("op1", "pw1")
+    assert worker_net._load_cached_credentials() == ("op1", "pw1")
 
 
 def test_local_compute_has_no_ui_deps():
     """操作员包只需精简依赖：local_compute 不得 import Streamlit/Pandas/Plotly。"""
-    src = (ROOT / "src" / "local_compute.py").read_text(encoding="utf-8")
+    pkg = ROOT / "src" / "local_compute"
+    src = "\n".join(p.read_text(encoding="utf-8") for p in pkg.rglob("*.py"))
     for bad in ("streamlit", "pandas", "plotly"):
         assert bad not in src

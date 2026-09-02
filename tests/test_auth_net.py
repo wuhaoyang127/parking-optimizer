@@ -1,4 +1,4 @@
-"""auth.py 网络自愈回归测试。"""
+"""auth 包网络自愈回归测试。"""
 
 import sys
 from pathlib import Path
@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 import auth  # noqa: E402
+import auth._base as auth_base  # noqa: E402
+import auth.tasks as auth_tasks  # noqa: E402
 
 
 def test_is_transient_net_detects_connection_reset():
@@ -36,8 +38,8 @@ def test_rpc_with_retry_recovers_after_transient_error(monkeypatch):
         def execute(self):
             return FakeResponse()
 
-    monkeypatch.setattr(auth, "get_supabase", lambda: FlakyClient())
-    res = auth._rpc_with_retry("get_compute_task", {"p_token": "t"})
+    monkeypatch.setattr(auth_base, "get_supabase", lambda: FlakyClient())
+    res = auth_base._rpc_with_retry("get_compute_task", {"p_token": "t"})
     assert res == {"success": True, "status": "done"}
     assert calls == ["get_compute_task", "get_compute_task"]
 
@@ -49,8 +51,8 @@ def test_rpc_with_retry_returns_error_for_non_transient(monkeypatch):
         def rpc(self, name, params):
             raise ValueError("boom")
 
-    monkeypatch.setattr(auth, "get_supabase", lambda: BadClient())
-    res = auth._rpc_with_retry("validate_session", {"p_token": "t"})
+    monkeypatch.setattr(auth_base, "get_supabase", lambda: BadClient())
+    res = auth_base._rpc_with_retry("validate_session", {"p_token": "t"})
     assert res == {"success": False, "error": "boom"}
 
 
@@ -63,7 +65,7 @@ def test_get_latest_compute_task_calls_rpc(monkeypatch):
         captured["params"] = params
         return {"success": True, "task": {"id": "x"}}
 
-    monkeypatch.setattr(auth, "_rpc_with_retry", fake_rpc)
+    monkeypatch.setattr(auth_tasks, "_rpc_with_retry", fake_rpc)
     res = auth.get_latest_compute_task("tok")
     assert res == {"success": True, "task": {"id": "x"}}
     assert captured == {"name": "get_latest_compute_task", "params": {"p_token": "tok"}}
@@ -78,7 +80,7 @@ def test_delete_compute_task_calls_rpc(monkeypatch):
         captured["params"] = params
         return {"success": True}
 
-    monkeypatch.setattr(auth, "_rpc", fake_rpc)
+    monkeypatch.setattr(auth_tasks, "_rpc", fake_rpc)
     res = auth.delete_compute_task("tok", "task-1")
     assert res == {"success": True}
     assert captured == {"name": "delete_compute_task",
@@ -94,7 +96,7 @@ def test_get_latest_compute_task_any_calls_rpc(monkeypatch):
         captured["params"] = params
         return {"success": True, "task": {"id": "x", "status": "running"}}
 
-    monkeypatch.setattr(auth, "_rpc_with_retry", fake_rpc)
+    monkeypatch.setattr(auth_tasks, "_rpc_with_retry", fake_rpc)
     res = auth.get_latest_compute_task_any("tok")
     assert res == {"success": True, "task": {"id": "x", "status": "running"}}
     assert captured == {"name": "get_latest_compute_task_any", "params": {"p_token": "tok"}}

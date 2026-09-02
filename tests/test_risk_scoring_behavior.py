@@ -1,53 +1,12 @@
-"""风险感知多准则评分策略（risk_scoring）单元测试。
+"""风险感知多准则评分策略（risk_scoring）行为测试。"""
 
-覆盖：无空位→waiting、仅独立位、有纵深位、不同预估时长、风险 vs 距离冲突、
-参数边界、tie-break 确定性、不读真实停车时长、注册表创建、默认无参构造、
-退化为最近路径的理论性质。
-"""
-
-import pytest
-
-from src.parking_opt.domain.spot import Spot, SpotType, Vehicle
+from src.parking_opt.domain.spot import Spot, SpotType
 from src.parking_opt.simulation.parking_lot import ParkingLot
 from src.parking_opt.strategies.baselines import NearestPath
-from src.parking_opt.strategies.registry import StrategyRegistry
 from src.parking_opt.strategies.risk_scoring import RiskScoringStrategy
 
-# 确保策略已登记（导入包触发注册）
-import src.parking_opt.strategies  # noqa: F401
+from tests._risk_helpers import StubPathEngine, build_lot, veh
 
-
-class StubPathEngine:
-    """按 node_id 返回可配置距离的路径引擎替身。"""
-
-    def __init__(self, distances=None):
-        self.distances = distances or {}
-
-    def distance_to_spot(self, node_id, entry_id=None):
-        return self.distances.get(node_id, 1.0)
-
-    def shortest_distance(self, a, b):
-        return 1.0
-
-
-def build_lot():
-    """2 独立位 + 1 个 2 深纵深组（G1-1 外层, G1-2 里层）。"""
-    spots = [
-        Spot("A1", SpotType.STANDALONE, "A1", "A1", 1),
-        Spot("A2", SpotType.STANDALONE, "A2", "A2", 1),
-        Spot("G1-1", SpotType.TANDEM, "G1-1", "G1", 1),
-        Spot("G1-2", SpotType.TANDEM, "G1-2", "G1", 2),
-    ]
-    return ParkingLot(spots)
-
-
-def veh(vid, arrival=0.0, real=1800.0, est=1800.0):
-    """构造车辆；real=真实停车时长(策略不可读)，est=预估时长(策略可用)。"""
-    return Vehicle(vid, arrival_time=arrival, parking_duration=real,
-                   estimated_duration=est)
-
-
-# ---------- 基础契约 ----------
 
 def test_no_available_returns_waiting():
     lot = build_lot()
@@ -86,8 +45,6 @@ def test_has_tandem_spot_runs():
     assert status == "assigned"
     assert spot.spot_id in {"A1", "A2", "G1-1", "G1-2"}
 
-
-# ---------- 风险语义 ----------
 
 def test_risk_vs_distance_conflict():
     """近处纵深外层(会挡住已停短停里层车) vs 远处安全独立位：
@@ -144,8 +101,6 @@ def test_inner_blocked_by_later_outer():
     assert s._risk_cost(lot.get_spot("G1-2"), v, lot) == 0.0
 
 
-# ---------- 信息边界：不读真实停车时长 ----------
-
 def test_does_not_read_real_parking_duration():
     """真实停车时长不同、预估时长相同 → 决策必须完全一致（无未来信息泄漏）。"""
     pe = StubPathEngine({"G1-1": 1.0, "A1": 10.0, "A2": 11.0})
@@ -174,8 +129,6 @@ def test_decision_follows_estimate_not_real():
     assert s._risk_cost(lot.get_spot("G1-1"), v_est_long, lot) == 1.0
     assert s._risk_cost(lot.get_spot("G1-1"), v_est_short, lot) == 0.0
 
-
-# ---------- 参数边界与退化性质 ----------
 
 def test_all_zero_weights_deterministic():
     """所有权重为 0：不崩溃，按 tie-break 确定性返回。"""
@@ -219,34 +172,3 @@ def test_degenerates_to_nearest():
     spot_s, _ = scoring.assign(v, 0, lot, pe)
     spot_n, _ = NearestPath().assign(v, 0, build_lot(), pe)
     assert spot_s.spot_id == spot_n.spot_id == "A2"
-
-
-# ---------- 注册表 / 构造 ----------
-
-def test_registry_create():
-    s = StrategyRegistry.create("risk_scoring")
-    assert isinstance(s, RiskScoringStrategy)
-    assert s.name == "risk_scoring"
-
-
-def test_registry_create_with_params():
-    s = StrategyRegistry.create("risk_scoring", w_distance=2.0, w_risk=0.5, w_depth=0.0)
-    assert (s.w_distance, s.w_risk, s.w_depth) == (2.0, 0.5, 0.0)
-
-
-def test_default_construction():
-    s = RiskScoringStrategy()
-    assert s.w_distance == 1.0 and s.w_risk == 1.5 and s.w_depth == 0.5
-
-
-def test_params_match_constructor():
-    """PARAMS 里每个 key 必须是构造函数关键字参数（网页控件契约）。"""
-    keys = {p["key"] for p in RiskScoringStrategy.PARAMS}
-    assert keys == {"w_distance", "w_risk", "w_depth"}
-    # 用默认值实例化不报错
-    defaults = {p["key"]: p["default"] for p in RiskScoringStrategy.PARAMS}
-    RiskScoringStrategy(**defaults)
-
-
-def test_registered_in_registry():
-    assert StrategyRegistry.get("risk_scoring") is RiskScoringStrategy

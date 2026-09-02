@@ -80,6 +80,13 @@
 
 复杂任务、跨多个模块、改变数学含义、引入重要依赖或预计超过一小时的任务，必须按照 `.agent/PLANS.md` 建立 ExecPlan。
 
+### 3.2.1 单文件行数上限（强制）
+
+- 项目中所有 Python 文件（源码 / 测试 / 脚本）单文件不得超过 **200 行**；
+- 超过 200 行必须**按功能拆分**：一个功能一个文件，禁止为凑行数而胡乱拆分；
+- 每次改动后先运行 `py scripts/check_file_lines.py` 自检行数，再运行 `py -m pytest`；
+- 新增文件同样受 200 行限制；`scripts/check_file_lines.py` 会把所有超限文件列为不合规。
+
 ### 3.3 `PROJECT_STATUS.md`
 
 `PROJECT_STATUS.md` 是项目当前状态的唯一入口，只保存当前有效状态，不替代 ExecPlan、研究文档、阶段交接摘要或 Git 历史。

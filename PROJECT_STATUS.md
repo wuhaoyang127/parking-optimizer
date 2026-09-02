@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 63
+status_version: 64
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: 47f1537
+last_verified_commit: a946f9b
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
@@ -32,7 +32,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
+- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；**全库 Python 文件已按功能拆分至单文件 ≤200 行**（AGENTS.md 3.2.1 已写入强制规则：源码/测试/脚本全部适用，超 200 行必须按功能拆，一个功能一个文件；`scripts/check_file_lines.py` 自检通过，143 测试通过），已于 2026-09-02 完成；
 - **当前阶段阻断项**：无；
 - **当前唯一下一步**：💻 本地计算全链路已在公网 app 由 222 账号验收通过（内置布局、约 200 车位、结果正常载入指标页）；「📂 载入最近一次结果」（迁移 10）公网验收通过；**「🗑 删除该任务」刷新后删除场景已公网验收通过**（迁移 12 已执行）；企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
