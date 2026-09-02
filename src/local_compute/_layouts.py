@@ -17,7 +17,7 @@ def _an(net, nid, nt, x, y, st=None, sg=None, dp=None):
 
 def build_linear(n_spots, tandem_ratio):
     net = RoadNetwork(); _an(net, "ENTRY", NodeType.ENTRY, 0, 0); _an(net, "N0", NodeType.ROAD_NODE, 5, 0)
-    net.add_edge("ENTRY", "N0", 5); spots = []; nt = int(n_spots * tandem_ratio / 2); ns = n_spots - nt * 2
+    net.add_edge("ENTRY", "N0", 5); net.add_edge("N0", "ENTRY", 5); spots = []; nt = int(n_spots * tandem_ratio / 2); ns = n_spots - nt * 2
     for i in range(ns):
         sid = f"A{i+1:02d}"; _an(net, sid, NodeType.PARKING_SPOT, 8 + i * 5, 3, SpotType.STANDALONE, sid, 1)
         net.add_edge("N0", sid, 3 + i * 5); net.add_edge(sid, "N0", 3 + i * 5); spots.append(Spot(sid, SpotType.STANDALONE, sid, sid, 1))
@@ -32,7 +32,7 @@ def build_linear(n_spots, tandem_ratio):
 def build_rectangle(n_spots, tandem_ratio):
     net = RoadNetwork(); _an(net, "ENTRY", NodeType.ENTRY, 0, 0)
     _an(net, "M", NodeType.ROAD_NODE, 8, 0); _an(net, "U", NodeType.ROAD_NODE, 8, 6); _an(net, "D", NodeType.ROAD_NODE, 8, -6)
-    for a, b, d in [("ENTRY", "M", 8), ("M", "U", 6), ("M", "D", 6), ("U", "M", 6), ("D", "M", 6)]:
+    for a, b, d in [("ENTRY", "M", 8), ("M", "ENTRY", 8), ("M", "U", 6), ("M", "D", 6), ("U", "M", 6), ("D", "M", 6)]:
         net.add_edge(a, b, d)
     spots = []; half = n_spots // 2; nt = int(half * tandem_ratio / 2); ns = half - nt * 2
     for row, rd, ys in [("U", "U", 1), ("D", "D", -1)]:
@@ -103,7 +103,7 @@ def build_circle(n_spots, tandem_ratio):
     net = RoadNetwork(); _an(net, "ENTRY", NodeType.ENTRY, 0, 0); rns = []
     for a in range(8):
         ang = a * _m.pi * 2 / 8; nid = f"R{a}"; _an(net, nid, NodeType.ROAD_NODE, R * _m.cos(ang), R * _m.sin(ang)); rns.append(nid)
-    net.add_edge("ENTRY", rns[0], R)
+    net.add_edge("ENTRY", rns[0], R); net.add_edge(rns[0], "ENTRY", R)
     for i in range(8):
         j = (i + 1) % 8; net.add_edge(rns[i], rns[j], R * _m.pi / 4); net.add_edge(rns[j], rns[i], R * _m.pi / 4)
     spots = []; nt = int(n_spots * tandem_ratio / 2); ns = n_spots - nt * 2
