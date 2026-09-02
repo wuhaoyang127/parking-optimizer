@@ -7,7 +7,8 @@ from ui.pages.feedback_admin import _render_admin_feedbacks
 def render_feedback_page(role):
     """页面: 用户反馈 —— 意见箱 + 仿真结果反馈"""
     st.subheader("💬 反馈")
-    is_admin = role.get("can_manage_users", False)
+    is_admin = role.get("can_manage_feedback", False)
+    can_submit = bool(role.get("can_submit_feedback"))
 
     if "feedback_sort_order" not in st.session_state:
         st.session_state.feedback_sort_order = "正序（早→晚）"
@@ -17,7 +18,7 @@ def render_feedback_page(role):
     sort_desc = st.session_state.feedback_sort_order.startswith("倒序")
 
     with st.expander("📝 提交反馈", expanded=True):
-        _render_submit_feedback()
+        _render_submit_feedback(can_submit)
 
     with st.expander("📋 我的反馈", expanded=False):
         _render_my_feedbacks(reverse=sort_desc)
@@ -28,8 +29,11 @@ def render_feedback_page(role):
         _render_admin_feedbacks(reverse=sort_desc)
 
 
-def _render_submit_feedback():
-    """提交反馈表单（所有登录用户）"""
+def _render_submit_feedback(can_submit: bool = True):
+    """提交反馈表单（有 can_submit_feedback 权限的登录用户）"""
+    if not can_submit:
+        st.info("当前角色无提交反馈权限")
+        return
     category = st.radio("反馈类型", ["general", "simulation"],
                         format_func=lambda x: "通用意见" if x == "general" else "仿真结果反馈",
                         horizontal=True)

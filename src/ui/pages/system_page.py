@@ -11,33 +11,48 @@ def _role_index(ur: str) -> int:
 
 
 def _render_custom_role_editor():
-    """自定义角色模板：管理员勾选该角色可见板块，保存后同步给所有 custom 用户。"""
+    """自定义角色模板：管理员勾选该角色的板块 + 功能权限，保存后同步给所有 custom 用户。"""
     st.markdown("#### 🧩 自定义角色权限")
-    st.caption("勾选「自定义」角色能看到的板块；功能权限与操作员一致（可配置/可导出/可查看状态）。")
+    st.caption("勾选「自定义」角色能看到的板块和可执行的功能；保存后同步给所有「自定义」角色用户。")
     saved = auth_get_custom_sections(st.session_state.token)
-    current = saved if saved else DEFAULT_CUSTOM_SECTIONS
-    # 全选/全不选快捷按钮
-    c_all, c_none = st.columns(2)
-    with c_all:
-        if st.button("全选", key="custom_all", use_container_width=True):
-            st.session_state.custom_sections = list(SECTION_KEYS); st.rerun()
-    with c_none:
-        if st.button("全不选", key="custom_none", use_container_width=True):
-            st.session_state.custom_sections = ["feedback"]; st.rerun()
-    if "custom_sections" not in st.session_state:
-        st.session_state.custom_sections = list(current)
-    chosen = []
-    for key in SECTION_KEYS:
-        label = SECTION_LABELS[key]
-        if st.checkbox(label, value=key in st.session_state.custom_sections,
-                       key=f"perm_{key}"):
-            chosen.append(key)
-    st.session_state.custom_sections = chosen
+    cur_sections = saved.get("sections") if saved.get("sections") else DEFAULT_CUSTOM_SECTIONS
+    cur_features = saved.get("features") if saved.get("features") else ROLES["custom"]
+
+    tab_sections, tab_features = st.tabs(["📑 板块可见性", "🔘 功能权限"])
+    with tab_sections:
+        c_all, c_none = st.columns(2)
+        with c_all:
+            if st.button("板块全选", key="custom_all", use_container_width=True):
+                st.session_state.custom_sections = list(SECTION_KEYS); st.rerun()
+        with c_none:
+            if st.button("板块全不选", key="custom_none", use_container_width=True):
+                st.session_state.custom_sections = ["feedback"]; st.rerun()
+        if "custom_sections" not in st.session_state:
+            st.session_state.custom_sections = list(cur_sections)
+        chosen_sections = []
+        for key in SECTION_KEYS:
+            if st.checkbox(SECTION_LABELS[key], value=key in st.session_state.custom_sections,
+                           key=f"perm_sec_{key}"):
+                chosen_sections.append(key)
+        st.session_state.custom_sections = chosen_sections
+
+    with tab_features:
+        if "custom_features" not in st.session_state:
+            st.session_state.custom_features = {k: bool(cur_features.get(k)) for k in FEATURE_KEYS}
+        chosen_features = {}
+        for key in FEATURE_KEYS:
+            label, help_text = FEATURE_LABELS[key]
+            chosen_features[key] = st.checkbox(
+                label, value=st.session_state.custom_features.get(key, False),
+                key=f"perm_feat_{key}", help=help_text)
+        st.session_state.custom_features = chosen_features
+
     if st.button("💾 保存自定义角色权限", type="primary", use_container_width=True):
-        if not chosen:
+        if not chosen_sections:
             st.error("至少勾选一个板块（建议至少保留「仿真设置」）")
         else:
-            res = auth_save_custom_sections(st.session_state.token, chosen)
+            res = auth_save_custom_sections(st.session_state.token,
+                                            chosen_sections, chosen_features)
             if res.get("success"):
                 st.success("已保存，并同步到所有「自定义」角色用户")
             else:

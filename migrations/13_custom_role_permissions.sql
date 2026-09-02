@@ -1,10 +1,10 @@
 -- ============================================
--- 迁移 13：自定义角色板块权限
+-- 迁移 13：自定义角色权限（板块 + 功能开关）
 -- 目标：
---   1. users 表加 permissions JSONB（custom 用户实际生效的板块数组）
---   2. app_settings 表存全局「自定义角色模板」（管理员勾选保存后同步给所有 custom 用户）
+--   1. users 表加 permissions JSONB（custom 用户实际生效的 {sections, features}）
+--   2. app_settings 表存全局「自定义角色模板」
 --   3. login_user / validate_session / list_users 返回 permissions
---   4. 新 RPC：get_custom_sections / save_custom_sections
+--   4. 新 RPC：get_custom_sections / save_custom_sections（对象结构）
 --   5. update_user_role 支持 custom（自动套用模板）
 -- 在 Supabase SQL Editor 中执行本脚本（幂等，可重复执行）
 -- ============================================
@@ -80,7 +80,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 5. 用户列表：返回 permissions（管理员查看 custom 用户的板块配置）
+-- 5. 用户列表：返回 permissions（管理员查看 custom 用户的配置）
 CREATE OR REPLACE FUNCTION public.list_users(
   p_token TEXT
 ) RETURNS JSON AS $$
@@ -118,7 +118,10 @@ BEGIN
   IF p_role = 'custom' THEN
     SELECT value INTO v_template FROM public.app_settings WHERE key = 'custom_sections';
     IF v_template IS NULL THEN
-      v_template := '["settings","layout","path","metrics","history","feedback"]'::jsonb;
+      v_template := jsonb_build_object(
+        'sections', '["settings","layout","path","metrics","history","feedback"]'::jsonb,
+        'features', '{"can_configure":true,"can_import_demand":true,"can_export_demand":true,"can_run_simulation":true,"can_local_compute":true,"can_delete_local_task":true,"can_export_results":true,"can_delete_history":true,"can_manage_users":false,"can_manage_data":false,"can_import_algo":false,"can_debug":true,"can_submit_feedback":true,"can_manage_feedback":false}'::jsonb
+      );
     END IF;
     UPDATE public.users SET role = p_role, permissions = v_template
     WHERE username = p_username AND username != 'wuhaoyang127';
@@ -131,7 +134,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 7. 读取自定义角色模板（管理员）
+-- 7. 读取自定义角色模板（管理员）：返回 {sections, features}
 CREATE OR REPLACE FUNCTION public.get_custom_sections(
   p_token TEXT
 ) RETURNS JSON AS $$
@@ -146,7 +149,10 @@ BEGIN
 
   SELECT value INTO v_value FROM public.app_settings WHERE key = 'custom_sections';
   IF v_value IS NULL THEN
-    v_value := '["settings","layout","path","metrics","history","feedback"]'::jsonb;
+    v_value := jsonb_build_object(
+      'sections', '["settings","layout","path","metrics","history","feedback"]'::jsonb,
+      'features', '{"can_configure":true,"can_import_demand":true,"can_export_demand":true,"can_run_simulation":true,"can_local_compute":true,"can_delete_local_task":true,"can_export_results":true,"can_delete_history":true,"can_manage_users":false,"can_manage_data":false,"can_import_algo":false,"can_debug":true,"can_submit_feedback":true,"can_manage_feedback":false}'::jsonb
+    );
   END IF;
 
   RETURN json_build_object('success', true, 'sections', v_value);

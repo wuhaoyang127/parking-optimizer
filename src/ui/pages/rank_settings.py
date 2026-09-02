@@ -55,12 +55,19 @@ def _render_rank_settings(disabled):
     return rank_mode
 
 
-def _render_compute_mode():
-    """计算位置：云端 CPU / 本机 worker（云 UI + 本地算力）。返回 compute_mode。"""
+def _render_compute_mode(role=None):
+    """计算位置：云端 CPU / 本机 worker（云 UI + 本地算力）。返回 compute_mode。
+
+    role 传入时，无 can_local_compute 权限则隐藏本地选项（访客只能云端）。
+    """
     compute_mode = st.session_state.get("compute_mode", "cloud")
     mode_options = ["☁️ 云端计算", "💻 本地计算（本机 CPU）"]
+    allow_local = True if role is None else bool(role.get("can_local_compute"))
+    if not allow_local:
+        mode_options = mode_options[:1]
+        st.caption("当前角色仅可使用云端计算")
     mode_sel = st.radio("计算位置", mode_options, horizontal=True,
-                        index=0 if compute_mode != "local" else 1,
+                        index=0 if (compute_mode != "local" or not allow_local) else 1,
                         key="compute_mode_sel",
                         help="本地计算：云端界面 + 本机 worker 计算，大参数不再受云端内存限制")
     new_mode = "local" if mode_sel == mode_options[1] else "cloud"

@@ -8,7 +8,8 @@ def render_history_page(role):
     """页面: 历史运行记录（sim_runs 持久化，跨会话/跨用户可查）"""
     st.subheader("📜 历史运行")
     is_admin = bool(role.get("can_manage_users"))
-    can_export = bool(role.get("can_export"))
+    can_export = bool(role.get("can_export_results"))
+    can_delete = bool(role.get("can_delete_history"))
     token = st.session_state.get("token")
     if not token:
         st.info("未登录")
@@ -117,14 +118,17 @@ def render_history_page(role):
                 st.dataframe(pd.DataFrame(cmp_rows), use_container_width=True, hide_index=True)
                 st.plotly_chart(_compare_radar(rep_a, rep_b), use_container_width=True)
 
-    # 删除（管理员任意 / 本人自己的）
+    # 删除（有权删除者）
     with st.expander("🗑 删除运行记录"):
-        sel = st.selectbox("选择要删除的记录", labels, key="hist_del_sel")
-        if st.button("确认删除", key="hist_del_btn"):
-            idx = labels.index(sel)
-            res = auth_delete_sim_run(token, runs[idx].get("id"))
-            if isinstance(res, dict) and res.get("success"):
-                st.success("已删除")
-            else:
-                st.error((res or {}).get("error", "删除失败"))
-            st.rerun()
+        if not can_delete:
+            st.info("当前角色无权删除历史运行记录")
+        else:
+            sel = st.selectbox("选择要删除的记录", labels, key="hist_del_sel")
+            if st.button("确认删除", key="hist_del_btn"):
+                idx = labels.index(sel)
+                res = auth_delete_sim_run(token, runs[idx].get("id"))
+                if isinstance(res, dict) and res.get("success"):
+                    st.success("已删除")
+                else:
+                    st.error((res or {}).get("error", "删除失败"))
+                st.rerun()

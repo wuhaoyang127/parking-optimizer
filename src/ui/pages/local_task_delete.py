@@ -3,15 +3,20 @@ from ui.common import *
 from ui.pages.worker_kit import _resolve_delete_task_id
 
 
-def _delete_local_task_with_confirm():
+def _delete_local_task_with_confirm(role):
     """删除本地计算任务（下发错了叫停用），带二次确认。
 
     优先删本会话下发的 task_id；刷新/重开浏览器后 session 丢失 task_id 时，
     自动查询该用户最近一条任务（任意状态）来删，按钮不再因刷新而失效。
     """
+    can_delete = bool(role.get("can_delete_local_task"))
     token = st.session_state.get("token")
     if not token:
         st.info("未登录，无法删除本地计算任务")
+        return
+    if not can_delete:
+        st.button("🗑 删除该任务", use_container_width=True, disabled=True,
+                  help="当前角色无权删除本地计算任务")
         return
     task_id = st.session_state.get("local_task_id")
     task_status = None

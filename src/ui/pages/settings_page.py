@@ -25,7 +25,7 @@ def render_settings(role):
                       n_spots, tandem_ratio, n_vehicles, env_params, layout)
 
     _render_rank_settings(disabled)
-    compute_mode = _render_compute_mode()
+    compute_mode = _render_compute_mode(role)
 
     # 需求来源（导入序列所有 run/策略复用同一批，保证公平；否则按种子生成）
     base_vehicles = list(imported_vehicles) if imported_vehicles else None
@@ -44,7 +44,7 @@ def render_settings(role):
         imported_meta=imported_meta, n_vehicles=n_vehicles)
 
     if compute_mode == "local":
-        _render_local_compute_section(ctx_kwargs)
+        _render_local_compute_section(ctx_kwargs, role)
 
     # 公网云端资源受限，大参数提前提示（本地 Windows 桌面不提示）
     if (not is_local_desktop() and compute_mode == "cloud"
@@ -53,8 +53,8 @@ def render_settings(role):
                 "可切换到上面的「💻 本地计算」，并在本机运行 `py local_worker.py`。")
 
     run_label = "▶️ 下发本地计算任务" if compute_mode == "local" else "▶️ 运行仿真"
-    if st.button(run_label, type="primary", use_container_width=True,
-                 disabled=not role["can_run_simulation"]):
+    run_allowed = role["can_local_compute"] if compute_mode == "local" else role["can_run_simulation"]
+    if st.button(run_label, type="primary", use_container_width=True, disabled=not run_allowed):
         if compute_mode == "local":
             _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                         strat_params, env_params, wait_policy, seed,

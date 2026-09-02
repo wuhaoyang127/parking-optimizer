@@ -24,7 +24,7 @@ def _render_demand_source(disabled, role):
                     "📥 下载道闸流水示例 CSV",
                     sample_path.read_bytes(),
                     "道闸流水示例.csv", "text/csv",
-                    disabled=not role["can_export"],
+                    disabled=not role["can_export_demand"],
                     help="按这个格式准备数据即可导入",
                 )
             with st.expander("📖 道闸流水 CSV 填写说明（给停车场运营方）", expanded=False):
@@ -52,7 +52,7 @@ def _render_demand_source(disabled, role):
 """)
             up = st.file_uploader(
                 "上传道闸流水 CSV（.csv）", type=["csv"],
-                disabled=disabled,
+                disabled=not role["can_import_demand"],
                 help="列名支持 车牌/入场时间/出场时间（中英文），可选入口/出口编号；"
                      "系统默认对车牌脱敏后转换为需求序列",
             )
@@ -67,7 +67,7 @@ def _render_demand_source(disabled, role):
                                f"（车牌已脱敏）。运行仿真将以该真实时序为准。")
                 except ValueError as exc:
                     st.error(f"❌ 道闸流水解析失败：{exc}")
-            if (role["can_export"]
+            if (role["can_export_demand"]
                     and (st.session_state.get("imported_meta") or {}).get("source") == "real_gate"
                     and st.session_state.get("imported_vehicles")):
                 st.download_button(
@@ -81,7 +81,7 @@ def _render_demand_source(disabled, role):
                 )
         else:
             up = st.file_uploader("上传需求序列 JSON（.json）", type=["json"],
-                                  disabled=disabled,
+                                  disabled=not role["can_import_demand"],
                                   help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
             if up is not None:
                 try:
@@ -101,7 +101,7 @@ def _render_demand_source(disabled, role):
                     sel = st.selectbox(
                         "或从项目文件夹选择（data/demand_exports/）",
                         ["（不选择）"] + labels, key="local_demand_sel",
-                        disabled=disabled,
+                        disabled=not role["can_import_demand"],
                         help="选择后立即解析该文件作为本次需求序列；文件由「指标分析页 → 保存到项目文件夹」生成",
                     )
                     if sel != "（不选择）":
@@ -119,7 +119,7 @@ def _render_demand_source(disabled, role):
                     imported_meta = st.session_state.get("imported_meta") or {}
                     st.info(f"沿用本会话已导入的需求序列（{len(imported_vehicles)} 辆车）。"
                             f"重新上传文件可替换。")
-            if role["can_export"]:
+            if role["can_export_demand"]:
                 st.download_button(
                     "📄 下载需求序列 JSON 示例",
                     export_demand_json(

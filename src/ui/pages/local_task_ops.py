@@ -115,8 +115,9 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name, st
     st.stop()
 
 
-def _render_local_compute_section(ctx_kwargs):
+def _render_local_compute_section(ctx_kwargs, role):
     """本地计算模式：下载脚本/操作员包 + 检查/载入/删除按钮。"""
+    can_local = bool(role.get("can_local_compute"))
     st.info("💻 **本地计算模式**：云端界面 + 本机 CPU。\n\n"
             "**本机就是项目电脑（管理员）**：下载「📥 一键启动脚本」放到项目根目录双击运行；\n\n"
             "**操作员/同事自己的电脑**：直接下载「📦 操作员本地计算包（zip）」→ 解压到任意文件夹 → "
@@ -131,6 +132,7 @@ def _render_local_compute_section(ctx_kwargs):
             file_name="start_local_worker.bat",
             mime="application/octet-stream",
             use_container_width=True,
+            disabled=not can_local,
             help="保存到项目根目录（和 local_worker.py 同一个文件夹）后双击，即启动本机 worker")
     with c_dl2:
         st.download_button(
@@ -139,6 +141,7 @@ def _render_local_compute_section(ctx_kwargs):
             file_name="install_local_worker_autostart.bat",
             mime="application/octet-stream",
             use_container_width=True,
+            disabled=not can_local,
             help="保存到项目根目录双击一次：注册 Windows 登录自启，以后每次开机自动运行 worker，无需再手动打开")
     with c_dl3:
         try:
@@ -153,16 +156,16 @@ def _render_local_compute_section(ctx_kwargs):
                       disabled=True, help=f"生成失败：{exc}")
     c_refresh, c_load, c_delete = st.columns(3)
     with c_refresh:
-        if st.button("🔄 检查本地计算结果", use_container_width=True,
+        if st.button("🔄 检查本地计算结果", use_container_width=True, disabled=not can_local,
                      help="按本会话下发的任务 ID 查询状态（任务跑完自动载入）"):
             _check_local_task_once(ctx_kwargs)
     with c_load:
-        if st.button("📂 载入最近一次结果", use_container_width=True,
+        if st.button("📂 载入最近一次结果", use_container_width=True, disabled=not can_local,
                      help="从 Supabase 拉取该用户最近一次已完成的本地计算任务并载入；"
                           "刷新页面、重开浏览器或换电脑后也能找回结果"):
             _load_latest_local_task()
     with c_delete:
-        _delete_local_task_with_confirm()
+        _delete_local_task_with_confirm(role)
     if st.session_state.get("local_task_id"):
         st.caption(f"最近任务：{st.session_state.local_task_id}")
     else:

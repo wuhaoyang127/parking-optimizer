@@ -9,7 +9,7 @@ from ui.pages.metrics_demand import _render_demand_section
 def render_metrics_page(role):
     """页面5: 指标分析"""
     st.subheader("📊 指标分析")
-    can_export = role.get("can_export", False)
+    can_export = role.get("can_export_results", False)
     if not st.session_state.get("sim_has_run"):
         st.info("👈 请先在 **仿真设置** 中运行仿真")
         return

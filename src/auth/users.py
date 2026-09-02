@@ -68,17 +68,27 @@ def set_preference(token: str, key: str, value: str) -> dict:
     return _rpc("set_preference", {"p_token": token, "p_key": key, "p_value": value})
 
 
-def get_custom_sections(token: str) -> list:
-    """读取自定义角色模板的板块数组（管理员）。迁移 13 未执行时返回空列表。"""
+def get_custom_sections(token: str) -> dict:
+    """读取自定义角色模板（管理员）。返回 {sections: [...], features: {...}}；
+    迁移 13 未执行或 RPC 缺失时返回空 dict。兼容旧版数组返回。"""
     try:
         res = _rpc("get_custom_sections", {"p_token": token})
-        if isinstance(res, dict) and res.get("success") and isinstance(res.get("sections"), list):
-            return [str(s) for s in res["sections"]]
+        if isinstance(res, dict) and res.get("success"):
+            sections = res.get("sections")
+            features = res.get("features") or {}
+            if isinstance(sections, list):  # 旧版只存数组：升级为对象
+                return {"sections": [str(s) for s in sections], "features": features}
+            if isinstance(sections, dict):
+                return {
+                    "sections": [str(s) for s in (sections.get("sections") or [])],
+                    "features": sections.get("features") or {},
+                }
     except Exception:
         pass
-    return []
+    return {}
 
 
-def save_custom_sections(token: str, sections: list) -> dict:
-    """保存自定义角色模板的板块数组（管理员），并同步给所有 custom 用户。"""
-    return _rpc("save_custom_sections", {"p_token": token, "p_sections": sections})
+def save_custom_sections(token: str, sections: list, features: dict) -> dict:
+    """保存自定义角色模板（管理员），并同步给所有 custom 用户。"""
+    payload = {"sections": sections, "features": features}
+    return _rpc("save_custom_sections", {"p_token": token, "p_sections": payload})

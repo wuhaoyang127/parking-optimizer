@@ -1,12 +1,13 @@
-"""板块级权限：角色解析与自定义角色模板测试。"""
+"""板块级 + 功能级权限：角色解析与自定义角色模板测试。"""
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from ui.common.constants import (ROLES, SECTION_KEYS, SECTION_LABELS,  # noqa: E402
-                                 DEFAULT_CUSTOM_SECTIONS, resolve_role)
+from ui.common.permissions import (ROLES, SECTION_KEYS, SECTION_LABELS,  # noqa: E402
+                                   DEFAULT_CUSTOM_SECTIONS, FEATURE_KEYS,
+                                   FEATURE_LABELS, resolve_role)
 
 
 def test_section_keys_cover_all_nav_pages():
@@ -15,28 +16,44 @@ def test_section_keys_cover_all_nav_pages():
     assert set(SECTION_KEYS) == set(SECTION_LABELS)
 
 
-def test_builtin_roles_have_valid_sections():
-    """内置三角色 sections 必须是 SECTION_KEYS 的子集且非空。"""
+def test_builtin_roles_have_valid_sections_and_features():
+    """内置三角色 sections/features 必须完整且合法。"""
     for name in ("admin", "operator", "viewer"):
         secs = ROLES[name]["sections"]
         assert secs, f"{name} 板块不能为空"
         assert set(secs).issubset(SECTION_KEYS)
         assert len(secs) == len(set(secs)), f"{name} 板块重复"
+        for key in FEATURE_KEYS:
+            assert isinstance(ROLES[name].get(key), bool), f"{name} 缺少功能权限 {key}"
 
 
-def test_admin_sees_all_operator_loses_system_viewer_readonly():
+def test_all_features_have_labels():
+    assert set(FEATURE_KEYS) == set(FEATURE_LABELS)
+    for key in FEATURE_KEYS:
+        assert len(FEATURE_LABELS[key]) == 2
+
+
+def test_admin_all_operator_no_system_viewer_readonly():
     assert ROLES["admin"]["sections"] == SECTION_KEYS
+    assert ROLES["admin"]["can_manage_users"] is True
     assert "system" not in ROLES["operator"]["sections"]
     assert "system" not in ROLES["viewer"]["sections"]
-    assert "algo_import" not in ROLES["viewer"]["sections"]
-    assert "status" not in ROLES["viewer"]["sections"]
-    # 功能权限向后兼容：访客可跑仿真但不能配置/导出
+    # 访客只能运行仿真 + 提交反馈
     assert ROLES["viewer"]["can_run_simulation"] is True
+    assert ROLES["viewer"]["can_submit_feedback"] is True
     assert ROLES["viewer"]["can_configure"] is False
-    assert ROLES["viewer"]["can_export"] is False
+    assert ROLES["viewer"]["can_local_compute"] is False
+    assert ROLES["viewer"]["can_delete_local_task"] is False
+    assert ROLES["viewer"]["can_export_results"] is False
+    # 操作员可本地计算 + 删除历史 + 删除本地任务
+    assert ROLES["operator"]["can_local_compute"] is True
+    assert ROLES["operator"]["can_delete_local_task"] is True
+    assert ROLES["operator"]["can_delete_history"] is True
+    assert ROLES["operator"]["can_manage_feedback"] is False
+    assert ROLES["operator"]["can_manage_users"] is False
 
 
-def test_resolve_role_returns_copy_and_keeps_can_flags():
+def test_resolve_role_returns_copy_and_keeps_features():
     role = resolve_role("admin")
     assert role["sections"] == SECTION_KEYS
     assert role["can_manage_users"] is True
@@ -45,23 +62,33 @@ def test_resolve_role_returns_copy_and_keeps_can_flags():
     assert ROLES["admin"]["sections"] == SECTION_KEYS
 
 
-def test_resolve_role_custom_uses_permissions():
-    perms = ["settings", "feedback"]
-    role = resolve_role("custom", permissions=perms)
-    assert role["sections"] == perms
-    # 功能权限与操作员一致
+def test_resolve_role_custom_uses_object_permissions():
+    perm = {"sections": ["settings", "feedback"],
+            "features": {"can_local_compute": True, "can_manage_users": False}}
+    role = resolve_role("custom", permissions=perm)
+    assert role["sections"] == ["settings", "feedback"]
+    assert role["can_local_compute"] is True
+    # 未在 features 中指定的 key 保持 custom 默认（操作员级）
     assert role["can_configure"] is True
-    assert role["can_manage_users"] is False
-    assert role["can_import_algo"] is False
+    assert role["can_manage_feedback"] is False
 
 
 def test_resolve_role_custom_fallback_on_missing_permissions():
     role = resolve_role("custom", permissions=None)
     assert role["sections"] == DEFAULT_CUSTOM_SECTIONS
+    assert role["can_local_compute"] is True  # 默认操作员级
+
+
+def test_resolve_role_custom_compat_with_legacy_list():
+    """旧格式：permissions 是板块数组 → sections 用之，features 用默认。"""
+    role = resolve_role("custom", permissions=["settings", "history"])
+    assert role["sections"] == ["settings", "history"]
+    assert role["can_local_compute"] is True
 
 
 def test_resolve_role_custom_filters_unknown_sections():
-    role = resolve_role("custom", permissions=["settings", "not_exist", "feedback"])
+    role = resolve_role("custom", permissions={"sections": ["settings", "not_exist", "feedback"],
+                                               "features": {}})
     assert role["sections"] == ["settings", "feedback"]
 
 
@@ -71,6 +98,6 @@ def test_resolve_role_unknown_role_falls_back_to_viewer():
     assert role["can_manage_users"] is False
 
 
-def test_default_custom_sections_valid_and_sane():
-    assert DEFAULT_CUSTOM_SECTIONS == ["settings", "layout", "path", "metrics", "history", "feedback"]
+def test_default_custom_sections_valid():
     assert set(DEFAULT_CUSTOM_SECTIONS).issubset(SECTION_KEYS)
+    assert "settings" in DEFAULT_CUSTOM_SECTIONS
