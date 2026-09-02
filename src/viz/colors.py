@@ -23,3 +23,7 @@ BASE = {
 def _s(key: str, scale: float) -> float:
     """缩放尺寸"""
     return BASE[key] * scale
+
+
+# 显式 __all__：让 `from viz.colors import *` 也能携带 _ 前缀内部名
+__all__ = [n for n in globals() if not n.startswith("_")] + ["_s"]
