@@ -21,7 +21,7 @@ def render_algo_import_page(role):
         st.info("📤 上传/删除算法文件仅管理员可操作；操作员可查看以上接入说明。")
         return
 
-    pending_dir = Path(__file__).resolve().parents[2] / "pending_algorithms"
+    pending_dir = Path(__file__).resolve().parents[3] / "pending_algorithms"
     pending_dir.mkdir(parents=True, exist_ok=True)
 
     uploaded = st.file_uploader("📤 上传算法文件", type=["md", "txt", "py", "json"],

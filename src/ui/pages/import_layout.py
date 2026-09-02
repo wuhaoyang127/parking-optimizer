@@ -4,7 +4,7 @@ from ui.common import *
 
 def _load_layout_doc() -> str:
     """读取布局导入格式说明文档内容（网页内嵌展示，避免相对链接打不开）"""
-    doc_path = Path(__file__).resolve().parents[2] / "docs" / "布局导入格式说明.md"
+    doc_path = Path(__file__).resolve().parents[3] / "docs" / "布局导入格式说明.md"
     try:
         return doc_path.read_text(encoding="utf-8")
     except Exception:
