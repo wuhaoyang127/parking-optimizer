@@ -33,3 +33,15 @@ from ui.common.prefs import _load_priority_preference, _load_run_history, _load_
 from ui.common.param_widgets import (_coerce_int, _coerce_float,  # noqa: F401
                                     _render_param_widget)
 from ui.common.vehicle_phases import _helper_shift_paths  # noqa: F401
+
+# 显式声明 __all__：让 `from ui.common import *` 也能携带 _ 前缀内部名，
+# 修复拆分后 pages 各文件通过 `import *` 使用内部函数时的 NameError。
+__all__ = [n for n in globals() if not n.startswith("_")]
+__all__ += [
+    "_avg_metrics", "_vehicle_to_dict", "_plot_radar", "_fmt_clock", "_finite_time",
+    "_interp_path", "_est_path_duration", "_sync_custom_layouts_to_globals",
+    "_build_customs_from_items", "_load_layout_items_from_local_backup",
+    "_write_local_layout_backup", "_json_safe", "_load_priority_preference",
+    "_load_run_history", "_load_last_params", "_coerce_int", "_coerce_float",
+    "_render_param_widget", "_helper_shift_paths",
+]
