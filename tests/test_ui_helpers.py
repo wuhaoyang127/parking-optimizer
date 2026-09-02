@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from ui.pages import _vehicle_sort_key, _worker_bat  # noqa: E402
 from ui.pages import _worker_operator_bat, _worker_package_bytes  # noqa: E402
 from ui.pages import _worker_package_data_url  # noqa: E402
+from ui.pages import _resolve_delete_task_id  # noqa: E402
 from ui.common import build_local_task_context  # noqa: E402
 
 
@@ -159,3 +160,27 @@ def test_worker_package_data_url_is_zip_bytes():
     assert url.startswith("data:application/zip;base64,")
     data = base64.b64decode(url.split(",", 1)[1])
     assert data[:4] == b"PK\x03\x04"  # zip 魔数
+
+
+def test_resolve_delete_task_id_prefers_session_id():
+    """有本会话 task_id 时优先删它，不理会最近任务查询结果。"""
+    tid, status, source = _resolve_delete_task_id(
+        "aaa-bbb", {"success": True, "task": {"id": "ccc-ddd", "status": "pending"}})
+    assert tid == "aaa-bbb"
+    assert status is None
+    assert source == "本会话任务"
+
+
+def test_resolve_delete_task_id_falls_back_to_latest_any():
+    """刷新后 session 丢失：自动定位最近一条任务（任意状态）来删。"""
+    tid, status, source = _resolve_delete_task_id(
+        None, {"success": True, "task": {"id": "ccc-ddd", "status": "running"}})
+    assert tid == "ccc-ddd"
+    assert status == "running"
+    assert "最近一条任务" in source
+
+
+def test_resolve_delete_task_id_none_when_no_task():
+    """无 session 且后端无任何任务：返回全 None，按钮置灰提示。"""
+    assert _resolve_delete_task_id(None, {"success": True, "task": None}) == (None, None, None)
+    assert _resolve_delete_task_id(None, {"success": False, "error": "未登录"}) == (None, None, None)

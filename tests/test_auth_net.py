@@ -83,3 +83,18 @@ def test_delete_compute_task_calls_rpc(monkeypatch):
     assert res == {"success": True}
     assert captured == {"name": "delete_compute_task",
                         "params": {"p_token": "tok", "p_task_id": "task-1"}}
+
+
+def test_get_latest_compute_task_any_calls_rpc(monkeypatch):
+    """任意状态最近任务查询 RPC 封装：走只读重试通道并原样返回。"""
+    captured = {}
+
+    def fake_rpc(name, params):
+        captured["name"] = name
+        captured["params"] = params
+        return {"success": True, "task": {"id": "x", "status": "running"}}
+
+    monkeypatch.setattr(auth, "_rpc_with_retry", fake_rpc)
+    res = auth.get_latest_compute_task_any("tok")
+    assert res == {"success": True, "task": {"id": "x", "status": "running"}}
+    assert captured == {"name": "get_latest_compute_task_any", "params": {"p_token": "tok"}}

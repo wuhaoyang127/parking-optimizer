@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 61
+status_version: 62
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: 780c8ef
+last_verified_commit: 47f1537
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
 next_prompt: null
@@ -34,7 +34,7 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
 - **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；
 - **当前阶段阻断项**：无；
-- **当前唯一下一步**：公网 app 浏览器侧验收「💻 本地计算」全流程 + 新按钮「📂 载入最近一次结果」（迁移 10 已执行并验证）+ **「📦 下载操作员本地计算包（zip）」**（操作员/同事在自己电脑解压双击 `start_local_worker.bat`，首次自动装精简依赖并输入自己的账号密码即可本地计算）+ **「🗑 删除该任务」**（下发错了可叫停删除，迁移 11 已执行并验证：create→delete→get 任务不存在全链路通过）。
+- **当前唯一下一步**：💻 本地计算全链路已在公网 app 由 222 账号验收通过（内置布局、约 200 车位、结果正常载入指标页）；「📂 载入最近一次结果」（迁移 10）公网验收通过；**「🗑 删除该任务」本轮已修复为刷新后仍可删**（session 丢失 task_id 时自动定位该用户最近一条任务，任意状态，二次确认显示任务状态，迁移 12 已执行），待用户公网验收「刷新后删除」场景；企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -85,6 +85,7 @@ superseded
 - [x] 阶段 D：多入口多出口改造（布局允许多个 `type="entry"`/`type="exit"` 节点，旧单入口布局兼容；`Vehicle` 增 `entry_id`/`exit_id`；`generate_demand` 用 seed 派生独立随机流（+100003/+200003）等概率分配每车入口与出口；引擎按车辆口进出、出口不可达回退入口并记 DEGRADATION；SPOT_ENTRY/DEPARTURE 事件带 entry/exit 元数据；四个策略距离语义改为「该车入口」；需求 JSON 可选 `entry_id`/`exit_id`；viz 渲染全部入口/出口；导入校验放宽为至少一个入口），pytest 101 passed、自检通过（138 文件），已于 2026-08-28 验收通过。
 - [x] 阶段 D：动态路径页反馈修复 + 移位车辆表（①入库黄色虚线按该车实际入口；②新增「③ 选择回放阶段」入库/离场/移位，离场动画车位→出口、移位动画 from→to；③离场阶段让行移位轨迹以辅助虚线绘制；另增补「🔄 移位车辆表」折叠区列出全部移位事件，并在选车下拉对移位车标记），pytest 103 passed、自检通过（139 文件），已于 2026-08-28 验收通过。
 - [x] 阶段 D：反馈按修改后显示时间自动排序 + 正序/倒序切换（反馈列表按显示时间排序，未修改的按原始提交时间参与排序、时间无法解析的排最后；反馈页顶部「反馈排序」可切换正序 早→晚 / 倒序 晚→早；「我的反馈」「管理员全部反馈」与 CSV 导出统一跟随；管理员修改显示时间保存后自动重排），pytest 103 passed、自检通过（139 文件）、AppTest 反馈页通过，已于 2026-08-28 验收通过。
+- [x] 阶段 D：💻 本地计算全链路公网验收通过（222 账号、内置布局、约 200 车位，结果正常载入指标页）+「📂 载入最近一次结果」（迁移 10）公网验收通过 + **「🗑 删除该任务」刷新后失效修复**（用户反馈：刷新页面后 session 丢失 task_id，删除按钮失效、pending 任务在网页上"消失"但实际仍在队列被 worker 继续领取——新增 `migrations/12_latest_task_any.sql` 并已直连执行：`get_latest_compute_task_any` RPC 返回该用户最近一条任务任意状态；`src/ui/pages.py` 新增 `_resolve_delete_task_id` 纯函数，删除按钮改为不依赖 session——无 task_id 时自动定位最近任务，二次确认显示任务 id/状态，无任务时按钮置灰；「🔄 检查」与 caption 提示同步说明刷新后找回/叫停方式），pytest 143 passed、自检通过（171 关键文件），2026-09-02；
 
 ## 5. 已批准的项目级决定
 
@@ -137,10 +138,10 @@ superseded
 
 - 核心代码：已完成（`src/parking_opt/` 分层包）；
 - Python 环境与依赖：见 `requirements.txt`（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase）；
-- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`、`tests/test_auth_net.py`，共 139 项）；
+- 单元/回归测试：已有（`tests/test_core.py`、`tests/test_strategies_regression.py`、`tests/test_demand_io.py`、`tests/test_ranking.py`、`tests/test_engine_robustness.py`、`tests/test_mosa.py`、`tests/test_engine_timeslice.py`、`tests/test_risk_scoring.py`、`tests/test_engine_shift_race.py`、`tests/test_multi_entry.py`、`tests/test_realtime_io.py`、`tests/test_ui_helpers.py`、`tests/test_local_worker.py`、`tests/test_auth_net.py`，共 143 项）；
 - 正式实验协议：已冻结（阶段 B）；
 - 启动包自检：`python scripts/validate_starter_package.py`（默认只读）；
-- 备份存档：git tag `backup-before-delete-task-20260902`、`backup-before-operator-worker-package-20260902`、`backup-before-latest-task-load-20260902`、`backup-before-local-task-archive-20260902`（2026-09-02）、`backup-before-migration09-20260901`、`backup-before-migration08-20260901`、`backup-before-auth-net-retry-20260901`、`backup-before-worker-net-retry-20260901`、`backup-before-worker-bat-download-20260901`、`backup-before-worker-gbk-fix-20260901`、`backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
+- 备份存档：git tag `backup-before-delete-button-always-20260902`、`backup-before-delete-task-20260902`、`backup-before-operator-worker-package-20260902`、`backup-before-latest-task-load-20260902`、`backup-before-local-task-archive-20260902`（2026-09-02）、`backup-before-migration09-20260901`、`backup-before-migration08-20260901`、`backup-before-auth-net-retry-20260901`、`backup-before-worker-net-retry-20260901`、`backup-before-worker-bat-download-20260901`、`backup-before-worker-gbk-fix-20260901`、`backup-before-migration07-executed-20260901`、`backup-before-local-worker-20260901`、`backup-before-cloud-crash-guard-20260901`、`backup-before-layout-restore-accept-20260901`、`backup-before-layout-restore-hardening-20260901`（2026-09-01）、`backup-before-timeout-mark-only-20260831`、`backup-before-timeout-show-all-20260831`、`backup-before-path-page-typeerror-20260831`、`backup-before-scene-b-shift-race-20260831`（2026-08-31）、`backup-before-feedback-sort-accept-20260828`、`backup-before-feedback-sort-desc-20260828`、`backup-before-feedback-time-sort-20260828`、`backup-before-layout-metrics-follow-20260828`、`backup-before-layout-metrics-follow-accept-20260828`、`backup-before-dynamic-path-feedback-20260828`、`backup-before-dynamic-path-feedback-accept-20260828`、`backup-before-shift-table-20260828`、`backup-before-multi-entry-exit-20260828`、`backup-before-risk-scoring-accept-20260828`（2026-08-28）；`backup-before-risk-scoring-20260827`、`backup-before-fb-time-hint-cleanup-20260827`、`backup-before-layout-algo-feedback-perm-20260827`、`backup-before-scene-hint-fix-20260827`、`backup-before-last-params-persist-20260827`、`backup-before-mosa-20260827`（2026-08-27）；更早 `backup-before-ui-refactor-20260818`（2026-08-18）、`backup-before-algo-interface-20260817`（2026-08-17）。
 
 ## 9. 当前关键文件
 
@@ -163,6 +164,7 @@ superseded
 | `migrations/09_task_requeue.sql` | 卡住任务重新排队 + claim 15 分钟自愈 | 有效，本轮新增 |
 | `migrations/10_latest_task_load.sql` | 载入最近一次本地计算结果 RPC（get_latest_compute_task，含 payload+result） | 有效，本轮新增 |
 | `migrations/11_delete_compute_task.sql` | 删除本地计算任务 RPC（下发错了叫停；任意状态可删） | 有效，本轮新增 |
+| `migrations/12_latest_task_any.sql` | 查询最近一条本地计算任务 RPC（任意状态；删除按钮刷新后仍可定位任务） | 有效，本轮新增 |
 | `src/parking_opt/io/realtime_io.py` | 真实道闸流水/车位状态解析（企业对接预留） | 有效，本轮新增 |
 | `docs/data/03_真实数据接口规范_v1.md` | 真实数据接口规范 v1 | 有效，本轮新增 |
 | `docs/部署运维说明.md` | 部署/HTTPS/备份/安全自查 | 有效，本轮新增 |
@@ -204,9 +206,9 @@ superseded
 
 ## 11. 当前唯一下一步
 
-1. 「💻 本地计算」后端全链路已在本地验证通过（create → worker 领取并计算 → complete → get 结果完整；worker 使用独立登录态，不再与网页互踢，详见最近变更）。
-2. 浏览器侧验收：公网 app 仿真设置切「💻 本地计算」→ 下载 `start_local_worker.bat` 到项目根目录双击启动 worker（或下载『开机自启』脚本装一次，以后免手动）→ 点「▶️ 下发本地计算任务」→ 结果自动载入；若 worker 中途被关，任务卡住可点「🔄 检查本地计算结果」→「♻️ 重新排队该任务」恢复。
-3. 已新增「📂 载入最近一次结果」按钮（迁移 10 已执行）：浏览器 session 丢失 task_id（刷新/重开/换电脑）后，一键从 Supabase 找回最近一次已完成的本地计算结果，含布局/参数/结果完整恢复；待用户在公网 app 验收。
+1. ✅ 「💻 本地计算」全链路公网验收通过（222 账号、内置布局、约 200 车位、结果正常载入指标页）；「📦 下载操作员本地计算包（zip）」在操作员自己电脑解压双击即可用（首次自动装精简依赖 + 输入自己的账号密码），操作员依赖安装失败问题已随 v3 包（Python 版本/位数诊断 + 升级 pip + 引导发报错）解决。
+2. ✅ 「📂 载入最近一次结果」（迁移 10）公网验收通过：浏览器 session 丢失 task_id（刷新/重开/换电脑）后，一键从 Supabase 找回最近一次已完成的本地计算结果。
+3. 待验收：「🗑 删除该任务」刷新后删除场景——本轮已修复为不依赖 session（无 task_id 时自动定位该用户最近一条任务，任意状态均可删，二次确认显示任务 id/状态，迁移 12 已执行并验证 RPC 存在）。验收方法：下发任务 → 刷新页面（F5）→ 点「🗑 删除该任务」→ 确认删除；若 worker 正在算，回传时会自动丢弃结果。
 4. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 
 ## 12. 预计后续需要用户确认
@@ -217,6 +219,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-02：**删除任务按钮刷新后失效修复 + 本地计算公网验收通过**（用户反馈：刷新页面后 pending 任务在网页上「消失」、🗑 删除按钮因 session 丢失 task_id 失效，任务实际仍在队列里被 worker 继续领取；另报：222 账号完成一次简单运算，内置布局约 200 车位，正常看到指标）：①新增 `migrations/12_latest_task_any.sql` 并已直连 Supabase 执行——`get_latest_compute_task_any` RPC 返回该用户最近一条任务（任意状态，按 created_at DESC）；②`src/auth.py` 增加封装（走只读 RPC 重试通道）、`src/ui/common.py` 容错导入；③`src/ui/pages.py` 新增模块级纯函数 `_resolve_delete_task_id`（优先 session task_id，刷新丢失后自动定位最近任务），`_delete_local_task_with_confirm` 改为不依赖 session——二次确认显示任务 id 前 8 位 + 状态（排队中/计算中/已完成/失败），无任务时按钮置灰；④「🔄 检查本地计算结果」与按钮区 caption 提示同步说明刷新后找回/叫停方式。新增测试 4 项，pytest 143 passed、自检通过（171 关键文件）；状态文档 status_version 61 → 62；待用户公网验收「刷新后删除」场景；
 - 2026-09-02：**操作员启动脚本增加依赖安装诊断**（操作员反馈依赖安装仍失败，需要定位原因）：`_worker_operator_bat()` 安装前打印 `py --version` 与 Python 位数（ortools 无 32 位 wheel，32 位 Python 必失败并明确提示重装 64 位），并先 `pip install --upgrade pip`（清华镜像）解决老版本 pip 解析失败；失败提示改为引导用户把「Python 位数」起的完整内容发管理员。zip 包版本号 +1（v3），避免缓存旧包。pytest 139 passed；状态文档 status_version 60 → 61；待操作员重新下载 zip 复测；
 - 2026-09-02：**操作员包依赖安装改清华镜像优先**（操作员反馈：装精简依赖报「检查网络再试」，开 VPN 也没用——pip 默认不走 VPN 的浏览器代理，命令行需单独配代理）：`_worker_operator_bat()` 改为优先 `-i https://pypi.tuna.tsinghua.edu.cn/simple`（国内直连，无需 VPN，`--timeout 60 --retries 5`），失败自动回退官方源并提示（VPN 需全局/TUN 模式；Python 版本建议 3.10~3.12）。同时 `_WORKER_PACKAGE_VERSION = "2"` 加入 zip 缓存 key，避免公网用户下载到 1 小时缓存里的旧包。pytest 139 passed；状态文档 status_version 59 → 60；待操作员重新下载 zip 验证；
 - 2026-09-02：**修复操作员包下载报错「Error: not connected to a server!」**（操作员账号点击 zip 下载时报错）：根因是 `st.download_button` 传 bytes 数据时，前端点击要向服务器请求下载地址，WebSocket 断开/闪断即报该错（前两个 bat 按钮传字符串走浏览器 data URL 所以正常）。修复：`src/ui/pages.py` 新增 `_worker_package_data_url()`——把 zip 转为 `data:application/zip;base64,...` 数据 URL，并用 `st.link_button` 下载（浏览器本地直接下载，不再依赖服务器连接）；同时 `_cached_worker_package_bytes`（st.cache_data，ttl 1h）避免每次渲染重复读文件压缩。pytest 139 passed、自检通过（170 关键文件）；状态文档 status_version 58 → 59；待用户在公网 app 验收；

@@ -144,6 +144,22 @@ def _worker_package_data_url() -> str:
         _WORKER_PACKAGE_VERSION)
     return "data:application/zip;base64," + base64.b64encode(data).decode("ascii")
 
+
+def _resolve_delete_task_id(session_task_id, latest_any_res):
+    """解析「删除该任务」按钮要删的任务 ID。
+
+    优先用本会话下发的 task_id；session 丢失（刷新/重开浏览器）时，
+    从 get_latest_compute_task_any 的结果里取最近一条任务（任意状态）。
+    返回 (task_id, task_status, source)；无任务可删时 (None, None, None)。
+    """
+    if session_task_id:
+        return session_task_id, None, "本会话任务"
+    task = (latest_any_res or {}).get("task")
+    if isinstance(task, dict) and task.get("id"):
+        return task.get("id"), task.get("status"), "最近一条任务（刷新后自动定位）"
+    return None, None, None
+
+
 def render_settings(role):
     """页面1: 仿真设置"""
     ensure_custom_layouts_loaded()
@@ -600,41 +616,65 @@ def render_settings(role):
         _apply_sim_state(task.get("result") or {}, ctx)
 
     def _delete_local_task_with_confirm():
-        """删除本会话下发的本地计算任务（下发错了叫停用），带二次确认。"""
+        """删除本地计算任务（下发错了叫停用），带二次确认。
+
+        优先删本会话下发的 task_id；刷新/重开浏览器后 session 丢失 task_id 时，
+        自动查询该用户最近一条任务（任意状态）来删，按钮不再因刷新而失效。
+        """
         token = st.session_state.get("token")
-        task_id = st.session_state.get("local_task_id")
-        if not token or not task_id:
-            st.info("本会话没有任务 ID 可删除。请先下发任务，或点「📂 载入最近一次结果」找回后处理。")
+        if not token:
+            st.info("未登录，无法删除本地计算任务")
             return
-        if st.session_state.get("confirm_delete_task"):
+        task_id = st.session_state.get("local_task_id")
+        task_status = None
+        if not task_id:
+            res = auth_get_latest_compute_task_any(token)
+            if isinstance(res, dict) and not res.get("success"):
+                st.error(f"❌ 查询最近任务失败：{(res or {}).get('error', '未知错误')}")
+                return
+            task_id, task_status, task_source = _resolve_delete_task_id(None, res)
+        else:
+            task_source = "本会话任务"
+        if not task_id:
+            st.button("🗑 删除该任务", use_container_width=True, disabled=True,
+                      help="暂无本地计算任务可删除：下发任务后（或刷新页面后）这里即可叫停")
+            return
+        status_cn = {"pending": "排队中", "running": "计算中",
+                     "done": "已完成", "failed": "失败"}.get(task_status, task_status or "未知")
+        confirm_key = f"confirm_delete_task_{task_id}"
+        if st.session_state.get(confirm_key):
+            st.warning(f"将删除{task_source}：`{str(task_id)[:8]}…`（状态：{status_cn}）。\n\n"
+                       "若本机 worker 正在计算，回传时会自动丢弃结果。")
             c_yes, c_no = st.columns(2)
             with c_yes:
-                if st.button("⚠️ 确认删除该任务", use_container_width=True):
+                if st.button("⚠️ 确认删除", use_container_width=True):
                     res = auth_delete_compute_task(token, task_id)
                     if isinstance(res, dict) and res.get("success"):
                         st.session_state.pop("local_task_id", None)
                         st.session_state.pop("local_task_notice", None)
-                        st.session_state.pop("confirm_delete_task", None)
+                        st.session_state.pop(confirm_key, None)
                         st.success("🗑 任务已删除。若本机 worker 正在计算，回传时会自动丢弃结果。")
                         st.rerun()
                     else:
                         st.error(f"❌ 删除失败：{(res or {}).get('error', '未知错误')}")
             with c_no:
                 if st.button("取消", use_container_width=True):
-                    st.session_state.pop("confirm_delete_task", None)
+                    st.session_state.pop(confirm_key, None)
                     st.rerun()
         else:
             if st.button("🗑 删除该任务", use_container_width=True,
-                         help="下发错了想叫停：删除本会话任务（排队/计算中/已完成均可删）；"
-                              "worker 若正在计算，回传时自动丢弃结果"):
-                st.session_state.confirm_delete_task = True
+                         help="下发错了想叫停：优先删本会话任务；刷新丢失任务 ID 后自动定位最近一条任务删除"
+                              "（排队/计算中/已完成均可删，worker 若正在计算回传时自动丢弃结果）"):
+                st.session_state[confirm_key] = True
                 st.rerun()
 
     def _check_local_task_once():
         token = st.session_state.get("token")
         task_id = st.session_state.get("local_task_id")
         if not token or not task_id:
-            st.info("暂无本地计算任务。请先在下方点「下发本地计算任务」。")
+            st.info("浏览器里没有本会话的任务 ID（可能刷新过页面）。\n\n"
+                    "若刚下发过任务，本机 worker 会自动领取计算，完成后点「📂 载入最近一次结果」找回；\n\n"
+                    "要叫停，点「🗑 删除该任务」。")
             return
         stt = auth_get_compute_task(token, task_id)
         if isinstance(stt, dict) and stt.get("success"):
@@ -779,7 +819,8 @@ def render_settings(role):
         if st.session_state.get("local_task_id"):
             st.caption(f"最近任务：{st.session_state.local_task_id}")
         else:
-            st.caption("浏览器里没有本会话的任务 ID？点「📂 载入最近一次结果」即可找回已完成的本地计算结果。")
+            st.caption("浏览器里没有本会话的任务 ID？点「📂 载入最近一次结果」找回已完成结果；"
+                       "点「🗑 删除该任务」叫停最近一次任务（刷新后也能删）。")
 
     # 公网云端资源受限，大参数提前提示（本地 Windows 桌面不提示）
     if (not is_local_desktop() and compute_mode == "cloud"

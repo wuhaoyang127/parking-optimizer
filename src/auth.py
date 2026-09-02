@@ -414,3 +414,12 @@ def delete_compute_task(token: str, task_id: str) -> dict:
     """删除本地计算任务（下发错了叫停用；任意状态均可删）。"""
     return _rpc("delete_compute_task", {
         "p_token": token, "p_task_id": task_id})
+
+
+def get_latest_compute_task_any(token: str) -> dict:
+    """查询该用户最近一条本地计算任务（任意状态），供「删除该任务」按钮
+    在浏览器 session 丢失 task_id（刷新/重开）后自动定位要删的任务。
+
+    返回 {success, task}，task 含 id/status/error/时间戳；无任务时 task 为 null。
+    """
+    return _rpc_with_retry("get_latest_compute_task_any", {"p_token": token})
