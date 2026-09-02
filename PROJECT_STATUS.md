@@ -1,15 +1,15 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 72
+status_version: 73
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: f842a05
+last_verified_commit: c76b580
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
-latest_handoff: docs/handoffs/stage-d-risk-scoring-20260827.md
+latest_handoff: docs/handoffs/2026-09-02-权限重构与代码拆分.md
 next_prompt: null
 authoritative_route_document: docs/research/05_最终路线决策.md
 current_stage_blockers: []
