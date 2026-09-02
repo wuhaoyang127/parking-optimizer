@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime, timezone
-from typing import Any
 
 from ._base import ROOT, REPORT_PATH, CHECK_VERSION
 from ._checks import run_checks

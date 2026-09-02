@@ -5,8 +5,6 @@ from __future__ import annotations
 方向 "max"=越大越好；"min"=越小越好（归一化时反向，使所有指标得分越高越好）。
 """
 
-from typing import Iterable
-
 # 指标方向表：字段名 -> 方向（与 ui/common.py 的 PRIORITY_METRICS 保持一致，此处不依赖 UI 层）
 METRIC_DIRECTIONS: dict[str, str] = {
     "satisfaction_rate": "max",
@@ -109,11 +107,6 @@ def weighted_rank(metrics_list: list[dict], weights: dict[str, float]) -> list[d
         row["rank"] = rank
         result.append(row)
     return result
-
-
-def metrics_field_names() -> list[str]:
-    """返回参与评分的指标字段列表（顺序稳定）。"""
-    return list(METRIC_DIRECTIONS.keys())
 
 
 def below_significance_fields(metrics_list: list[dict]) -> list[str]:

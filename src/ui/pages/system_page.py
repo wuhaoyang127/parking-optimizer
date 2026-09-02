@@ -92,14 +92,28 @@ def render_system(role):
                 if new_role != ur: auth_update_role(st.session_state.token, u, new_role); st.rerun()
                 if c3.button("🔑", key=f"rst_{u}", help="重置密码"):
                     st.session_state[f"rst_open_{u}"] = True
-                if c4.button("🗑", key=f"del_{u}"):
-                    auth_delete_user(st.session_state.token, u); st.rerun()
+                if c4.button("🗑", key=f"del_{u}", help="删除用户"):
+                    st.session_state[f"del_open_{u}"] = True
                 if st.session_state.get(f"rst_open_{u}"):
                     rp = st.text_input("新密码", type="password", key=f"rst_pw_{u}")
                     if st.button("确认重置", key=f"rst_ok_{u}"):
                         if rp:
                             auth_reset_pw(st.session_state.token, u, rp)
                             st.session_state[f"rst_open_{u}"] = False; st.success(f"{u} 密码已重置！"); st.rerun()
+                if st.session_state.get(f"del_open_{u}"):
+                    st.warning(f"⚠️ 确认删除用户 **{u}**？该操作不可恢复，其历史记录与反馈不会删除。")
+                    dc1, dc2 = st.columns(2)
+                    if dc1.button("⚠️ 确认删除", key=f"del_ok_{u}", use_container_width=True):
+                        res = auth_delete_user(st.session_state.token, u)
+                        st.session_state.pop(f"del_open_{u}", None)
+                        if isinstance(res, dict) and res.get("success"):
+                            st.success(f"已删除用户 {u}")
+                        else:
+                            st.error((res or {}).get("error", "删除失败"))
+                        st.rerun()
+                    if dc2.button("取消", key=f"del_cancel_{u}", use_container_width=True):
+                        st.session_state.pop(f"del_open_{u}", None)
+                        st.rerun()
             st.divider()
             st.caption(f"👑 **{ADMIN_USER}** — 管理员（不可删除/不可降级）")
             with st.expander("🧩 自定义角色权限（板块级）", expanded=False):
