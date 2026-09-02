@@ -37,6 +37,25 @@ def test_risk_scoring_all_intensities_multi_seed_no_crash():
             run_once(net, spots, demands, RiskScoringStrategy(), seed)
 
 
+def test_move_vehicle_updates_assigned_spot_and_free_releases_buffer():
+    """移位后车辆实际车位应同步；缓冲位被离场释放后不再占用。"""
+    lot = ParkingLot([
+        Spot("A", SpotType.STANDALONE, "A", "A", 1),
+        Spot("B", SpotType.STANDALONE, "B", "B", 1),
+    ])
+    v = Vehicle("V1", 0.0, 100.0, 100.0)
+    lot.assign(v, lot.get_spot("A"))
+    assert v.assigned_spot == "A"
+
+    lot.buffer_in_use.add("B")
+    lot.move_vehicle(lot.get_spot("A"), lot.get_spot("B"))
+    assert v.assigned_spot == "B"
+
+    lot.free(lot.get_spot("B"))
+    assert "B" not in lot.buffer_in_use
+    assert "V1" not in lot.vehicles
+
+
 def test_scene_b_blocker_departs_during_shift_no_crash():
     """曾崩溃组合：入库让行（场景 B）中，阻挡车在移位行驶期间自行离场。
 

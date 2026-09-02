@@ -110,7 +110,9 @@ def render_path_page():
     if phase_key == "shift":
         shifts = phases["shifts"]
         if len(shifts) > 1:
-            shift_labels = [f"{s['from_spot']} → {s['to_spot']}" for s in shifts]
+            shift_labels = [f"{s['from_spot']} → {s['to_spot']}"
+                            + ("（回位）" if s.get("kind") == "return" else "")
+                            for s in shifts]
             shift_sel = st.selectbox("选择移位段", shift_labels, key="path_shift_sel")
             seg = shifts[shift_labels.index(shift_sel)]
         else:

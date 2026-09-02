@@ -99,14 +99,19 @@ class ParkingLot:
         vid = spot.occupied_by
         spot.is_occupied = False
         spot.occupied_by = None
+        # 任何车位被释放都不再视为缓冲位占用（含移位车直接从缓冲位离场的竞态）
+        self.buffer_in_use.discard(spot.spot_id)
         if vid and vid in self.vehicles:
             del self.vehicles[vid]
 
     def move_vehicle(self, from_spot: Spot, to_spot: Spot):
-        """将车辆从 from_spot 移到 to_spot"""
+        """将车辆从 from_spot 移到 to_spot（同步车辆的实际车位）"""
         vid = from_spot.occupied_by
         assert vid is not None
         to_spot.is_occupied = True
         to_spot.occupied_by = vid
         from_spot.is_occupied = False
         from_spot.occupied_by = None
+        veh = self.vehicles.get(vid)
+        if veh is not None:
+            veh.assigned_spot = to_spot.spot_id

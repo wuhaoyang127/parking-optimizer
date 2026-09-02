@@ -99,11 +99,38 @@ def test_build_vehicle_phases_extracts_enter_leave_shift_and_helpers():
     assert len(phases["leave"]["helper_shifts"]) == 1
     assert phases["leave"]["helper_shifts"][0]["vehicle_id"] == "V2"
 
-    # 移位段：V1 从 A → B
-    assert len(phases["shifts"]) == 1
+    # 移位段：V1 从 A → B，并含回位段 B → A
+    assert len(phases["shifts"]) == 2
+    assert phases["shifts"][0]["kind"] == "shift"
     assert phases["shifts"][0]["from_spot"] == "A" and phases["shifts"][0]["to_spot"] == "B"
     assert phases["shifts"][0]["t_start"] == 50 and phases["shifts"][0]["t_end"] == 55
     assert phases["shifts"][0]["path"][0] == "A" and phases["shifts"][0]["path"][-1] == "B"
+    back = phases["shifts"][1]
+    assert back["kind"] == "return"
+    assert back["from_spot"] == "B" and back["to_spot"] == "A"
+    assert back["t_end"] == 55 and 50 <= back["t_start"] < 55
+    assert back["path"][0] == "B" and back["path"][-1] == "A"
+
+
+def test_build_vehicle_phases_departure_starts_from_shifted_spot():
+    """移位后未回位（无 shift_end）时，离场起点应是移位后的缓冲位。"""
+    net = build_two_entry_net()
+    pe = PathEngine(net)
+    events = [
+        _ev(10, "parking_assigned", "V1", "A"),
+        _ev(20, "spot_entry", "V1", "A", {"entry": "E1"}),
+        _ev(50, "shift_start", "V1", "", {"from_spot": "A", "to_spot": "B"}),
+        _ev(100, "departure", "V1", "A", {"exit": "X2", "had_blocking": False}),
+    ]
+    phases = build_vehicle_phases(net, pe, events, "V1")
+
+    assert phases["leave"] is not None
+    assert phases["leave"]["spot_id"] == "B"
+    assert phases["leave"]["path"][0] == "B" and phases["leave"]["path"][-1] == "X2"
+    # 未回位则只有去程移位段，没有回位段
+    assert len(phases["shifts"]) == 1
+    assert phases["shifts"][0]["kind"] == "shift"
+    assert phases["shifts"][0]["from_spot"] == "A" and phases["shifts"][0]["to_spot"] == "B"
 
 
 def test_interp_path_segment_endpoints_and_midpoint():
