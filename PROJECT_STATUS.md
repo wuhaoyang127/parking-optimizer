@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 74
+status_version: 75
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: bf96976
+last_verified_commit: a94e2e3
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/2026-09-02-权限重构与代码拆分.md
 next_prompt: null
@@ -32,9 +32,9 @@ status_maintainer: 项目主线程或用户指定协调线程
 - **当前阶段**：阶段 D（应用与交付），进行中；
 - **验收状态**：`in_progress`；
 - **Git 状态**：已初始化，当前在 `stage-d-deliver` 分支；
-- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；**全库 Python 文件已按功能拆分至单文件 ≤200 行**（AGENTS.md 3.2.1 已写入强制规则：源码/测试/脚本全部适用，超 200 行必须按功能拆，一个功能一个文件；`scripts/check_file_lines.py` 自检通过，143 测试通过），已于 2026-09-02 完成；**权限体系全面重做**（9 板块可见性 + 14 项功能权限逐按钮开关：新增本地计算/删除本地任务/导入需求/导出需求/导出结果/删除历史/提交反馈/反馈管理；内置三角色按推荐矩阵：管理员全开、操作员含本地计算与历史删除、访客仅运行+反馈；「自定义」角色可同时勾选板块和功能权限，permissions 存 {sections, features}；迁移 13 最终版 + 迁移 14 旧数据升级），已于 2026-09-02 完成，待用户验收；
+- **当前里程碑**：`stage-d-dynamic-path-feedback`（动态路径页反馈修复：入库虚线按实际入口、离场/移位动画、移位车辆表；多入口多出口已验收；已于 2026-08-28 用户验收通过）；布局图「内置/真实布局」回显 + 指标分析需求时序按策略切换，已于 2026-08-28 用户验收通过；反馈按修改后显示时间自动排序（含正序/倒序切换），已于 2026-08-28 用户验收通过；**全库 Python 文件已按功能拆分至单文件 ≤200 行**（AGENTS.md 3.2.1 已写入强制规则：源码/测试/脚本全部适用，超 200 行必须按功能拆，一个功能一个文件；`scripts/check_file_lines.py` 自检通过，143 测试通过），已于 2026-09-02 完成；**权限体系全面重做**（9 板块可见性 + 14 项功能权限逐按钮开关：新增本地计算/删除本地任务/导入需求/导出需求/导出结果/删除历史/提交反馈/反馈管理；内置三角色按推荐矩阵：管理员全开、操作员含本地计算与历史删除、访客仅运行+反馈；「自定义」角色可同时勾选板块和功能权限，permissions 存 {sections, features}；迁移 13 最终版 + 迁移 14 旧数据升级），已于 2026-09-02 完成并**用户验收通过**；**动态路径移位修复**（离场段起点改为按事件流重放车辆实际车位：移位后未回位从缓冲位出发、已回位从回位目标出发；移位阶段新增「回位段」可选动画；引擎 `move_vehicle` 同步 `assigned_spot`、`free` 释放缓冲位占用），已于 2026-09-02 完成，待用户验收；
 - **当前阶段阻断项**：无（迁移 13/14 已直连执行并只读核验：`users.permissions` 列、`app_settings.custom_sections` 模板（当前 9 板块 + 13 功能开）与 login_user / validate_session / list_users / update_user_role / get_custom_sections / save_custom_sections 六个 RPC 均已就位）；
-- **当前唯一下一步**：☁️ 云端 Streamlit 重新部署（多轮修复需 Deploy 才生效；本地已全绿且 `stage-d-deliver` 已推送到 GitHub）→ 🧪 验收权限体系：管理员在「系统设置 → 用户管理 → 🧩 自定义角色权限」勾选板块/功能并保存 → 分别用 114514（custom）/ 222（操作员）/ 访客号验证导航与按钮矩阵；随后企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
+- **当前唯一下一步**：☁️ 云端重新部署本次动态路径修复（Deploy）→ 🚗 验收动态路径移位场景：选一辆 🔄移位 车 → 「③ 选择回放阶段」选「移位」应能看到「去程 A→B」与「回位 B→A」两段可选；选「离场」时起点应为车辆离场时刻实际车位（移位后未回位=缓冲位、已回位=回位目标）；随后企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 - **禁止事项**：改动前必须先打备份 tag；不破坏现有测试的向后兼容（策略 `cls()` 无参构造）。
 
 当 `current_exec_plan` 或 `latest_handoff` 为 `null` 时，新对话应跳过对应读取步骤，不得自行猜测文件路径。
@@ -209,9 +209,10 @@ superseded
 1. ✅ 「💻 本地计算」全链路公网验收通过（222 账号、内置布局、约 200 车位、结果正常载入指标页）；「📦 下载操作员本地计算包（zip）」在操作员自己电脑解压双击即可用（首次自动装精简依赖 + 输入自己的账号密码），操作员依赖安装失败问题已随 v3 包（Python 版本/位数诊断 + 升级 pip + 引导发报错）解决。
 2. ✅ 「📂 载入最近一次结果」（迁移 10）公网验收通过：浏览器 session 丢失 task_id（刷新/重开/换电脑）后，一键从 Supabase 找回最近一次已完成的本地计算结果。
 3. ✅ 「🗑 删除该任务」刷新后删除场景公网验收通过——不依赖 session（无 task_id 时自动定位该用户最近一条任务，任意状态均可删，二次确认显示任务 id/状态，迁移 12 已执行并验证 RPC 存在）。
-4. ☁️ 云端 Streamlit 重新部署（Deploy）：本地 154 passed、行数检查与启动包自检全绿，`stage-d-deliver` 已推送到 GitHub（HEAD=origin）；云端若 Reboot 后仍跑旧代码，用「改 requirements.txt 触发全量重建」或「删除后重新部署（先记下 Secrets）」强制生效。
-5. 🧪 验收权限体系（按 `src/ui/common/permissions.py` 矩阵）：管理员在「系统设置 → 用户管理 → 🧩 自定义角色权限」勾选板块/功能并保存 → 114514（custom）验证自定义板块/功能开关生效 → 222（操作员）验证 8 板块无系统设置、可本地计算/删历史 → 访客号验证 6 板块且仅云端运行 + 提交反馈。数据库侧已只读核验迁移 13/14 与 6 个权限 RPC 就位。
-6. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
+4. ✅ ☁️ 云端 Streamlit 重新部署（权限体系版）：公网已生效，权限体系按矩阵验收通过（管理员保存自定义模板成功；114514(custom)/222(操作员)/访客号 导航与按钮均符合预期）。
+5. ☁️ 云端重新部署本次动态路径修复（`a94e2e3`）：本地 156 passed、行数检查与启动包自检全绿，已推送到 GitHub；云端 Reboot 后若仍跑旧代码，用「改 requirements.txt 触发全量重建」或「删除后重新部署（先记下 Secrets）」强制生效。
+6. 🚗 验收动态路径移位场景：选一辆 🔄移位 车 → 「移位」阶段应能看到「去程 A→B」与「回位 B→A」两段可选动画；「离场」阶段起点应为该车离场时刻实际车位（移位后未回位=缓冲位、已回位=回位目标，不再是移位前原车位）。
+7. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
 
 ## 12. 预计后续需要用户确认
 
@@ -221,6 +222,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-02：**动态路径移位修复**（用户反馈：移位车的离场路径起点仍是移位前车位，且看不到回位段）：①`src/ui/common/vehicle_phases.py` 新增 `_spot_at_time`——按事件流重放车辆实际车位（shift_start 跟随 to_spot、shift_end 跟随 final_spot/原车位），离场段路径与 `spot_id` 改用该实际车位；②移位阶段新增「回位段」（shift_end 存在时生成 缓冲位→回位目标 的可选动画，kind=return，页面下拉标注「（回位）」）；③`ParkingLot.move_vehicle` 同步 `vehicle.assigned_spot`、`free` 释放缓冲位占用（修复前移归位后引擎离场用错车位的隐患）；新增回归测试 3 项（离场起点=移位后车位、回位段提取、assigned_spot/缓冲位同步），pytest 156 passed、行数检查与启动包自检全绿；打 tag `backup-before-departure-shift-path-20260902`；状态文档 status_version 74 → 75；
 - 2026-09-02：交接后恢复会话（新对话）：本地三项自检全绿（pytest 154 passed / `scripts/check_file_lines.py` 全部 ≤200 行 / 启动包自检 260 关键文件）；Supabase 只读核验权限迁移已生效（7 用户：admin 1 / operator 4 / custom 1 / viewer 1；`users.permissions` 列存在；`app_settings.custom_sections` 模板为 9 板块 + 13 功能开；login_user / validate_session / list_users / update_user_role / get_custom_sections / save_custom_sections 六个 RPC 均返回预期 JSON，无 PGRST202）；确认 `stage-d-deliver` HEAD `bf96976` 已推送到 origin；清理状态文档中过期的「迁移 13 待执行」提示（迁移 13/14 已直连执行）；打 tag `backup-before-status-sync-perm-accept-20260902`；状态文档 status_version 73 → 74；
 - 2026-09-02：**用户验收通过**「🗑 删除该任务」刷新后删除场景（提交 `fb90a6b`）：下发任务 → F5 刷新 → 删除按钮自动定位最近任务并成功叫停。至此 💻 本地计算全链路、📂 载入最近一次结果、🗑 删除任务（含刷新后叫停）、📦 操作员本地计算包全部公网验收通过；验收前打 tag `backup-before-delete-button-accept-20260902`；状态文档 status_version 62 → 63；
 - 2026-09-02：**删除任务按钮刷新后失效修复 + 本地计算公网验收通过**（用户反馈：刷新页面后 pending 任务在网页上「消失」、🗑 删除按钮因 session 丢失 task_id 失效，任务实际仍在队列里被 worker 继续领取；另报：222 账号完成一次简单运算，内置布局约 200 车位，正常看到指标）：①新增 `migrations/12_latest_task_any.sql` 并已直连 Supabase 执行——`get_latest_compute_task_any` RPC 返回该用户最近一条任务（任意状态，按 created_at DESC）；②`src/auth.py` 增加封装（走只读 RPC 重试通道）、`src/ui/common.py` 容错导入；③`src/ui/pages.py` 新增模块级纯函数 `_resolve_delete_task_id`（优先 session task_id，刷新丢失后自动定位最近任务），`_delete_local_task_with_confirm` 改为不依赖 session——二次确认显示任务 id 前 8 位 + 状态（排队中/计算中/已完成/失败），无任务时按钮置灰；④「🔄 检查本地计算结果」与按钮区 caption 提示同步说明刷新后找回/叫停方式。新增测试 4 项，pytest 143 passed、自检通过（171 关键文件）；状态文档 status_version 61 → 62；待用户公网验收「刷新后删除」场景；
