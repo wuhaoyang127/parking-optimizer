@@ -26,6 +26,7 @@ CREATE OR REPLACE FUNCTION public.login_user(
 ) RETURNS JSON AS $$
 DECLARE
   v_user users%ROWTYPE;
+  v_ok BOOLEAN := FALSE;
   v_token TEXT;
 BEGIN
   SELECT * INTO v_user FROM public.users WHERE username = p_username;
@@ -34,7 +35,20 @@ BEGIN
     RETURN json_build_object('success', false, 'error', '用户名或密码错误');
   END IF;
 
-  IF v_user.password_hash != encode(sha256(p_password::bytea), 'hex') THEN
+  -- 密码双格式兼容：bcrypt（$2 开头）用 crypt 校验；否则按 64 位十六进制 sha256 校验，
+  -- sha256 老用户校验成功后自动升级为 bcrypt（与 login_worker 行为一致）
+  IF v_user.password_hash LIKE '$2%' THEN
+    v_ok := v_user.password_hash = crypt(p_password, v_user.password_hash);
+  ELSE
+    v_ok := v_user.password_hash = encode(sha256(p_password::bytea), 'hex');
+    IF v_ok THEN
+      UPDATE public.users
+      SET password_hash = crypt(p_password, gen_salt('bf', 10))
+      WHERE id = v_user.id;
+    END IF;
+  END IF;
+
+  IF NOT v_ok THEN
     RETURN json_build_object('success', false, 'error', '用户名或密码错误');
   END IF;
 
