@@ -15,8 +15,18 @@ def _render_custom_role_editor():
     st.markdown("#### 🧩 自定义角色权限")
     st.caption("勾选「自定义」角色能看到的板块和可执行的功能；保存后同步给所有「自定义」角色用户。")
     saved = auth_get_custom_sections(st.session_state.token)
-    cur_sections = saved.get("sections") if saved.get("sections") else DEFAULT_CUSTOM_SECTIONS
-    cur_features = saved.get("features") if saved.get("features") else ROLES["custom"]
+    # 兼容旧版返回（list = 仅板块数组 / 其他异常类型按默认处理）
+    if isinstance(saved, dict):
+        cur_sections = saved.get("sections") or DEFAULT_CUSTOM_SECTIONS
+        cur_features = saved.get("features") or ROLES["custom"]
+    elif isinstance(saved, list):
+        cur_sections = saved or DEFAULT_CUSTOM_SECTIONS
+        cur_features = ROLES["custom"]
+    else:
+        cur_sections = DEFAULT_CUSTOM_SECTIONS
+        cur_features = ROLES["custom"]
+    if not isinstance(cur_features, dict):
+        cur_features = ROLES["custom"]
 
     tab_sections, tab_features = st.tabs(["📑 板块可见性", "🔘 功能权限"])
     with tab_sections:
