@@ -133,6 +133,37 @@ def test_build_vehicle_phases_departure_starts_from_shifted_spot():
     assert phases["shifts"][0]["from_spot"] == "A" and phases["shifts"][0]["to_spot"] == "B"
 
 
+def test_build_vehicle_phases_unreachable_exit_falls_back_to_entry():
+    """离场事件记录的出口不可达时，回放路径按引擎口径回退入口，不画假直线。"""
+    net = build_two_entry_net()
+    pe = PathEngine(net)
+    events = [
+        _ev(10, "parking_assigned", "V1", "A"),
+        _ev(20, "spot_entry", "V1", "A", {"entry": "E1"}),
+        _ev(100, "departure", "V1", "A", {"exit": "X9", "had_blocking": False}),
+    ]
+    phases = build_vehicle_phases(net, pe, events, "V1")
+
+    assert phases["leave"] is not None
+    assert phases["leave"]["exit_id"] == "E1"  # 回退默认入口
+    assert phases["leave"]["path"][0] == "A" and phases["leave"]["path"][-1] == "E1"
+
+
+def test_build_vehicle_phases_unreachable_entry_falls_back_to_default():
+    """入库事件记录的入口不可达时，回放路径按引擎口径回退默认入口。"""
+    net = build_two_entry_net()
+    pe = PathEngine(net)
+    events = [
+        _ev(10, "parking_assigned", "V1", "A"),
+        _ev(20, "spot_entry", "V1", "A", {"entry": "E9"}),
+    ]
+    phases = build_vehicle_phases(net, pe, events, "V1")
+
+    assert phases["enter"] is not None
+    assert phases["enter"]["entry_id"] == "E1"  # 回退默认入口
+    assert phases["enter"]["path"][0] == "E1" and phases["enter"]["path"][-1] == "A"
+
+
 def test_interp_path_segment_endpoints_and_midpoint():
     net = build_two_entry_net()
     path = ["E1", "A"]  # E1(0,0) → A(10,0)

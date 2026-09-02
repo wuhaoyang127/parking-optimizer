@@ -65,7 +65,14 @@ def build_vehicle_phases(net, pe, events, vid):
                 spot_id = e.get("spot_id", "")
     if t_assign is not None and spot_id:
         origin = entry_origin or pe.entry_id
-        path = pe.shortest_path(origin, spot_id) or [origin, spot_id]
+        path = pe.shortest_path(origin, spot_id)
+        if not path and origin != pe.entry_id:
+            # 该入口到车位不可达：按引擎口径回退默认入口
+            origin = pe.entry_id
+            path = pe.shortest_path(origin, spot_id)
+        if not path:
+            # 真的不可达：只标车位，不画假直线
+            path = [spot_id]
         if t_entry is None or t_entry <= t_assign:
             t_entry = t_assign + _est_path_duration(net, path)
         result["enter"] = {"path": path, "t_start": t_assign, "t_end": t_entry,
@@ -78,7 +85,14 @@ def build_vehicle_phases(net, pe, events, vid):
         meta = dep.get("metadata", {}) or {}
         exit_id = meta.get("exit") or pe.default_exit_id or pe.entry_id
         leave_spot = _spot_at_time(veh_ev, dep_time, spot_id)
-        path = pe.shortest_path(leave_spot, exit_id) or [leave_spot, exit_id]
+        path = pe.shortest_path(leave_spot, exit_id)
+        if not path and exit_id != pe.entry_id:
+            # 事件记录的出口从该车位不可达：按引擎离场口径回退入口
+            exit_id = pe.entry_id
+            path = pe.shortest_path(leave_spot, exit_id)
+        if not path:
+            # 真的不可达：只标起点，不画穿越空地的假直线
+            path = [leave_spot]
         t_start = dep_time
         # 若该车曾作为移位车（先被移走再回位），离场动画从其移位回位后开始
         own_shift_ends = [float(e["time"]) for e in veh_ev if e.get("type") == "shift_end"]
@@ -97,7 +111,7 @@ def build_vehicle_phases(net, pe, events, vid):
         frm = meta.get("from_spot"); to = meta.get("to_spot")
         if not frm or not to:
             continue
-        path = pe.shortest_path(frm, to) or [frm, to]
+        path = pe.shortest_path(frm, to) or [frm]
         t_start = float(e["time"])
         t_end = None
         final = None
@@ -115,7 +129,7 @@ def build_vehicle_phases(net, pe, events, vid):
         # 仅当存在 shift_end（确实回位）时才有该段
         if has_end:
             back_to = final or frm
-            back_path = pe.shortest_path(to, back_to) or [to, back_to]
+            back_path = pe.shortest_path(to, back_to) or [to]
             back_dur = _est_path_duration(net, back_path)
             result["shifts"].append({"path": back_path, "from_spot": to, "to_spot": back_to,
                                      "t_start": max(t_start, t_end - back_dur),
@@ -135,7 +149,7 @@ def _helper_shift_paths(pe, events, vid):
         frm = meta.get("from_spot"); to = meta.get("to_spot")
         if not frm or not to:
             continue
-        path = pe.shortest_path(frm, to) or [frm, to]
+        path = pe.shortest_path(frm, to) or [frm]
         out.append({"path": path, "from_spot": frm, "to_spot": to,
                     "vehicle_id": str(e.get("vehicle_id", ""))})
     return out
