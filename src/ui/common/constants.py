@@ -49,17 +49,49 @@ ADMIN_USER = "wuhaoyang127"
 LOGIN_MAX_FAILS = 3       # 连续登录失败多少次后临时锁定
 LOGIN_LOCK_SECONDS = 30   # 临时锁定时长（秒）
 STRATEGY_TIME_BUDGET = 60.0  # 每个种子单次仿真的超时标记（秒）：超过仅标记，结果仍全部展示，可在指标页选择隐藏
+# ── 板块（页面）权限定义 ──
+# key 与 app.py 导航分发一致；板块级权限控制「导航是否显示该页面」
+SECTION_KEYS = ["settings", "system", "layout", "path", "metrics",
+                "history", "algo_import", "status", "feedback"]
+SECTION_LABELS = {
+    "settings": "⚙️ 仿真设置", "system": "🔧 系统设置", "layout": "🅿️ 停车场布局图",
+    "path": "🚗 动态路径", "metrics": "📊 指标分析", "history": "📜 历史运行",
+    "algo_import": "🧩 新算法接入", "status": "🚨 系统状态", "feedback": "💬 反馈",
+}
+# 自定义角色默认可见板块（管理员可在系统设置中勾选调整）
+DEFAULT_CUSTOM_SECTIONS = ["settings", "layout", "path", "metrics", "history", "feedback"]
+
 ROLES = {
     "admin": {"can_configure": True, "can_manage_users": True, "can_run_simulation": True,
               "can_export": True, "can_debug": True, "can_manage_data": True,
-              "can_import_algo": True, "label": "管理员"},
+              "can_import_algo": True, "label": "管理员", "sections": SECTION_KEYS},
     "operator": {"can_configure": True, "can_manage_users": False, "can_run_simulation": True,
                  "can_export": True, "can_debug": True, "can_manage_data": False,
-                 "can_import_algo": False, "label": "操作员"},
+                 "can_import_algo": False, "label": "操作员",
+                 "sections": [k for k in SECTION_KEYS if k != "system"]},
     "viewer": {"can_configure": False, "can_manage_users": False, "can_run_simulation": True,
                "can_export": False, "can_debug": False, "can_manage_data": False,
-               "can_import_algo": False, "label": "访客"},
+               "can_import_algo": False, "label": "访客",
+               "sections": ["settings", "layout", "path", "metrics", "history", "feedback"]},
+    # 自定义角色：功能权限与操作员一致，板块可见性由管理员在系统设置中勾选
+    "custom": {"can_configure": True, "can_manage_users": False, "can_run_simulation": True,
+               "can_export": True, "can_debug": True, "can_manage_data": False,
+               "can_import_algo": False, "label": "自定义", "sections": DEFAULT_CUSTOM_SECTIONS},
 }
+
+
+def resolve_role(role_name: str, permissions=None) -> dict:
+    """把 session 里的角色名解析为完整权限 dict。
+
+    内置角色直接返回其默认权限表；custom 角色用数据库 permissions（板块数组）
+    覆盖默认可见板块，permissions 缺失/非法时回退 DEFAULT_CUSTOM_SECTIONS。
+    """
+    base = ROLES.get(role_name, ROLES["viewer"]).copy()
+    if role_name == "custom":
+        sections = permissions if isinstance(permissions, list) and permissions \
+            else DEFAULT_CUSTOM_SECTIONS
+        base["sections"] = [s for s in SECTION_KEYS if s in sections]
+    return base
 # LAYOUT_BUILDERS / LAYOUTS / BUILTIN_LAYOUT_KEYS 已从 src/local_compute.py 导入（见 _imports）
 
 # 自定义布局 JSON 的最简示例（供「导入布局」页下载参考）

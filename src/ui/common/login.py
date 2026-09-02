@@ -10,6 +10,7 @@ def check_login():
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False; st.session_state.username = None
         st.session_state.role = None; st.session_state.token = None
+        st.session_state.permissions = None
         st.session_state.compute_mode = "cloud"
     if not st.session_state.logged_in and not st.session_state.token:
         restored = restore_session()
@@ -17,6 +18,7 @@ def check_login():
             st.session_state.logged_in = True
             st.session_state.username = restored["username"]
             st.session_state.role = restored["role"]
+            st.session_state.permissions = restored.get("permissions")
             st.session_state.token = restored["token"]
             _load_priority_preference()
             _load_run_history()
@@ -46,6 +48,7 @@ def check_login():
                         st.session_state.logged_in = True
                         st.session_state.username = res["username"]
                         st.session_state.role = res["role"]
+                        st.session_state.permissions = res.get("permissions")
                         st.session_state.token = res["token"]
                         st.session_state.login_fails = 0
                         set_session_token(res["token"])

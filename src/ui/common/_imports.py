@@ -14,6 +14,8 @@ from auth import change_password as auth_change_pw, reset_user_password as auth_
 from auth import export_users as auth_export_users, import_users as auth_import_users
 from auth import set_session_token, clear_session_token, restore_session
 from auth import get_preference as auth_get_pref, set_preference as auth_set_pref
+from auth import get_custom_sections as auth_get_custom_sections
+from auth import save_custom_sections as auth_save_custom_sections
 # 本地计算纯函数（布局构建/仿真运行/车辆序列化）统一从 local_compute 导入：
 # ui 与 local_worker 共用同一实现，worker 无需安装 Streamlit/Pandas/Plotly。
 from local_compute import (LAYOUT_BUILDERS, LAYOUTS, BUILTIN_LAYOUT_KEYS,

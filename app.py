@@ -16,7 +16,22 @@ from ui.pages import (
 st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout="wide")
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 check_login()
-role = ROLES[st.session_state.role]
+role = resolve_role(st.session_state.role, st.session_state.get("permissions"))
+
+# ── 页面注册表（key 顺序即导航顺序；板块权限控制导航可见性）──
+PAGE_RENDERERS = {
+    "settings": render_settings,
+    "system": render_system,
+    "layout": render_layout_page,
+    "path": render_path_page,
+    "metrics": render_metrics_page,
+    "history": render_history_page,
+    "algo_import": render_algo_import_page,
+    "status": render_status_page,
+    "feedback": render_feedback_page,
+}
+allowed = [k for k in SECTION_KEYS if k in role.get("sections", [])]
+pages = [SECTION_LABELS[k] for k in allowed]
 
 # ── Sidebar ──
 with st.sidebar:
@@ -47,44 +62,24 @@ with st.sidebar:
                 else: st.error(res.get("error", "修改失败"))
 
     st.divider()
-    # ── 页面导航 ──
-    pages = [
-        "⚙️ 仿真设置",
-        "🔧 系统设置",
-        "🅿️ 停车场布局图",
-        "🚗 动态路径",
-        "📊 指标分析",
-        "📜 历史运行",
-        "🧩 新算法接入",
-        "🚨 系统状态",
-        "💬 反馈",
-    ]
-    if "page" not in st.session_state:
+    # ── 页面导航（只显示有权板块）──
+    if "page" not in st.session_state or st.session_state.page not in pages:
         st.session_state.page = pages[0]
-
-    selected = st.radio("导航", pages, index=pages.index(st.session_state.page) if st.session_state.page in pages else 0,
+    selected = st.radio("导航", pages,
+                        index=pages.index(st.session_state.page),
                         label_visibility="collapsed")
     if selected != st.session_state.page:
         st.session_state.page = selected
         st.rerun()
 
-# ── 主区域 ──
+# ── 主区域（按板块 key 分发；无权板块不渲染）──
 page = st.session_state.page
-if page == pages[0]:
-    render_settings(role)
-elif page == pages[1]:
-    render_system(role)
-elif page == pages[2]:
+key = next((k for k, label in SECTION_LABELS.items() if label == page), None)
+if key is None or key not in allowed:
+    st.warning("当前角色没有访问该板块的权限。")
+elif key == "layout":
     render_layout_page()
-elif page == pages[3]:
+elif key == "path":
     render_path_page()
-elif page == pages[4]:
-    render_metrics_page(role)
-elif page == pages[5]:
-    render_history_page(role)
-elif page == pages[6]:
-    render_algo_import_page(role)
-elif page == pages[7]:
-    render_status_page(role)
-elif page == pages[8]:
-    render_feedback_page(role)
+else:
+    PAGE_RENDERERS[key](role)

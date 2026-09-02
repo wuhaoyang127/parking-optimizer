@@ -66,3 +66,19 @@ def get_preference(token: str, key: str) -> Optional[str]:
 def set_preference(token: str, key: str, value: str) -> dict:
     """写入用户偏好值"""
     return _rpc("set_preference", {"p_token": token, "p_key": key, "p_value": value})
+
+
+def get_custom_sections(token: str) -> list:
+    """读取自定义角色模板的板块数组（管理员）。迁移 13 未执行时返回空列表。"""
+    try:
+        res = _rpc("get_custom_sections", {"p_token": token})
+        if isinstance(res, dict) and res.get("success") and isinstance(res.get("sections"), list):
+            return [str(s) for s in res["sections"]]
+    except Exception:
+        pass
+    return []
+
+
+def save_custom_sections(token: str, sections: list) -> dict:
+    """保存自定义角色模板的板块数组（管理员），并同步给所有 custom 用户。"""
+    return _rpc("save_custom_sections", {"p_token": token, "p_sections": sections})

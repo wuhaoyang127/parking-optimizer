@@ -7,7 +7,8 @@ from auth._base import (SUPABASE_URL, SUPABASE_ANON_KEY, get_supabase,  # noqa: 
 from auth.users import (login, register, validate_session, logout,  # noqa: F401
                         list_users, update_user_role, delete_user,
                         change_password, reset_user_password,
-                        export_users, import_users, get_preference, set_preference)
+                        export_users, import_users, get_preference, set_preference,
+                        get_custom_sections, save_custom_sections)
 from auth.session import (set_session_token, get_session_token,  # noqa: F401
                           clear_session_token, restore_session,
                           _cookie_token, _set_cookie_js, _clear_cookie_js)
