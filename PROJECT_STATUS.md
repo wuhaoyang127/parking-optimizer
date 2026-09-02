@@ -1,6 +1,6 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 65
+status_version: 66
 last_updated: 2026-09-02
 current_stage: D
 stage_status: in_progress
