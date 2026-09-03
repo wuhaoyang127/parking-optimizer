@@ -101,3 +101,23 @@ def test_resolve_role_unknown_role_falls_back_to_viewer():
 def test_default_custom_sections_valid():
     assert set(DEFAULT_CUSTOM_SECTIONS).issubset(SECTION_KEYS)
     assert "settings" in DEFAULT_CUSTOM_SECTIONS
+
+
+def test_restore_session_keeps_custom_permissions(monkeypatch):
+    """刷新恢复会话必须带回 permissions，否则 custom 用户权限会回退默认。"""
+    import types
+    import auth.session as session_mod
+
+    perm = {"sections": ["settings", "feedback"],
+            "features": {"can_local_compute": False}}
+    dummy_st = types.SimpleNamespace(query_params={"token": "tok"})
+    monkeypatch.setattr(session_mod, "st", dummy_st)
+    monkeypatch.setattr(session_mod, "get_session_token", lambda: "tok")
+    monkeypatch.setattr(session_mod, "_cookie_token", lambda: "tok")
+    monkeypatch.setattr(session_mod, "validate_session",
+                        lambda t: {"success": True, "username": "u", "role": "custom",
+                                   "permissions": perm})
+
+    out = session_mod.restore_session()
+    assert out["permissions"] == perm
+    assert out["role"] == "custom"

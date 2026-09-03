@@ -70,7 +70,7 @@ def clear_session_token():
 
 
 def restore_session() -> Optional[dict]:
-    """页面加载时尝试恢复登录态，返回 {username, role, token} 或 None"""
+    """页面加载时尝试恢复登录态，返回 {username, role, permissions, token} 或 None"""
     token = get_session_token()
     if not token:
         return None
@@ -83,7 +83,8 @@ def restore_session() -> Optional[dict]:
                     del st.query_params["token"]
             except Exception:
                 pass
-        return {"username": res["username"], "role": res["role"], "token": token}
+        return {"username": res["username"], "role": res["role"],
+                "permissions": res.get("permissions"), "token": token}
     else:
         clear_session_token()
         return None
