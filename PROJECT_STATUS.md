@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 76
-last_updated: 2026-09-02
+status_version: 77
+last_updated: 2026-09-03
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: 34a4d6c
+last_verified_commit: f0010d6
 current_exec_plan: docs/plans/stage-d-dynamic-path-feedback.md
 latest_handoff: docs/handoffs/2026-09-02-权限重构与代码拆分.md
 next_prompt: null
@@ -222,6 +222,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-03：**custom 用户刷新后权限回退修复**（用户反馈：刷新一下权限变少了）：根因是 `restore_session()` 恢复会话时没有把 `validate_session` 返回的 `permissions` 带回 session_state——登录路径带上了、刷新恢复路径漏了，刷新后 `st.session_state.permissions=None`，`resolve_role("custom", None)` 回退到 custom 默认（6 板块 + 操作员功能）；修复：`src/auth/session.py` 的 `restore_session` 返回值增加 `permissions`；新增回归测试 1 项（恢复会话必须带回 permissions），pytest 160 passed、行数检查与启动包自检全绿；打 tag `backup-before-restore-permissions-fix-20260903`；状态文档 status_version 76 → 77；
 - 2026-09-02：**回放路径假直线与内置布局单向边修复**（用户反馈：离场动画彻底没了，判断「路是单向的」——完全正确）：①核验发现内置布局 `linear`（ENTRY→N0）、`rectangle`（ENTRY→M）、`circle`（ENTRY→R0）三处入口边只加了单方向，车位全部「能进不能出」，离场路径 `spot→entry` 不存在；旧 UI 因此画 `[车位,入口]` 假直线（用户上一轮看到的穿墙线），禁止假直线后动画消失；②补齐三处反向边（`N0→ENTRY`、`M→ENTRY`、`R0→ENTRY`），全部内置布局现在每个车位都能返回入口；③`vehicle_phases.py` 回放路径兜底统一改为「找不到路按引擎口径回退入口，再找不到只标起点不画假直线」（离场/入库/移位/回位/让行全量覆盖）；④新增回归测试（`tests/test_builtin_layouts.py`：全部内置布局双向连通；不可达出口/入口回退测试 2 项），pytest 159 passed、行数检查与启动包自检全绿；状态文档 status_version 75 → 76；
 - 2026-09-02：**动态路径移位修复**（用户反馈：移位车的离场路径起点仍是移位前车位，且看不到回位段）：①`src/ui/common/vehicle_phases.py` 新增 `_spot_at_time`——按事件流重放车辆实际车位（shift_start 跟随 to_spot、shift_end 跟随 final_spot/原车位），离场段路径与 `spot_id` 改用该实际车位；②移位阶段新增「回位段」（shift_end 存在时生成 缓冲位→回位目标 的可选动画，kind=return，页面下拉标注「（回位）」）；③`ParkingLot.move_vehicle` 同步 `vehicle.assigned_spot`、`free` 释放缓冲位占用（修复前移归位后引擎离场用错车位的隐患）；新增回归测试 3 项（离场起点=移位后车位、回位段提取、assigned_spot/缓冲位同步），pytest 156 passed、行数检查与启动包自检全绿；打 tag `backup-before-departure-shift-path-20260902`；状态文档 status_version 74 → 75；
 - 2026-09-02：交接后恢复会话（新对话）：本地三项自检全绿（pytest 154 passed / `scripts/check_file_lines.py` 全部 ≤200 行 / 启动包自检 260 关键文件）；Supabase 只读核验权限迁移已生效（7 用户：admin 1 / operator 4 / custom 1 / viewer 1；`users.permissions` 列存在；`app_settings.custom_sections` 模板为 9 板块 + 13 功能开；login_user / validate_session / list_users / update_user_role / get_custom_sections / save_custom_sections 六个 RPC 均返回预期 JSON，无 PGRST202）；确认 `stage-d-deliver` HEAD `bf96976` 已推送到 origin；清理状态文档中过期的「迁移 13 待执行」提示（迁移 13/14 已直连执行）；打 tag `backup-before-status-sync-perm-accept-20260902`；状态文档 status_version 73 → 74；
