@@ -1,7 +1,7 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 77
-last_updated: 2026-09-03
+status_version: 78
+last_updated: 2026-09-04
 current_stage: D
 stage_status: in_progress
 current_milestone: stage-d-dynamic-path-feedback
@@ -182,6 +182,11 @@ superseded
 | `tests/test_engine_shift_race.py` | 引擎移位让行并发竞态回归测试（2 项） | 有效，本轮新增 |
 | `docs/algorithms/risk_scoring.md` | 算法二教学文档（数学定义/伪代码/实验/优缺点） | 有效，本轮新增 |
 | `scripts/exp_risk_scoring.py` | 算法二第一版实验脚本（产出 `outputs/`，本地产物） | 有效，本轮新增 |
+| `src/parking_opt/strategies/rho.py` | 算法三 RHO 滚动时域动态修正（在线，免 statsmodels） | 有效，本轮新增 |
+| `src/parking_opt/strategies/_rho_forecast.py` | 算法三 SARIMA-lite 预测器（Holt + AR(1) 误差修正） | 有效，本轮新增 |
+| `tests/test_rho.py` | 算法三 19 项单元/回归测试 | 有效，本轮新增 |
+| `docs/algorithms/rho_rolling.md` | 算法三教学文档（数学定义/伪代码/实验/优缺点） | 有效，本轮新增 |
+| `scripts/exp_rho.py` | 算法三第一版实验脚本（产出 `outputs/exp_rho_*`，本地产物） | 有效，本轮新增 |
 | `src/parking_opt/io/demand_io.py` | 需求序列 JSON 导出/导入（schema v1） | 有效，本轮新增 |
 | `src/parking_opt/evaluation/ranking.py` | 加权多指标评分排名（归一化+方向） | 有效，本轮新增 |
 | `docs/新算法接入说明.md` | 新算法接入步骤文档 | 有效 |
@@ -213,6 +218,7 @@ superseded
 5. ☁️ 云端重新部署本次动态路径修复（`a94e2e3`）：本地 156 passed、行数检查与启动包自检全绿，已推送到 GitHub；云端 Reboot 后若仍跑旧代码，用「改 requirements.txt 触发全量重建」或「删除后重新部署（先记下 Secrets）」强制生效。
 6. 🚗 验收动态路径移位场景：选一辆 🔄移位 车 → 「移位」阶段应能看到「去程 A→B」与「回位 B→A」两段可选动画；「离场」阶段起点应为该车离场时刻实际车位（移位后未回位=缓冲位、已回位=回位目标，不再是移位前原车位）。
 7. 企业交付前人工待办：删旧 publishable key、正式交付前改管理员强密码、数据授权协议、试点基线、`docs/企业可用性检查清单.md`。
+8. 🚗 验收算法三（RHO 滚动时域动态修正）：仿真设置页策略下拉出现「RHO 滚动时域动态修正」，选中后出现 9 个参数控件；运行后行为说明——高峰/突发时自动切兜底（就近分配），平稳时用基准方案（时长感知贪心）。
 
 ## 12. 预计后续需要用户确认
 
@@ -222,6 +228,7 @@ superseded
 
 ## 13. 最近重要变更
 
+- 2026-09-04：**算法三 RHO 滚动时域动态修正接入**（用户提供 `新算法接入/算法三/SARIMA+RHO滚动时域_实时动态修正完整解决方案.docx`，已同步转成同名 `.md` 便于上传）：①新增 `src/parking_opt/strategies/rho.py`（在线策略，`rho_rolling`）——预测前置规划 + 滚动窗口动态纠偏 + 实时事件兜底：每 10 分钟滚动校验、60 分钟预测窗口，按窗口累计偏差 `E=|A−F|/F` 分三级修正（≤20% 保持基准方案 / 20%~50% 按实际偏高偏低切换高负载或低负载算法 / >50% 或 5 分钟进场突发降级纯实时兜底，连续 2 个步长回归后自动恢复）；②新增 `_rho_forecast.py` 免依赖 SARIMA-lite 预测器（Holt 水平/趋势 + AR(1) 误差修正，生产环境可替换 statsmodels SARIMA，不新增任何依赖）；③登记注册表后网页自动出现「RHO 滚动时域动态修正」及 9 个参数控件（滚动步长/预测窗口/两级阈值/突发阈值/基准·偏高·偏低·兜底四个子算法下拉）；④信息边界：在线合法——不实现 prepare、不读未来需求与真实停车时长；⑤新增 `tests/test_rho.py`（19 项）、教学文档 `docs/algorithms/rho_rolling.md`、实验脚本 `scripts/exp_rho.py`（产出 `outputs/exp_rho_*`）；pytest 179 passed、行数检查与启动包自检全绿；打 tag `backup-before-rho-algo3-20260904`；状态文档 status_version 77 → 78；待用户网页验收；
 - 2026-09-03：**custom 用户刷新后权限回退修复**（用户反馈：刷新一下权限变少了）：根因是 `restore_session()` 恢复会话时没有把 `validate_session` 返回的 `permissions` 带回 session_state——登录路径带上了、刷新恢复路径漏了，刷新后 `st.session_state.permissions=None`，`resolve_role("custom", None)` 回退到 custom 默认（6 板块 + 操作员功能）；修复：`src/auth/session.py` 的 `restore_session` 返回值增加 `permissions`；新增回归测试 1 项（恢复会话必须带回 permissions），pytest 160 passed、行数检查与启动包自检全绿；打 tag `backup-before-restore-permissions-fix-20260903`；状态文档 status_version 76 → 77；
 - 2026-09-02：**回放路径假直线与内置布局单向边修复**（用户反馈：离场动画彻底没了，判断「路是单向的」——完全正确）：①核验发现内置布局 `linear`（ENTRY→N0）、`rectangle`（ENTRY→M）、`circle`（ENTRY→R0）三处入口边只加了单方向，车位全部「能进不能出」，离场路径 `spot→entry` 不存在；旧 UI 因此画 `[车位,入口]` 假直线（用户上一轮看到的穿墙线），禁止假直线后动画消失；②补齐三处反向边（`N0→ENTRY`、`M→ENTRY`、`R0→ENTRY`），全部内置布局现在每个车位都能返回入口；③`vehicle_phases.py` 回放路径兜底统一改为「找不到路按引擎口径回退入口，再找不到只标起点不画假直线」（离场/入库/移位/回位/让行全量覆盖）；④新增回归测试（`tests/test_builtin_layouts.py`：全部内置布局双向连通；不可达出口/入口回退测试 2 项），pytest 159 passed、行数检查与启动包自检全绿；状态文档 status_version 75 → 76；
 - 2026-09-02：**动态路径移位修复**（用户反馈：移位车的离场路径起点仍是移位前车位，且看不到回位段）：①`src/ui/common/vehicle_phases.py` 新增 `_spot_at_time`——按事件流重放车辆实际车位（shift_start 跟随 to_spot、shift_end 跟随 final_spot/原车位），离场段路径与 `spot_id` 改用该实际车位；②移位阶段新增「回位段」（shift_end 存在时生成 缓冲位→回位目标 的可选动画，kind=return，页面下拉标注「（回位）」）；③`ParkingLot.move_vehicle` 同步 `vehicle.assigned_spot`、`free` 释放缓冲位占用（修复前移归位后引擎离场用错车位的隐患）；新增回归测试 3 项（离场起点=移位后车位、回位段提取、assigned_spot/缓冲位同步），pytest 156 passed、行数检查与启动包自检全绿；打 tag `backup-before-departure-shift-path-20260902`；状态文档 status_version 74 → 75；
