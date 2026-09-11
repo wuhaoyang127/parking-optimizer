@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from ui.pages import _best_algo_from_runs  # noqa: E402
+from ui.pages import _owner_app_connected  # noqa: E402
 from parking_opt.evaluation.ranking import DEFAULT_WEIGHTS  # noqa: E402
 
 
@@ -70,3 +71,15 @@ def test_best_algo_ignores_metrics_without_strategy_key():
     best, ranked, source = _best_algo_from_runs(runs, DEFAULT_WEIGHTS)
     assert best == "algo_a"
     assert len(ranked) == 1
+
+
+def test_owner_app_connected_parses_true_values():
+    """车主端接入开关：1/true/yes/on（大小写均可）视为已接入。"""
+    for v in ("1", "true", "True", "TRUE", "yes", "on", " On "):
+        assert _owner_app_connected(v) is True
+
+
+def test_owner_app_connected_false_by_default():
+    """未设置/其他值一律视为未接入（推送按钮仅备用）。"""
+    for v in ("0", "false", "no", "off", "", None, "还没接"):
+        assert _owner_app_connected(v) is False

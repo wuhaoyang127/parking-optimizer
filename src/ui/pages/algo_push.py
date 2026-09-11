@@ -2,6 +2,16 @@
 from ui.common import *
 
 
+def _owner_app_connected(value) -> bool:
+    """解析车主端接入开关：'1'/'true'/'yes'/'on' 视为已接入，其余视为未接入。"""
+    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+# 车主端接入开关：车主端 FastAPI 接入前，推送按钮仅备用（点击只提示，不写库）。
+# 车主端接入后设置环境变量 OWNER_APP_CONNECTED=1（或 true/yes/on）并重新部署即可启用。
+OWNER_APP_CONNECTED = _owner_app_connected(os.environ.get("OWNER_APP_CONNECTED", "0"))
+
+
 def _best_algo_from_runs(runs, weights):
     """从 sim_runs 记录计算当前测试最优算法。
 
@@ -63,6 +73,9 @@ def render_algo_push_section(role):
     st.divider()
     st.subheader("🚀 推送到车主端")
     st.caption("把研发端测试完成的算法发布为快照；车主端 FastAPI 读取最新发布记录进入实验。")
+    if not OWNER_APP_CONNECTED:
+        st.info("📡 当前状态：**车主端未接入** —— 推送按钮仅备用，点击只提示、不会真正推送。"
+                "车主端接入后设置环境变量 `OWNER_APP_CONNECTED=1` 并重新部署即可启用。")
 
     registry = StrategyRegistry.all()
     label_to_name = {cls.label: name for name, cls in registry.items()}
@@ -88,14 +101,17 @@ def render_algo_push_section(role):
                                   key="push_algo_confirm")
             if st.button("📤 推送到车主端", type="primary",
                          disabled=not confirm, key="push_algo_btn"):
-                res = auth_publish_algorithm(st.session_state.token, algo, params,
-                                             note or None)
-                if res.get("success"):
-                    st.success(f"✅ 已发布「{label}」（{algo}）到车主端")
-                    st.session_state.push_algo_confirm = False
+                if not OWNER_APP_CONNECTED:
+                    st.warning("🚫 车主端未接入，该按钮仅备用：当前点击不会真正推送到车主端。")
                 else:
-                    st.error(res.get("error") or
-                             "发布失败：请确认已在 Supabase 执行迁移 15")
+                    res = auth_publish_algorithm(st.session_state.token, algo, params,
+                                                 note or None)
+                    if res.get("success"):
+                        st.success(f"✅ 已发布「{label}」（{algo}）到车主端")
+                        st.session_state.push_algo_confirm = False
+                    else:
+                        st.error(res.get("error") or
+                                 "发布失败：请确认已在 Supabase 执行迁移 15")
 
     # ── 自动推送当前测试最优 ──
     with tab_auto:
@@ -130,14 +146,17 @@ def render_algo_push_section(role):
             confirm2 = st.checkbox("我确认推送该最优算法", key="auto_push_confirm")
             if st.button("📤 确认推送", type="primary",
                          disabled=not confirm2, key="auto_push_ok"):
-                res = auth_publish_algorithm(st.session_state.token, best, params,
-                                             f"自动推送：{source}")
-                if res.get("success"):
-                    st.success(f"✅ 已发布「{labels.get(best, best)}」（{best}）到车主端")
-                    st.session_state.auto_push_confirm = False
+                if not OWNER_APP_CONNECTED:
+                    st.warning("🚫 车主端未接入，该按钮仅备用：当前点击不会真正推送到车主端。")
                 else:
-                    st.error(res.get("error") or
-                             "发布失败：请确认已在 Supabase 执行迁移 15")
+                    res = auth_publish_algorithm(st.session_state.token, best, params,
+                                                 f"自动推送：{source}")
+                    if res.get("success"):
+                        st.success(f"✅ 已发布「{labels.get(best, best)}」（{best}）到车主端")
+                        st.session_state.auto_push_confirm = False
+                    else:
+                        st.error(res.get("error") or
+                                 "发布失败：请确认已在 Supabase 执行迁移 15")
 
     # ── 发布与实验记录 ──
     with tab_history:
