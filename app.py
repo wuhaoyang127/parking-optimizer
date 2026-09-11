@@ -61,6 +61,19 @@ with st.sidebar:
                 if res.get("success"): st.success("密码已修改！")
                 else: st.error(res.get("error", "修改失败"))
 
+    with st.expander("✏️ 修改用户名"):
+        new_name = st.text_input("新用户名", key="chg_name")
+        if st.button("确认修改用户名", use_container_width=True, key="do_chg_name"):
+            if not new_name or new_name.strip() == st.session_state.username:
+                st.info("请输入新的用户名")
+            else:
+                res = auth_change_username(st.session_state.token, new_name)
+                if res.get("success"):
+                    st.session_state.username = res.get("username", new_name.strip())
+                    st.success("用户名已修改！")
+                else:
+                    st.error(res.get("error", "修改失败"))
+
     st.divider()
     # ── 页面导航（只显示有权板块）──
     if "page" not in st.session_state or st.session_state.page not in pages:

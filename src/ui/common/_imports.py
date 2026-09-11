@@ -104,6 +104,16 @@ except ImportError:
     auth_list_algorithm_releases = lambda *_a, **_k: []
     auth_list_experiments = lambda *_a, **_k: []
 
+try:
+    from auth import change_username as auth_change_username
+    from auth import admin_rename_user as auth_admin_rename_user
+except ImportError:
+    def _username_change_unavailable(*_a, **_k):
+        return {"success": False, "error": "用户名修改功能未加载：请先执行 migrations/16_change_username.sql 并重新部署"}
+
+    auth_change_username = _username_change_unavailable
+    auth_admin_rename_user = _username_change_unavailable
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go

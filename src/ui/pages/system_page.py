@@ -85,7 +85,7 @@ def render_system(role):
                 u = u_info.get("username", "")
                 ur = u_info.get("role", "viewer")
                 if u == ADMIN_USER: continue
-                c1, c2, c3, c4 = st.columns([2, 2, 1.5, 1.5])
+                c1, c2, c3, c4, c5 = st.columns([2, 2, 1.5, 1.5, 1])
                 c1.write(f"**{u}**")
                 new_role = c2.selectbox("角色", _ROLE_OPTIONS,
                     index=_role_index(ur), key=f"role_{u}", label_visibility="collapsed")
@@ -94,6 +94,8 @@ def render_system(role):
                     st.session_state[f"rst_open_{u}"] = True
                 if c4.button("🗑", key=f"del_{u}", help="删除用户"):
                     st.session_state[f"del_open_{u}"] = True
+                if c5.button("✏️", key=f"rn_{u}", help="修改用户名"):
+                    st.session_state[f"rn_open_{u}"] = True
                 if st.session_state.get(f"rst_open_{u}"):
                     rp = st.text_input("新密码", type="password", key=f"rst_pw_{u}")
                     if st.button("确认重置", key=f"rst_ok_{u}"):
@@ -114,6 +116,19 @@ def render_system(role):
                     if dc2.button("取消", key=f"del_cancel_{u}", use_container_width=True):
                         st.session_state.pop(f"del_open_{u}", None)
                         st.rerun()
+                if st.session_state.get(f"rn_open_{u}"):
+                    new_name = st.text_input("新用户名", key=f"rn_name_{u}")
+                    if st.button("确认改名", key=f"rn_ok_{u}"):
+                        if not new_name or new_name.strip() == u:
+                            st.info("请输入新的用户名")
+                        else:
+                            res = auth_admin_rename_user(st.session_state.token, u, new_name)
+                            if res.get("success"):
+                                st.session_state.pop(f"rn_open_{u}", None)
+                                st.success(f"已将 {u} 改名为 {res.get('username', new_name.strip())}")
+                                st.rerun()
+                            else:
+                                st.error(res.get("error", "修改失败"))
             st.divider()
             st.caption(f"👑 **{ADMIN_USER}** — 管理员（不可删除/不可降级）")
             with st.expander("🧩 自定义角色权限（板块级）", expanded=False):

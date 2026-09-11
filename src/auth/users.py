@@ -92,3 +92,21 @@ def save_custom_sections(token: str, sections: list, features: dict) -> dict:
     """保存自定义角色模板（管理员），并同步给所有 custom 用户。"""
     payload = {"sections": sections, "features": features}
     return _rpc("save_custom_sections", {"p_token": token, "p_sections": payload})
+
+
+def _clean_username(name) -> str:
+    """用户名预处理：去首尾空白（与 SQL 端 trim 保持一致）。"""
+    return str(name or "").strip()
+
+
+def change_username(token: str, new_username: str) -> dict:
+    """当前登录用户修改自己的用户名（管理员账号除外）。"""
+    return _rpc("change_username", {
+        "p_token": token, "p_new_username": _clean_username(new_username)})
+
+
+def admin_rename_user(token: str, old_username: str, new_username: str) -> dict:
+    """管理员修改任意用户的用户名（管理员账号除外）。"""
+    return _rpc("admin_rename_user", {
+        "p_token": token, "p_old_username": old_username,
+        "p_new_username": _clean_username(new_username)})
