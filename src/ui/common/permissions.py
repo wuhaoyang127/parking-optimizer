@@ -29,6 +29,7 @@ FEATURE_KEYS = [
     "can_manage_users",    # 用户管理
     "can_manage_data",     # 数据管理
     "can_import_algo",     # 上传新算法
+    "can_push_algo",       # 推送到车主端
     "can_debug",           # 查看系统状态
     "can_submit_feedback",  # 提交反馈
     "can_manage_feedback",  # 反馈管理
@@ -45,6 +46,7 @@ FEATURE_LABELS = {
     "can_manage_users": ("用户管理", "角色/重置密码/删除用户/自定义角色面板"),
     "can_manage_data": ("数据管理", "导出/导入用户备份、导入布局"),
     "can_import_algo": ("上传新算法", "新算法接入页上传 zip"),
+    "can_push_algo": ("推送到车主端", "发布算法快照到车主端进入实验"),
     "can_debug": ("查看系统状态", "系统状态页（连接/版本检查）"),
     "can_submit_feedback": ("提交反馈", "意见箱提交与查看我的反馈"),
     "can_manage_feedback": ("反馈管理", "查看全部反馈/回复/删除/改状态"),
@@ -55,15 +57,15 @@ FEATURES_OPERATOR = {
     "can_configure": True, "can_import_demand": True, "can_export_demand": True,
     "can_run_simulation": True, "can_local_compute": True, "can_delete_local_task": True,
     "can_export_results": True, "can_delete_history": True, "can_manage_users": False,
-    "can_manage_data": False, "can_import_algo": False, "can_debug": True,
-    "can_submit_feedback": True, "can_manage_feedback": False,
+    "can_manage_data": False, "can_import_algo": False, "can_push_algo": False,
+    "can_debug": True, "can_submit_feedback": True, "can_manage_feedback": False,
 }
 FEATURES_VIEWER = {
     "can_configure": False, "can_import_demand": False, "can_export_demand": False,
     "can_run_simulation": True, "can_local_compute": False, "can_delete_local_task": False,
     "can_export_results": False, "can_delete_history": False, "can_manage_users": False,
-    "can_manage_data": False, "can_import_algo": False, "can_debug": False,
-    "can_submit_feedback": True, "can_manage_feedback": False,
+    "can_manage_data": False, "can_import_algo": False, "can_push_algo": False,
+    "can_debug": False, "can_submit_feedback": True, "can_manage_feedback": False,
 }
 
 

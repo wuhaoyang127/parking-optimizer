@@ -1,10 +1,12 @@
 """页面：新算法接入（上传算法描述文件，供 AI 后台接入）。"""
 from ui.common import *
+from ui.pages.algo_push import render_algo_push_section
 
 
 def render_algo_import_page(role):
     """页面: 新算法接入 —— 上传算法描述文件，供 AI 后台接入"""
     st.subheader("🧩 新算法接入")
+    render_algo_push_section(role)
     can_upload = role["can_import_algo"]
     can_view_docs = role["can_configure"] or can_upload
     if not can_view_docs:

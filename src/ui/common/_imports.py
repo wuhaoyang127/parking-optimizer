@@ -92,6 +92,18 @@ except ImportError:
     auth_delete_compute_task = _compute_tasks_unavailable
     auth_get_latest_compute_task_any = _compute_tasks_unavailable
 
+try:
+    from auth import publish_algorithm as auth_publish_algorithm
+    from auth import list_algorithm_releases as auth_list_algorithm_releases
+    from auth import list_experiments as auth_list_experiments
+except ImportError:
+    def _algo_push_unavailable(*_a, **_k):
+        return {"success": False, "error": "推送到车主端功能未加载：请先执行 migrations/15_algo_push.sql 并重新部署"}
+
+    auth_publish_algorithm = _algo_push_unavailable
+    auth_list_algorithm_releases = lambda *_a, **_k: []
+    auth_list_experiments = lambda *_a, **_k: []
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go

@@ -22,3 +22,5 @@ from auth.tasks import (create_compute_task, claim_compute_task,  # noqa: F401
                         complete_compute_task, get_compute_task,
                         get_latest_compute_task, requeue_compute_task,
                         delete_compute_task, get_latest_compute_task_any)
+from auth.releases import (publish_algorithm, list_algorithm_releases,  # noqa: F401
+                           list_experiments)
