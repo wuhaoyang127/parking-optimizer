@@ -27,6 +27,7 @@ def run_local_task(payload: dict) -> dict:
     from parking_opt.simulation.arrival import generate_demand
     from parking_opt.io.demand_io import parse_demand_json
     from parking_opt.strategies import StrategyRegistry
+    from parking_opt.strategies.registry import CATEGORY_CLASSIC, CATEGORY_ML
 
     # 1. 布局
     layout = payload.get("layout") or {}
@@ -74,7 +75,13 @@ def run_local_task(payload: dict) -> dict:
         all_m, timed_out, failed = [], [], []
         events_by_strategy, vehicles_by_strategy = {}, {}
         main_events_raw = None
-        all_strategies = StrategyRegistry.all()
+        # 两段式选择：compare_all 只对比当前分类内的策略；
+        # 旧任务 payload 无 category 时保持旧行为（全部策略），向后兼容。
+        strategy_category = (payload.get("strategy") or {}).get("category")
+        if strategy_category in (CATEGORY_CLASSIC, CATEGORY_ML):
+            all_strategies = dict(StrategyRegistry.items_in_category(strategy_category))
+        else:
+            all_strategies = StrategyRegistry.all()
         total = len(all_strategies)
         for idx, (nm, cls) in enumerate(all_strategies.items(), 1):
             label = getattr(cls, "label", nm)

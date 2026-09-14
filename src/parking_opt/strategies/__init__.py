@@ -2,7 +2,7 @@
 
 from .baselines import BaseStrategy, FCFS, NearestPath, RandomAssign
 from .greedy import GreedyStrategy, DepartureOrderGreedy, DurationAwareGreedy
-from .registry import StrategyRegistry
+from .registry import StrategyRegistry, CATEGORY_CLASSIC, CATEGORY_ML
 from .fusion import CompositeStrategy, PeakOffPeakFusion
 from .mosa import MosaStrategy
 from .risk_scoring import RiskScoringStrategy
@@ -25,4 +25,5 @@ __all__ = [
     "GreedyStrategy", "DepartureOrderGreedy", "DurationAwareGreedy",
     "CompositeStrategy", "PeakOffPeakFusion", "MosaStrategy",
     "RiskScoringStrategy", "RhoRollingStrategy", "StrategyRegistry",
+    "CATEGORY_CLASSIC", "CATEGORY_ML",
 ]

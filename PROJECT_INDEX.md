@@ -146,6 +146,7 @@
 | `test_ui_helpers.py` | UI 纯函数（车辆ID排序键 3 项 + worker 启动脚本 2 项） |
 | `test_local_worker.py` | local_worker GBK 输出兜底 + 网络自愈重试（3 项） |
 | `test_auth_net.py` | 公网 app RPC 网络自愈重试（3 项） |
+| `test_strategy_categories.py` | 策略两段式选择 category 分类契约（7 项） |
 
 ---
 

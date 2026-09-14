@@ -126,6 +126,7 @@ from parking_opt.simulation.arrival import generate_demand
 from parking_opt.simulation.defaults import (CAR_SPEED, MAX_WAIT_TIME, SIM_DURATION,
                                              DURATION_MIN, DURATION_MAX, PEAK_RATIO, ERROR_RATIO)
 from parking_opt.strategies import StrategyRegistry
+from parking_opt.strategies.registry import CATEGORY_CLASSIC, CATEGORY_ML
 from parking_opt.strategies.mosa import estimate_scene as estimate_mosa_scene
 from parking_opt.strategies.mosa import resolve_scene as resolve_mosa_scene
 from parking_opt.strategies.mosa import SCENE_LABELS as MOSA_SCENE_LABELS

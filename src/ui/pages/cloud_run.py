@@ -4,7 +4,8 @@ from ui.pages.cloud_store import _n_runs_for, _store_cloud_common_state
 
 
 def _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed, n_runs,
-                          wait_policy, strategy_name, random_reps, strat_params, env_params,
+                          wait_policy, strategy_name, strategy_category, random_reps,
+                          strat_params, env_params,
                           base_vehicles, demand_source_used, imported_meta):
     """云端运行仿真：全部对比 / 单策略，结果写入 session_state 并跳指标页。"""
     with st.spinner("仿真运行中..."):
@@ -32,7 +33,9 @@ def _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
             main_events_raw = None
             events_by_strategy = {}
             vehicles_by_strategy = {}
-            all_strategies = list(StrategyRegistry.all().items())
+            all_strategies = (StrategyRegistry.items_in_category(strategy_category)
+                              if strategy_category in (CATEGORY_CLASSIC, CATEGORY_ML)
+                              else list(StrategyRegistry.all().items()))
             total = len(all_strategies)
             prog = st.progress(0.0, text="准备运行全部策略对比...")
             for i, (nm, cls) in enumerate(all_strategies):

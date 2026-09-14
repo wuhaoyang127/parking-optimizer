@@ -40,7 +40,8 @@ def _check_local_task_once(ctx_kwargs):
         st.info("暂无任务状态。请先运行 `py local_worker.py`，再下发任务。")
 
 
-def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name, strat_params,
+def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
+                                strategy_category, strat_params,
                                 env_params, wait_policy, seed, n_runs, random_reps,
                                 base_vehicles, demand_source_used, n_vehicles, ctx_kwargs):
     """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。"""
@@ -68,7 +69,8 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name, st
     payload = {
         "layout": layout_payload,
         "demand": demand_payload,
-        "strategy": {"name": strategy_name, "params": strat_params},
+        "strategy": {"name": strategy_name, "params": strat_params,
+                     "category": strategy_category},
         "engine": {"wait_policy": wait_policy,
                    "car_speed": env_params["car_speed"],
                    "max_wait_time": env_params["max_wait_time"],

@@ -4,6 +4,7 @@ from __future__ import annotations
 import random
 from ..domain.spot import Spot, Vehicle
 from ..simulation.parking_lot import ParkingLot
+from .registry import CATEGORY_CLASSIC
 
 
 class BaseStrategy:
@@ -11,6 +12,8 @@ class BaseStrategy:
 
     新算法接入约定（详见 docs/新算法接入说明.md）：
       - 继承本类，设置 name（英文唯一标识）、label（网页显示名）；
+      - 用 category 声明算法分类：CATEGORY_CLASSIC（经典/规则，默认）
+        或 CATEGORY_ML（机器学习）。网页据此做两段式策略选择；
       - 用 PARAMS 列表声明可调参数，每项含 key/label/type/min/max/step/default/help；
       - 构造函数接收与 PARAMS 中 key 同名的关键字参数（带默认值）；
       - 在 strategies/__init__.py 的注册表中登记后，网页会自动出现参数控件。
@@ -25,6 +28,7 @@ class BaseStrategy:
 
     name: str = "base"
     label: str = "基础策略"
+    category: str = CATEGORY_CLASSIC  # CATEGORY_CLASSIC=经典/规则；CATEGORY_ML=机器学习
     PARAMS: list = []  # 可调参数声明，见类文档字符串
     DESCRIPTION: str = ""  # 算法说明（Markdown），网页仿真设置页自动展示
 

@@ -52,9 +52,21 @@ def _render_layout_and_strategy(disabled, import_mode):
                                    format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
                                    disabled=disabled,
                                    help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
-        strategy_name = st.selectbox("策略", list(STRATEGY_LABELS.keys()),
+        # 两段式选择：先选「是否加入机器学习」，再按分类选具体策略
+        strategy_category = st.radio(
+            "是否加入机器学习", [CATEGORY_CLASSIC, CATEGORY_ML],
+            format_func=lambda v: STRATEGY_CATEGORY_LABELS[v],
+            horizontal=True, key="use_ml", disabled=disabled,
+            help="先选策略大类：经典/规则算法，或机器学习算法；后续接入的新 ML 算法会自动出现在「加入机器学习」分类下")
+        strategy_options = strategy_options_for(strategy_category)
+        if st.session_state.get("strategy_name") not in strategy_options:
+            st.session_state.strategy_name = strategy_options[0]
+        strategy_name = st.selectbox("策略", strategy_options,
+                                     key="strategy_name",
                                      format_func=lambda x: STRATEGY_LABELS[x],
                                      disabled=disabled)
+        st.caption(f"当前分类：{STRATEGY_CATEGORY_LABELS[strategy_category]}；"
+                   f"「全部对比」仅对比该分类内的 {len(strategy_options) - 1} 个算法")
 
         # random 策略重复次数单独控制：随机性强，需 100+ 次取平均才有说服力；
         # 其他策略仍用上方「仿真次数」滑杆（1~10），避免被迫一起跑 100+ 次。
@@ -98,4 +110,5 @@ def _render_layout_and_strategy(disabled, import_mode):
             env_params["duration_max"], env_params["duration_min"]
 
     return (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
-            n_runs, wait_policy, strategy_name, random_reps, strat_params, env_params)
+            n_runs, wait_policy, strategy_name, strategy_category, random_reps,
+            strat_params, env_params)

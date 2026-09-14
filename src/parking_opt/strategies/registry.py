@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+# 策略分类：经典/规则算法 与 机器学习算法。
+# 机器学习类算法的判定口径：从数据中学习规律/预测（如时序预测、监督学习、强化学习）。
+# 仅用规则/启发式/运筹优化（如贪心、NSGA-II 进化搜索、多准则评分）的算法归 classic。
+CATEGORY_CLASSIC = "classic"
+CATEGORY_ML = "ml"
+
 
 class StrategyRegistry:
     """策略注册表（类级单例）。
@@ -50,3 +56,21 @@ class StrategyRegistry:
     def default_params(cls, name: str) -> dict:
         """返回某策略的默认参数 {key: default}（供网页初始化控件）。"""
         return {p["key"]: p["default"] for p in cls.specs(name) if "default" in p}
+
+    @classmethod
+    def names_in_category(cls, category: str) -> list:
+        """返回指定分类下的策略 name 列表（保持登记顺序）。
+
+        未标 category 的策略默认视为 CATEGORY_CLASSIC（向后兼容）。
+        """
+        return [n for n, c in cls._strategies.items()
+                if getattr(c, "category", CATEGORY_CLASSIC) == category]
+
+    @classmethod
+    def items_in_category(cls, category: str) -> list:
+        """返回指定分类下的 [(name, class), ...] 列表（保持登记顺序）。
+
+        供「全部对比」按当前分类过滤使用；云/本机计算共用，避免两处口径不一致。
+        """
+        return [(n, c) for n, c in cls._strategies.items()
+                if getattr(c, "category", CATEGORY_CLASSIC) == category]

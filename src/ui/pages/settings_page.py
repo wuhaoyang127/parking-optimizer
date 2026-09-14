@@ -18,7 +18,7 @@ def render_settings(role):
     import_mode, gate_mode, imported_vehicles, imported_meta = _render_demand_source(disabled, role)
 
     (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
-     n_runs, wait_policy, strategy_name, random_reps, strat_params,
+     n_runs, wait_policy, strategy_name, strategy_category, random_reps, strat_params,
      env_params) = _render_layout_and_strategy(disabled, import_mode)
 
     _render_mosa_hint(strategy_name, import_mode, imported_vehicles, real_layout_mode,
@@ -57,11 +57,12 @@ def render_settings(role):
     if st.button(run_label, type="primary", use_container_width=True, disabled=not run_allowed):
         if compute_mode == "local":
             _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
-                                        strat_params, env_params, wait_policy, seed,
-                                        n_runs, random_reps, base_vehicles,
-                                        demand_source_used, n_vehicles, ctx_kwargs)
+                                        strategy_category, strat_params, env_params,
+                                        wait_policy, seed, n_runs, random_reps,
+                                        base_vehicles, demand_source_used, n_vehicles,
+                                        ctx_kwargs)
             st.stop()
         _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
-                              n_runs, wait_policy, strategy_name, random_reps,
-                              strat_params, env_params, base_vehicles,
+                              n_runs, wait_policy, strategy_name, strategy_category,
+                              random_reps, strat_params, env_params, base_vehicles,
                               demand_source_used, imported_meta)
