@@ -14,7 +14,7 @@ RHO 每 roll_step 分钟按 E_t=|A_t-F_t|/F_t 分三级修正，5 分钟进场�
 from ..domain.spot import Spot, Vehicle
 from ..simulation.parking_lot import ParkingLot
 from .baselines import BaseStrategy
-from .registry import CATEGORY_ML, StrategyRegistry
+from .registry import StrategyRegistry
 from ._rho_forecast import SarimaLite
 
 
@@ -23,7 +23,6 @@ class RhoRollingStrategy(BaseStrategy):
 
     name = "rho_rolling"
     label = "RHO 滚动时域动态修正"
-    category = CATEGORY_ML  # 机器学习：SARIMA-lite 时序预测 + 滚动学习修正
     DESCRIPTION = (
         "**RHO 滚动时域动态修正（算法三）**\\n\\n"
         "预测前置规划 + 滚动窗口动态纠偏 + 实时事件兜底。SARIMA-lite 车流预判，"

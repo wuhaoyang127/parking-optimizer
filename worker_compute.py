@@ -75,8 +75,7 @@ def run_local_task(payload: dict) -> dict:
         all_m, timed_out, failed = [], [], []
         events_by_strategy, vehicles_by_strategy = {}, {}
         main_events_raw = None
-        # 两段式选择：compare_all 只对比当前分类内的策略；
-        # 旧任务 payload 无 category 时保持旧行为（全部策略），向后兼容。
+        # compare_all 只跑当前分类；旧任务无 category 时跑全部（向后兼容）
         strategy_category = (payload.get("strategy") or {}).get("category")
         if strategy_category in (CATEGORY_CLASSIC, CATEGORY_ML):
             all_strategies = dict(StrategyRegistry.items_in_category(strategy_category))

@@ -52,21 +52,24 @@ def _render_layout_and_strategy(disabled, import_mode):
                                    format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
                                    disabled=disabled,
                                    help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
-        # 两段式选择：先选「是否加入机器学习」，再按分类选具体策略
+        # 两段式选择：先选大类，再选具体策略
         strategy_category = st.radio(
             "是否加入机器学习", [CATEGORY_CLASSIC, CATEGORY_ML],
             format_func=lambda v: STRATEGY_CATEGORY_LABELS[v],
             horizontal=True, key="use_ml", disabled=disabled,
-            help="先选策略大类：经典/规则算法，或机器学习算法；后续接入的新 ML 算法会自动出现在「加入机器学习」分类下")
+            help="新算法接入后会自动归入对应分类")
         strategy_options = strategy_options_for(strategy_category)
-        if st.session_state.get("strategy_name") not in strategy_options:
-            st.session_state.strategy_name = strategy_options[0]
-        strategy_name = st.selectbox("策略", strategy_options,
-                                     key="strategy_name",
-                                     format_func=lambda x: STRATEGY_LABELS[x],
-                                     disabled=disabled)
-        st.caption(f"当前分类：{STRATEGY_CATEGORY_LABELS[strategy_category]}；"
-                   f"「全部对比」仅对比该分类内的 {len(strategy_options) - 1} 个算法")
+        if not strategy_options:
+            st.info("🧠 暂无机器学习算法。新算法接入后会自动出现在这里。")
+            strategy_name = None
+        else:
+            if st.session_state.get("strategy_name") not in strategy_options:
+                st.session_state.strategy_name = strategy_options[0]
+            strategy_name = st.selectbox("策略", strategy_options,
+                                         key="strategy_name",
+                                         format_func=lambda x: STRATEGY_LABELS[x],
+                                         disabled=disabled)
+            st.caption(f"「全部对比」仅对比当前分类内的 {len(strategy_options) - 1} 个算法")
 
         # random 策略重复次数单独控制：随机性强，需 100+ 次取平均才有说服力；
         # 其他策略仍用上方「仿真次数」滑杆（1~10），避免被迫一起跑 100+ 次。
@@ -80,14 +83,14 @@ def _render_layout_and_strategy(disabled, import_mode):
             )
 
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
-        st.markdown(strategy_description(strategy_name))
+        st.markdown(strategy_description(strategy_name)
+                    if strategy_name else "**暂无算法**\n\n当前分类下还没有已登记算法，接入后会自动出现。")
         st.markdown("""
 **等待与拒绝规则**
 
 当停车场**所有车位均被占用**时，到达车辆不会立即被拒，而是**排队等待**；若等待超过下方「排队等待上限」仍无空闲车位，才判定为拒绝（计入「拒绝数」指标，等待时长计入「平均等待时间」）。
 """)
 
-    # 策略可调参数（按 PARAMS 声明动态渲染）
     if strategy_name != "compare_all" and StrategyRegistry.specs(strategy_name):
         st.markdown("#### 🎛️ 算法参数（可调）")
         last_params = st.session_state.get("last_params", {}).get(strategy_name, {})
@@ -95,7 +98,6 @@ def _render_layout_and_strategy(disabled, import_mode):
     else:
         strat_params = {}
 
-    # 环境参数（引擎 + 需求，可调）
     with st.expander("🌐 环境参数（车速/等待/需求，可调）"):
         if import_mode:
             st.caption("导入需求序列后，需求生成参数（仿真时长/停车时长/高峰占比/预估误差）不再生效，已变灰；"

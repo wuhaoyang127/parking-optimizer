@@ -16,13 +16,11 @@ STRATEGY_CATEGORY_LABELS = {
 
 
 def strategy_options_for(category: str) -> list:
-    """返回某分类下的策略下拉选项（含「全部对比」）。
-
-    非法分类回退到经典分类，保证 UI 不因脏数据崩溃。
-    """
+    """返回某分类下的策略下拉选项（含「全部对比」）；分类为空时返回空列表。"""
     if category not in (CATEGORY_CLASSIC, CATEGORY_ML):
         category = CATEGORY_CLASSIC
-    return StrategyRegistry.names_in_category(category) + ["compare_all"]
+    names = StrategyRegistry.names_in_category(category)
+    return names + ["compare_all"] if names else []
 
 # 算法评估指标：显示名 -> (指标字段, 方向, 说明)
 # 方向: "max"=越大越好, "min"=越小越好

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-# 策略分类：经典/规则算法 与 机器学习算法。
-# 机器学习类算法的判定口径：从数据中学习规律/预测（如时序预测、监督学习、强化学习）。
-# 仅用规则/启发式/运筹优化（如贪心、NSGA-II 进化搜索、多准则评分）的算法归 classic。
+# 策略分类。ml 只收真正的机器学习算法（树模型/神经网络/强化学习等从数据中
+# 学习映射的方法）；规则、启发式、运筹优化、多准则评分与统计时序预测（如
+# SARIMA/Holt）均归 classic。
 CATEGORY_CLASSIC = "classic"
 CATEGORY_ML = "ml"
 

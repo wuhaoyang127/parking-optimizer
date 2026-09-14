@@ -54,7 +54,8 @@ def render_settings(role):
 
     run_label = "▶️ 下发本地计算任务" if compute_mode == "local" else "▶️ 运行仿真"
     run_allowed = role["can_local_compute"] if compute_mode == "local" else role["can_run_simulation"]
-    if st.button(run_label, type="primary", use_container_width=True, disabled=not run_allowed):
+    run_disabled = (not run_allowed) or (not strategy_name)
+    if st.button(run_label, type="primary", use_container_width=True, disabled=run_disabled):
         if compute_mode == "local":
             _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                         strategy_category, strat_params, env_params,
