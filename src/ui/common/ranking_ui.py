@@ -1,6 +1,7 @@
 """排名展示工具：雷达图、加权排名表、无区分度指标提示。"""
 from ui.common._imports import *
-from ui.common.constants import PRIORITY_METRICS, STRATEGY_LABELS
+from ui.common.constants import (PRIORITY_METRICS, STRATEGY_LABELS,
+                                 DEFAULT_WEIGHTS_BY_LABEL, DEFAULT_PRIORITY)
 
 
 def _plot_radar(all_m):
