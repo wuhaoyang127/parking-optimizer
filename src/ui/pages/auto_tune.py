@@ -49,8 +49,8 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
         return
     persist_last_params(strategy_name, best_params)
     st.session_state.last_tune_summary = {
-        "strategy": strategy_name, "trials": res["trials"],
-        "failed": res.get("failed", 0)}
+        "strategy": strategy_name, "best_params": best_params,
+        "trials": res["trials"], "failed": res.get("failed", 0)}
     st.rerun()
 
 
@@ -68,8 +68,9 @@ def _apply_tune_result(result):
         if isinstance(params, dict) and params:
             persist_last_params(name, params)
     st.session_state.last_tune_summary = {
-        "strategy": next(iter(tuned), ""), "trials": trials,
-        "failed": result.get("failed", 0)}
+        "strategy": next(iter(tuned), ""),
+        "best_params": next(iter(tuned.values()), {}) or {},
+        "trials": trials, "failed": result.get("failed", 0)}
     st.rerun()
 
 
@@ -79,9 +80,14 @@ def _render_tune_summary():
     if not summary:
         return
     trials = summary.get("trials") or []
+    best_params = summary.get("best_params") or {}
     with st.expander("🎯 上次自动调参摘要", expanded=True):
         st.caption(f"策略：{STRATEGY_LABELS.get(summary.get('strategy', ''), summary.get('strategy'))}"
                    f"；共 {len(trials)} 组，最优参数已自动填入上方控件。")
+        if best_params:
+            best_txt = ", ".join(f"**{k}** = {v:.4g}" if isinstance(v, float) else f"**{k}** = {v}"
+                                 for k, v in best_params.items())
+            st.markdown(f"✅ **最优参数**：{best_txt}")
         if trials:
             rows = []
             for i, t in enumerate(trials, 1):
