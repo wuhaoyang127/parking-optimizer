@@ -3,7 +3,6 @@ from ui.common import *
 from ui.pages.worker_kit import _worker_bat, _worker_package_data_url
 from ui.pages.local_task_actions import (_apply_local_result, _build_settings_ctx,
                                         _load_latest_local_task)
-from ui.pages.auto_tune import _apply_tune_result
 from ui.pages.local_task_delete import _delete_local_task_with_confirm
 
 
@@ -48,7 +47,7 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                 auto_tune=False, tune_compare=False):
     """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。
 
-    auto_tune=True：单策略调参任务（只调参回填，不跑正式仿真）。
+    auto_tune=True：单策略先调参再用最优参数跑正式仿真（一步到位）。
     tune_compare=True：全部对比时额外产出最优参数组。
     """
     token = st.session_state.get("token")
@@ -111,9 +110,6 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
             status_box.info(f"⚙️ 本机 worker 正在计算（已等 {(i + 1) * 2}s）…")
         elif s == "done":
             status_box.success("✅ 本机计算完成，正在载入结果…")
-            if auto_tune:
-                _apply_tune_result(stt.get("result") or {})
-                return
             ctx = _build_settings_ctx(**ctx_kwargs)
             _apply_local_result(stt.get("result") or {}, ctx)
             return

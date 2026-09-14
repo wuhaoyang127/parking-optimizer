@@ -57,12 +57,13 @@ def render_settings(role):
     run_allowed = role["can_local_compute"] if compute_mode == "local" else role["can_run_simulation"]
     run_disabled = (not run_allowed) or (not strategy_name)
 
-    # 单策略模式：自动调参按钮（compare_all 的调参在策略区勾选）
+    # 单策略模式：自动调参按钮（调完最优参数后直接跑正式仿真并跳指标页）
     if strategy_name and strategy_name != "compare_all" and tunable_specs(strategy_name):
         tune_label = ("🎯 下发自动调参任务（试 10 组）" if compute_mode == "local"
                       else "🎯 自动调参（试 10 组）")
         if st.button(tune_label, use_container_width=True, disabled=run_disabled,
-                     help="随机试 10 组参数，每组跑 1 次仿真，按当前排名设置选最优并回填控件"):
+                     help="随机试 10 组参数，每组跑 1 次仿真，按当前排名设置选最优，"
+                          "回填控件并用最优参数跑正式仿真"):
             if compute_mode == "local":
                 _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                             strategy_category, strat_params, env_params,
@@ -70,8 +71,15 @@ def render_settings(role):
                                             base_vehicles, demand_source_used, n_vehicles,
                                             ctx_kwargs, auto_tune=True)
                 st.stop()
-            _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed,
-                                 wait_policy, strategy_name, env_params, base_vehicles)
+            best_params = _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles,
+                                               seed, wait_policy, strategy_name,
+                                               env_params, base_vehicles)
+            if best_params:
+                _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles,
+                                      seed, n_runs, wait_policy, strategy_name,
+                                      strategy_category, random_reps, best_params,
+                                      env_params, False, base_vehicles,
+                                      demand_source_used, imported_meta)
             st.stop()
     _render_tune_summary()
 

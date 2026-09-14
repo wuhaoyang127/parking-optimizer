@@ -18,8 +18,11 @@ def _tune_vehicles(base_vehicles, n_vehicles, env_params, pe, seed):
 
 
 def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_policy,
-                         strategy_name, env_params, base_vehicles):
-    """云端进程内自动调参：跑 K 组单种子仿真，选最优回填参数控件。"""
+                         strategy_name, env_params, base_vehicles) -> dict:
+    """云端进程内自动调参：跑 K 组单种子仿真，选最优回填参数控件并返回最优参数。
+
+    不在此处跑正式仿真（由调用方拿最优参数继续跑并跳指标页）。
+    """
     net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
     pe = PathEngine(net)
     vehs = _tune_vehicles(base_vehicles, n_vehicles, env_params, pe, seed)
@@ -46,32 +49,12 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
     best_params = res["best_params"] or {}
     if not best_params:
         st.info("该算法没有可调参数，无需调参。")
-        return
+        return {}
     persist_last_params(strategy_name, best_params)
     st.session_state.last_tune_summary = {
         "strategy": strategy_name, "best_params": best_params,
         "trials": res["trials"], "failed": res.get("failed", 0)}
-    st.rerun()
-
-
-def _apply_tune_result(result):
-    """把本地调参任务结果回填参数控件并刷新设置页。"""
-    if not isinstance(result, dict):
-        st.error("调参结果为空，无法应用")
-        st.stop()
-    tuned = result.get("tuned_params") or {}
-    trials = result.get("tune_trials") or []
-    if not tuned:
-        st.info("该算法没有可调参数，无需调参。")
-        return
-    for name, params in tuned.items():
-        if isinstance(params, dict) and params:
-            persist_last_params(name, params)
-    st.session_state.last_tune_summary = {
-        "strategy": next(iter(tuned), ""),
-        "best_params": next(iter(tuned.values()), {}) or {},
-        "trials": trials, "failed": result.get("failed", 0)}
-    st.rerun()
+    return best_params
 
 
 def _render_tune_summary():

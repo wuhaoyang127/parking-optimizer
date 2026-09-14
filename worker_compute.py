@@ -152,9 +152,10 @@ def run_local_task(payload: dict) -> dict:
             tune_res = run_tuning(strategy_name, net, spots, vehs, seed, wait_policy,
                                   eng_kwargs, tune_trials, rank_mode, rank_weights,
                                   rank_priority, budget=budget)
-            result.update({"tuned_params": {strategy_name: tune_res["best_params"] or {}},
-                           "tune_trials": tune_res["trials"]})
-            return result
+            strat_params = tune_res["best_params"] or {}
+            result["tuned_params"] = {strategy_name: strat_params}
+            result["tune_trials"] = tune_res["trials"]
+            print(f"[🎯] 调参完成，用最优参数运行正式仿真（{strategy_name}）…", flush=True)
         print(f"[⚙️] 运行策略：{getattr(cls, 'label', strategy_name)}（{strategy_name}）…", flush=True)
         res = run_group([(strategy_name, cls)], net, spots, base_vehicles, demand_kwargs,
                         seed, wait_policy, eng_kwargs, _n_runs_for,
