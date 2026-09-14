@@ -2,9 +2,9 @@
 from ui.common import *
 
 
-def _render_compare_section(all_m, can_export):
+def _render_compare_section(all_m, can_export, heading="🏆 多策略对比"):
     """多策略对比：排序模式在仿真设置页配置，此处按配置展示。"""
-    st.markdown("### 🏆 多策略对比")
+    st.markdown(f"### {heading}")
     n_runs = st.session_state.get("sim_n_runs", 1)
     demand_source = st.session_state.get("sim_demand_source", "generated")
     src_note = ("同一导入需求序列" if demand_source in ("imported", "real_gate")

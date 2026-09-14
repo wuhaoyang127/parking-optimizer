@@ -9,3 +9,6 @@ from local_compute._layouts import (LAYOUT_BUILDERS, LAYOUTS, BUILTIN_LAYOUT_KEY
                                     build_triangle, build_circle, build_layout_from_json)
 from local_compute._run import (run_single, COUNT_FIELDS, _avg_metrics,  # noqa: F401
                                 _vehicle_to_dict)
+from local_compute._tuning import (TUNE_TRIALS_DEFAULT, run_tuning,  # noqa: F401
+                                   sample_params, best_trial, tunable_specs)
+from local_compute._groups import run_group  # noqa: F401

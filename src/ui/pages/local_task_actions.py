@@ -32,6 +32,12 @@ def _apply_sim_state(result, ctx):
     st.session_state.sim_timed_out_strategies = result.get("timed_out") or []
     st.session_state.sim_failed_strategies = result.get("failed") or []
     st.session_state.sim_cpsat_rate = result.get("cpsat_rate")
+    st.session_state.sim_tuned_metrics = result.get("tuned_m") or None
+    tuned_params = result.get("tuned_params") or {}
+    st.session_state.sim_tuned_params = tuned_params
+    for nm, params in tuned_params.items():
+        if isinstance(params, dict) and params:
+            st.session_state.setdefault("last_params", {})[nm] = params
     evs = result.get("events_by_strategy") or {}
     vehs_raw = result.get("vehicles_by_strategy") or {}
     st.session_state.sim_events_by_strategy = evs

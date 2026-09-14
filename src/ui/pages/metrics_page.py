@@ -73,6 +73,24 @@ def render_metrics_page(role):
     else:
         _render_single_strategy(can_export)
 
+    # 最优参数对比组（全部对比勾选自动调参时产生）
+    tuned_metrics = st.session_state.get("sim_tuned_metrics") or []
+    visible_tuned = [m for m in tuned_metrics
+                     if not (hide_timed_out and m.get("strategy") in timed_out_set)]
+    if visible_tuned:
+        st.markdown("---")
+        _render_compare_section(visible_tuned, can_export, heading="🎯 最优参数对比")
+        tuned_params = st.session_state.get("sim_tuned_params") or {}
+        if tuned_params:
+            with st.expander("查看各算法最优参数"):
+                rows = [{"策略": STRATEGY_LABELS.get(n, n),
+                         "最优参数": ", ".join(f"{k}={v:.4g}" if isinstance(v, float)
+                                             else f"{k}={v}"
+                                             for k, v in params.items())}
+                        for n, params in tuned_params.items() if params]
+                if rows:
+                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
     # 需求时序分布与车辆明细（跟随所选策略）
     _render_demand_section(visible_all_m, can_export)
 

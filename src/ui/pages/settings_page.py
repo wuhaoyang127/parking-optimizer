@@ -5,6 +5,7 @@ from ui.pages.layout_strategy import _render_layout_and_strategy
 from ui.pages.mosa_hint import _render_mosa_hint
 from ui.pages.rank_settings import _render_rank_settings, _render_compute_mode
 from ui.pages.cloud_run import _run_cloud_simulation
+from ui.pages.auto_tune import _run_auto_tune_cloud, _render_tune_summary
 from ui.pages.local_task_ops import _submit_local_task_and_wait, _render_local_compute_section
 
 
@@ -19,7 +20,7 @@ def render_settings(role):
 
     (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
      n_runs, wait_policy, strategy_name, strategy_category, random_reps, strat_params,
-     env_params) = _render_layout_and_strategy(disabled, import_mode)
+     env_params, tune_compare) = _render_layout_and_strategy(disabled, import_mode)
 
     _render_mosa_hint(strategy_name, import_mode, imported_vehicles, real_layout_mode,
                       n_spots, tandem_ratio, n_vehicles, env_params, layout)
@@ -55,15 +56,34 @@ def render_settings(role):
     run_label = "▶️ 下发本地计算任务" if compute_mode == "local" else "▶️ 运行仿真"
     run_allowed = role["can_local_compute"] if compute_mode == "local" else role["can_run_simulation"]
     run_disabled = (not run_allowed) or (not strategy_name)
+
+    # 单策略模式：自动调参按钮（compare_all 的调参在策略区勾选）
+    if strategy_name and strategy_name != "compare_all" and tunable_specs(strategy_name):
+        tune_label = ("🎯 下发自动调参任务（试 10 组）" if compute_mode == "local"
+                      else "🎯 自动调参（试 10 组）")
+        if st.button(tune_label, use_container_width=True, disabled=run_disabled,
+                     help="随机试 10 组参数，每组跑 1 次仿真，按当前排名设置选最优并回填控件"):
+            if compute_mode == "local":
+                _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
+                                            strategy_category, strat_params, env_params,
+                                            wait_policy, seed, n_runs, random_reps,
+                                            base_vehicles, demand_source_used, n_vehicles,
+                                            ctx_kwargs, auto_tune=True)
+                st.stop()
+            _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed,
+                                 wait_policy, strategy_name, env_params, base_vehicles)
+            st.stop()
+    _render_tune_summary()
+
     if st.button(run_label, type="primary", use_container_width=True, disabled=run_disabled):
         if compute_mode == "local":
             _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                         strategy_category, strat_params, env_params,
                                         wait_policy, seed, n_runs, random_reps,
                                         base_vehicles, demand_source_used, n_vehicles,
-                                        ctx_kwargs)
+                                        ctx_kwargs, tune_compare=tune_compare)
             st.stop()
         _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
                               n_runs, wait_policy, strategy_name, strategy_category,
-                              random_reps, strat_params, env_params, base_vehicles,
-                              demand_source_used, imported_meta)
+                              random_reps, strat_params, env_params, tune_compare,
+                              base_vehicles, demand_source_used, imported_meta)

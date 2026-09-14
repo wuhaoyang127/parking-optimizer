@@ -81,6 +81,13 @@ def _render_layout_and_strategy(disabled, import_mode):
                 help="random 随机性大，建议 100~200 次取平均；"
                      "该次数只作用于 random 策略，其余策略仍用上方「仿真次数」",
             )
+        tune_compare = False
+        if strategy_name == "compare_all":
+            tune_compare = st.checkbox(
+                "🎯 全部对比时自动调参（额外对比最优参数）", value=True,
+                disabled=disabled,
+                help=f"勾选后每个算法先各试 {TUNE_TRIALS_DEFAULT} 组参数选出最优，"
+                     "再额外产出「最优参数」对比组；耗时约为不勾选的 2~3 倍（大参数建议本地计算）")
 
     with st.expander("📖 算法说明（分配逻辑与拒绝规则）"):
         st.markdown(strategy_description(strategy_name)
@@ -113,4 +120,4 @@ def _render_layout_and_strategy(disabled, import_mode):
 
     return (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
             n_runs, wait_policy, strategy_name, strategy_category, random_reps,
-            strat_params, env_params)
+            strat_params, env_params, tune_compare)

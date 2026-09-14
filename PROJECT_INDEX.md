@@ -24,6 +24,9 @@
 |---|---|---|
 | `app.py` | 86 | Streamlit 瘦入口：sidebar 路由到 9 个页面函数 |
 | `local_worker.py` | 362 | **本机计算 worker**：领取云端下发的任务，用本机 CPU 跑仿真并回传结果（独立登录态 + 网络抖动自愈重试 + 算法/逐次进度打印） |
+| `worker_compute.py` | 172 | 本机任务执行层：单策略/全部对比仿真 + 自动调参任务（复用 `local_compute` 纯函数） |
+| `src/local_compute/_tuning.py` | 121 | **自动调参纯函数**：PARAMS 随机采样/修复/按排名口径选最优 |
+| `src/local_compute/_groups.py` | 77 | 多种子分组运行纯函数（云端/本机共用口径） |
 | `.streamlit/config.toml` | — | Streamlit 主题与服务器配置 |
 | `.streamlit/secrets.toml.example` | — | Supabase 密钥模板（复制为 secrets.toml 使用，已被 gitignore） |
 | `requirements.txt` | — | 运行依赖（streamlit/networkx/simpy/ortools/pandas/numpy/plotly/supabase） |
@@ -147,6 +150,7 @@
 | `test_local_worker.py` | local_worker GBK 输出兜底 + 网络自愈重试（3 项） |
 | `test_auth_net.py` | 公网 app RPC 网络自愈重试（3 项） |
 | `test_strategy_categories.py` | 策略两段式选择 category 分类契约（7 项） |
+| `test_auto_tune.py` | 自动调参：采样/修复/选优/调参/分组运行（10 项） |
 
 ---
 

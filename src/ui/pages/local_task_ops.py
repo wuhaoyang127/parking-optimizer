@@ -3,6 +3,7 @@ from ui.common import *
 from ui.pages.worker_kit import _worker_bat, _worker_package_data_url
 from ui.pages.local_task_actions import (_apply_local_result, _build_settings_ctx,
                                         _load_latest_local_task)
+from ui.pages.auto_tune import _apply_tune_result
 from ui.pages.local_task_delete import _delete_local_task_with_confirm
 
 
@@ -43,8 +44,13 @@ def _check_local_task_once(ctx_kwargs):
 def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                 strategy_category, strat_params,
                                 env_params, wait_policy, seed, n_runs, random_reps,
-                                base_vehicles, demand_source_used, n_vehicles, ctx_kwargs):
-    """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。"""
+                                base_vehicles, demand_source_used, n_vehicles, ctx_kwargs,
+                                auto_tune=False, tune_compare=False):
+    """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。
+
+    auto_tune=True：单策略调参任务（只调参回填，不跑正式仿真）。
+    tune_compare=True：全部对比时额外产出最优参数组。
+    """
     token = st.session_state.get("token")
     if not token:
         st.error("未登录，无法下发本地计算任务")
@@ -70,7 +76,11 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
         "layout": layout_payload,
         "demand": demand_payload,
         "strategy": {"name": strategy_name, "params": strat_params,
-                     "category": strategy_category},
+                     "category": strategy_category,
+                     "auto_tune": bool(auto_tune),
+                     "tune_compare": bool(tune_compare),
+                     "tune_trials": int(TUNE_TRIALS_DEFAULT)},
+        "ranking": ranking_config_from_session(),
         "engine": {"wait_policy": wait_policy,
                    "car_speed": env_params["car_speed"],
                    "max_wait_time": env_params["max_wait_time"],
@@ -101,6 +111,9 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
             status_box.info(f"⚙️ 本机 worker 正在计算（已等 {(i + 1) * 2}s）…")
         elif s == "done":
             status_box.success("✅ 本机计算完成，正在载入结果…")
+            if auto_tune:
+                _apply_tune_result(stt.get("result") or {})
+                return
             ctx = _build_settings_ctx(**ctx_kwargs)
             _apply_local_result(stt.get("result") or {}, ctx)
             return

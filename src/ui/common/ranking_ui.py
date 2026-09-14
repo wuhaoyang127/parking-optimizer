@@ -52,3 +52,20 @@ def neutralized_metric_labels(metrics_list) -> list[str]:
         if field in fields:
             labels.append(label)
     return labels
+
+
+def ranking_config_from_session() -> dict:
+    """把当前 session 的排名设置转成调参/worker 需要的字段口径。
+
+    返回 {"mode": 加权评分/字典序, "weights": {字段: 权重}, "priority": [字段, ...]}。
+    """
+    rank_mode = st.session_state.get("rank_mode", "加权评分")
+    weights = {}
+    if rank_mode == "加权评分":
+        for label, w in st.session_state.get("rank_weights", DEFAULT_WEIGHTS_BY_LABEL).items():
+            if label in PRIORITY_METRICS:
+                weights[PRIORITY_METRICS[label][0]] = float(w)
+    priority = [PRIORITY_METRICS[label][0]
+                for label in st.session_state.get("priority_order", DEFAULT_PRIORITY)
+                if label in PRIORITY_METRICS]
+    return {"mode": rank_mode, "weights": weights, "priority": priority}
