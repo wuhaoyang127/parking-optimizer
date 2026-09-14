@@ -2,7 +2,7 @@
 from ui.common import *
 
 
-def _render_compare_section(all_m, can_export, heading="🏆 多策略对比"):
+def _render_compare_section(all_m, can_export, heading="🏆 多策略对比", key_prefix=""):
     """多策略对比：排序模式在仿真设置页配置，此处按配置展示。"""
     st.markdown(f"### {heading}")
     n_runs = st.session_state.get("sim_n_runs", 1)
@@ -42,7 +42,8 @@ def _render_compare_section(all_m, can_export, heading="🏆 多策略对比"):
         st.dataframe(styled, use_container_width=True, hide_index=True)
         if can_export:
             st.download_button("📥 下载加权排名 CSV", wdf.to_csv(index=False).encode('utf-8'),
-                               "parking_weighted_ranking.csv", "text/csv")
+                               "parking_weighted_ranking.csv", "text/csv",
+                               key=f"{key_prefix}dl_weighted")
     else:
         # 按用户定义的优先级做字典序排序（原有逻辑，保留）
         priority_order = st.session_state.get("priority_order", DEFAULT_PRIORITY)
@@ -77,7 +78,8 @@ def _render_compare_section(all_m, can_export, heading="🏆 多策略对比"):
         st.dataframe(styled, use_container_width=True, hide_index=True)
         if can_export:
             st.download_button("📥 下载 CSV", df.to_csv(index=False).encode('utf-8'),
-                               "parking_comparison.csv", "text/csv")
+                               "parking_comparison.csv", "text/csv",
+                               key=f"{key_prefix}dl_lex")
 
     c1, c2 = st.columns(2)
     with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)

@@ -79,7 +79,8 @@ def render_metrics_page(role):
                      if not (hide_timed_out and m.get("strategy") in timed_out_set)]
     if visible_tuned:
         st.markdown("---")
-        _render_compare_section(visible_tuned, can_export, heading="🎯 最优参数对比")
+        _render_compare_section(visible_tuned, can_export,
+                                heading="🎯 最优参数对比", key_prefix="tuned_")
         tuned_params = st.session_state.get("sim_tuned_params") or {}
         if tuned_params:
             with st.expander("查看各算法最优参数"):
