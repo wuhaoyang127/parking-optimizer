@@ -31,7 +31,8 @@ from local_compute import (LAYOUT_BUILDERS, LAYOUTS, BUILTIN_LAYOUT_KEYS,
                            run_single, COUNT_FIELDS, _avg_metrics,
                            build_layout_from_json, _vehicle_to_dict,
                            run_group, run_tuning, tunable_specs,
-                           TUNE_TRIALS_DEFAULT)
+                           TUNE_TRIALS_DEFAULT,
+                           compress_result, decompress_result)
 # 以下新增函数做容错导入：若部署缓存导致 auth.py 未同步到最新，
 # 用 stub 降级，避免整个 app 因单个函数缺失而崩溃（登录等核心功能不受影响）。
 try:

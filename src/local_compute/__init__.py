@@ -12,3 +12,4 @@ from local_compute._run import (run_single, COUNT_FIELDS, _avg_metrics,  # noqa:
 from local_compute._tuning import (TUNE_TRIALS_DEFAULT, run_tuning,  # noqa: F401
                                    sample_params, best_trial, tunable_specs)
 from local_compute._groups import run_group  # noqa: F401
+from local_compute._compress import compress_result, decompress_result  # noqa: F401

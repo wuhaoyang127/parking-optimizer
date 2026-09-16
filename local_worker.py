@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from worker_net import (_SupabaseClient, _read_secret, _read_credentials,  # noqa: E402
                         _save_cached_credentials)
 from worker_compute import run_local_task  # noqa: E402
+from local_compute import compress_result  # noqa: E402
 
 # Windows 控制台/重定向输出可能使用 GBK（cp936），打印 ✓/✗/▶ 等符号会触发
 # UnicodeEncodeError 使 worker 直接崩溃。统一加 errors="replace" 兜底：
@@ -98,6 +99,7 @@ def main():
             t0 = time.time()
             try:
                 result = run_local_task(payload)
+                result = compress_result(result)
                 done_res = sb.rpc("complete_compute_task", {
                     "p_token": token, "p_task_id": task_id, "p_status": "done",
                     "p_result": result, "p_error": None})

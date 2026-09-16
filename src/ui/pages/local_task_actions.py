@@ -4,6 +4,7 @@ from ui.common import *
 
 def _apply_sim_state(result, ctx):
     """把仿真结果写入 session_state 并跳转指标分析页（本地计算/载入历史共用）。"""
+    result = decompress_result(result)
     if not isinstance(result, dict) or not result:
         st.error("结果为空，无法载入")
         st.stop()
