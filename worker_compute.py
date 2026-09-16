@@ -80,7 +80,11 @@ def run_local_task(payload: dict) -> dict:
     n_runs = int(eng.get("n_runs", 1))
     random_reps = int(eng.get("random_reps", 100))
     budget = float(eng.get("budget", 60.0))
-    eng_kwargs = dict(car_speed=car_speed, max_wait_time=max_wait_time)
+    eng_kwargs = dict(car_speed=car_speed, max_wait_time=max_wait_time,
+                      buffer_w_distance=float(eng.get("buffer_w_distance", 1.0)),
+                      buffer_w_idle=float(eng.get("buffer_w_idle", 1.0)),
+                      buffer_w_secondary=float(eng.get("buffer_w_secondary", 2.0)),
+                      buffer_idle_half_life=float(eng.get("buffer_idle_half_life", 300.0)))
 
     def _n_runs_for(name: str) -> int:
         return random_reps if name == "random" else n_runs

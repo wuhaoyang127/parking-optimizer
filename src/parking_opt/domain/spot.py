@@ -29,6 +29,7 @@ class Spot:
     y: float = 0.0
     is_occupied: bool = False
     occupied_by: Optional[str] = None  # vehicle_id
+    last_freed_at: Optional[float] = None  # 最近一次变为空闲的时刻（仿真秒）；None=从未被占用过
 
     def is_standalone(self) -> bool:
         return self.spot_type == SpotType.STANDALONE

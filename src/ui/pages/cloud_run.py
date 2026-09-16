@@ -21,7 +21,11 @@ def _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
                              entry_ids=pe.entry_ids,
                              exit_ids=pe.exit_ids)
         eng_kwargs = dict(car_speed=env_params["car_speed"],
-                          max_wait_time=env_params["max_wait_time"])
+                          max_wait_time=env_params["max_wait_time"],
+                          buffer_w_distance=env_params.get("buffer_w_distance", 1.0),
+                          buffer_w_idle=env_params.get("buffer_w_idle", 1.0),
+                          buffer_w_secondary=env_params.get("buffer_w_secondary", 2.0),
+                          buffer_idle_half_life=env_params.get("buffer_idle_half_life", 300.0))
         sim_vehicles_candidate = None
 
         seed_metrics = []

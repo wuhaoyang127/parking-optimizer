@@ -39,9 +39,11 @@ def weighted_rank_df(all_m, weights_by_label):
     df = pd.DataFrame(ranked)[["rank", "strategy", "weighted_score",
                                "satisfaction_rate", "spatial_utilization",
                                "avg_wait_time_s", "shift_count", "shift_distance_m",
+                               "secondary_shift_count",
                                "total_drive_distance_m", "rejected_count", "runtime_s"]]
     df.columns = ["排名", "策略", "综合得分", "满足率", "利用率", "平均等待(s)",
-                  "移位次数", "移位距离(m)", "行驶距离(m)", "拒绝数", "耗时(s)"]
+                  "移位次数", "移位距离(m)", "二次移位",
+                  "行驶距离(m)", "拒绝数", "耗时(s)"]
     return df, ranked
 
 

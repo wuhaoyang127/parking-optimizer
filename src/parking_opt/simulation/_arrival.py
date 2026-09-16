@@ -97,12 +97,12 @@ class ArrivalMixin:
         blockers = self._entry_blockers(spot)
         shift_pairs: list[tuple[Spot, Spot, str]] = []  # (原车位, 缓冲位, 移位车id)
 
-        # ── 场景 B：外行车移位让行 → 新车停入 → 外行车回位 ──
+        # ── 场景 B：外行车移位让行 → 新车停入 → 外行车就近前移归位 ──
         for blk_spot, blk_vid in blockers:
             blocker = self._vehicle_by_id(blk_vid)
             if blocker is None:
                 continue
-            buffer = self.parking_lot.select_buffer()
+            buffer, buffer_score = self._select_buffer(blk_spot)
             if buffer is None:
                 self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
                           blocked_vehicle=vehicle.vehicle_id,
@@ -116,28 +116,34 @@ class ArrivalMixin:
                           reason=f"缓冲位 {buffer.spot_id} 与阻挡车位 {blk_spot.spot_id} 不连通")
                 continue
             path_out = self.path_engine.shortest_path(blk_spot.node_id, buffer.node_id)
+            level = self._next_shift_level(blk_vid)
             self._log(self.env.now, EventType.SHIFT_START, blk_vid,
                       from_spot=blk_spot.spot_id, to_spot=buffer.spot_id,
                       blocked_vehicle=vehicle.vehicle_id, distance=dist,
+                      shift_level=level, buffer_score=round(buffer_score, 4),
                       reason=f"为让行新车 {vehicle.vehicle_id} 入库而临时移位")
             self.shift_count += 1
             self.total_shift_dist += dist * 2
             ok, _ = yield from self._reserve_drive(blocker, path_out, "shift", self.env.now)
             if not ok:
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._rollback_shift_level(blk_vid, level)
                 continue
             # 移位行驶期间，阻挡车可能已自行离场（并发竞态）：跳过移位，避免空车位断言
             if blk_spot.occupied_by != blk_vid:
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._rollback_shift_level(blk_vid, level)
                 continue
             # 缓冲位可能在行驶期间被等待车辆分配占用：放弃本次移位，避免覆盖他人占用
             if buffer.is_occupied:
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._rollback_shift_level(blk_vid, level)
                 self._log(self.env.now, EventType.BUFFER_FAILED, blk_vid,
                           blocked_vehicle=vehicle.vehicle_id,
                           reason=f"缓冲位 {buffer.spot_id} 在移位行驶期间被占用")
                 continue
-            self.parking_lot.move_vehicle(blk_spot, buffer)
+            self.parking_lot.move_vehicle(blk_spot, buffer, self.env.now)
+            self._commit_shift_level(blk_vid, level)
             shift_pairs.append((blk_spot, buffer, blk_vid))
 
         # ── 新车驶入目标车位 ──
@@ -152,29 +158,34 @@ class ArrivalMixin:
             self._log(self.env.now, EventType.REJECTED, vehicle.vehicle_id,
                       reason="入库行驶时间片冲突过多，无法入位")
             for blk_spot, buffer, blk_vid in shift_pairs:
-                self.parking_lot.move_vehicle(buffer, blk_spot)
+                self.parking_lot.move_vehicle(buffer, blk_spot, self.env.now)
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._clear_shift_level(blk_vid)
             return
         self._log(self.env.now, EventType.SPOT_ENTRY, vehicle.vehicle_id,
                   spot.spot_id, drive_distance=drive_dist, entry=entry)
 
-        # ── 外行车回位 ──
+        # ── 外行车就近前移归位（同组最内侧空闲位；没有再回原位）──
         for blk_spot, buffer, blk_vid in reversed(shift_pairs):
             # 回位前/后各检查一次：行驶期间若已被其它进程移走，则跳过回位
             if buffer.occupied_by != blk_vid:
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._clear_shift_level(blk_vid)
                 continue
             blocker = self._vehicle_by_id(blk_vid)
-            path_back = self.path_engine.shortest_path(buffer.node_id, blk_spot.node_id)
+            target = self.parking_lot.find_innermost_available(blk_spot) or blk_spot
+            path_back = self.path_engine.shortest_path(buffer.node_id, target.node_id)
             if blocker is not None and path_back:
                 yield from self._reserve_drive(blocker, path_back, "shift", self.env.now)
             if buffer.occupied_by != blk_vid:
                 self.parking_lot.release_buffer(buffer.spot_id)
+                self._clear_shift_level(blk_vid)
                 continue
-            self.parking_lot.move_vehicle(buffer, blk_spot)
+            self.parking_lot.move_vehicle(buffer, target, self.env.now)
             self.parking_lot.release_buffer(buffer.spot_id)
+            self._clear_shift_level(blk_vid)
             self._log(self.env.now, EventType.SHIFT_END, blk_vid,
-                      final_spot=blk_spot.spot_id)
+                      final_spot=target.spot_id)
 
         # 调度离场
         dep_time = self.env.now + vehicle.parking_duration

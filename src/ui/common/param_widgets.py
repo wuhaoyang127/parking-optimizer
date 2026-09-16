@@ -24,6 +24,18 @@ ENV_PARAM_SPECS = [
     {"key": "error_ratio", "label": "时长预估误差(±)", "type": "float",
      "min": 0.0, "max": 0.9, "step": 0.05, "default": ERROR_RATIO,
      "help": "预估停车时长相较真实时长的误差比例"},
+    {"key": "buffer_w_distance", "label": "缓冲位-距离权重 w_d", "type": "float",
+     "min": 0.0, "max": 3.0, "step": 0.1, "default": 1.0,
+     "help": "移位选缓冲位时，距离越近代价越低（越小越优先选近的）"},
+    {"key": "buffer_w_idle", "label": "缓冲位-空闲时间权重 w_t", "type": "float",
+     "min": 0.0, "max": 3.0, "step": 0.1, "default": 1.0,
+     "help": "移位选缓冲位时，车位空闲时间越短代价越高（刚空出的车位不适合做缓冲位）"},
+    {"key": "buffer_w_secondary", "label": "缓冲位-二次移位惩罚 w_q", "type": "float",
+     "min": 0.0, "max": 5.0, "step": 0.1, "default": 2.0,
+     "help": "候选缓冲位会挡住其他车（可能引发二次移位）时的惩罚，越大越回避"},
+    {"key": "buffer_idle_half_life", "label": "缓冲位-空闲半衰 τ(秒)", "type": "int",
+     "min": 60, "max": 1800, "step": 60, "default": 300,
+     "help": "空闲时间代价的半衰阈值：已空闲 τ 秒时代价=0.5，空闲越久代价越低"},
 ]
 
 

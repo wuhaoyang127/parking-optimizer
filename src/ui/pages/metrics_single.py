@@ -30,8 +30,10 @@ def _render_single_strategy(can_export):
         st.markdown(f'> 🎯 理论最优（CP-SAT）满足率 **{cpsat_rate:.1%}**，当前策略距最优 {gap:.1%}')
     buffers = m.get('buffer_failed_count', 0)
     rejs = m.get('rejected_count', 0)
-    if buffers or rejs:
-        st.warning(f"⚠️ 降级: {buffers} 缓冲失败, {rejs} 拒绝")
+    sec_shifts = m.get('secondary_shift_count', 0)
+    if buffers or rejs or sec_shifts:
+        st.warning(f"⚠️ 降级: {buffers} 缓冲失败, {rejs} 拒绝, "
+                   f"{sec_shifts} 二次移位（移位车在缓冲位再次让行）")
     if can_export:
         st.download_button("📥 下载指标", pd.DataFrame([m]).to_csv(index=False).encode('utf-8'),
                            f"parking_{m.get('strategy','result')}.csv", "text/csv")

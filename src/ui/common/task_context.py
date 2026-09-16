@@ -61,6 +61,10 @@ def build_local_task_context(payload: dict) -> dict:
         "duration_max": int(gen.get("duration_max", int(DURATION_MAX))),
         "peak_ratio": float(gen.get("peak_ratio", PEAK_RATIO)),
         "error_ratio": float(gen.get("error_ratio", ERROR_RATIO)),
+        "buffer_w_distance": float(eng.get("buffer_w_distance", 1.0)),
+        "buffer_w_idle": float(eng.get("buffer_w_idle", 1.0)),
+        "buffer_w_secondary": float(eng.get("buffer_w_secondary", 2.0)),
+        "buffer_idle_half_life": float(eng.get("buffer_idle_half_life", 300.0)),
     }
 
     return {

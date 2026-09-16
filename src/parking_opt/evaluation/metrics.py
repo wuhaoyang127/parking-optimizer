@@ -41,9 +41,12 @@ def compute_metrics(events: list[Event], total_spots: int,
 
     spatial_util = occupied_time / (total_spots * sim_duration) if sim_duration > 0 else 0.0
 
-    # 移位统计
+    # 移位统计（含二次移位单列：移位车在缓冲位上再次被要求让行）
     shift_count = len(shift_starts)
     shift_dist = sum(e.metadata.get('distance', 0) for e in shift_starts)
+    secondary = [e for e in shift_starts if e.metadata.get('shift_level', 1) >= 2]
+    secondary_shift_count = len(secondary)
+    secondary_shift_dist = sum(e.metadata.get('distance', 0) for e in secondary)
 
     # 行驶距离
     total_drive = sum(e.metadata.get('drive_distance', 0) for e in spot_entries)
@@ -62,6 +65,8 @@ def compute_metrics(events: list[Event], total_spots: int,
         "spatial_utilization": round(spatial_util, 4),
         "shift_count": shift_count,
         "shift_distance_m": round(shift_dist, 2),
+        "secondary_shift_count": secondary_shift_count,
+        "secondary_shift_distance_m": round(secondary_shift_dist, 2),
         "total_drive_distance_m": round(total_drive, 2),
         "avg_wait_time_s": round(avg_wait, 2),
         "rejected_count": n_rejected,

@@ -31,7 +31,9 @@ class SimulationEngine(ArrivalMixin, DepartureMixin, TimeSliceMixin):
     def __init__(self, parking_lot: ParkingLot, path_engine: PathEngine,
                  vehicles: list, strategy, seed: int = 42,
                  wait_policy: str = "fifo", car_speed: float = DEFAULT_CAR_SPEED,
-                 max_wait_time: float = DEFAULT_MAX_WAIT):
+                 max_wait_time: float = DEFAULT_MAX_WAIT,
+                 buffer_w_distance: float = 1.0, buffer_w_idle: float = 1.0,
+                 buffer_w_secondary: float = 2.0, buffer_idle_half_life: float = 300.0):
         self.env = simpy.Environment()
         self.parking_lot = parking_lot
         self.path_engine = path_engine
@@ -43,14 +45,44 @@ class SimulationEngine(ArrivalMixin, DepartureMixin, TimeSliceMixin):
         self.wait_policy = wait_policy
         self.car_speed = car_speed  # 车速（m/s）
         self.max_wait_time = max_wait_time  # 排队等待上限（秒）
+        # 缓冲位评分选位权重与空闲时间半衰（C = w_d·D̂ + w_t·T̂ + w_q·Q̂）
+        self.buffer_w_distance = buffer_w_distance
+        self.buffer_w_idle = buffer_w_idle
+        self.buffer_w_secondary = buffer_w_secondary
+        self.buffer_idle_half_life = buffer_idle_half_life
 
         self.events: list[Event] = []
         self.shift_count = 0
         self.total_shift_dist = 0.0
         self.waiting_queue: list = []  # 排队等待中的车辆
         self.time_slices: list = []  # 全部车辆运动时间片（路口碰撞检测）
+        self._shift_level: dict[str, int] = {}  # 车辆当前移位层级（1=首次移位，2=二次移位）
 
     # ========== 事件与基础 ==========
+
+    def _select_buffer(self, from_spot):
+        """按评分标准选择缓冲位：距离 + 空闲时间 + 二次移位惩罚（越小越好）。"""
+        return self.parking_lot.select_buffer_scored(
+            from_spot, self.path_engine, self.env.now,
+            waiting_len=len(self.waiting_queue),
+            w_d=self.buffer_w_distance, w_t=self.buffer_w_idle,
+            w_q=self.buffer_w_secondary, tau=self.buffer_idle_half_life)
+
+    def _next_shift_level(self, vehicle_id: str) -> int:
+        """计算该车本次移位的层级（1=首次移位，2=二次移位……）。"""
+        return self._shift_level.get(vehicle_id, 0) + 1
+
+    def _commit_shift_level(self, vehicle_id: str, level: int):
+        """移位成功后记录该车当前层级。"""
+        self._shift_level[vehicle_id] = level
+
+    def _rollback_shift_level(self, vehicle_id: str, level: int):
+        """移位失败/放弃：回退到本次尝试前的层级。"""
+        self._shift_level[vehicle_id] = max(0, level - 1)
+
+    def _clear_shift_level(self, vehicle_id: str):
+        """回位/离场后清除层级。"""
+        self._shift_level[vehicle_id] = 0
 
     def _log(self, time: float, event_type: EventType, vehicle_id: str = None,
              spot_id: str = None, strategy: str = None, **metadata):

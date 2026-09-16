@@ -60,9 +60,10 @@ def _render_compare_section(all_m, can_export, heading="🏆 多策略对比", k
         best = sorted_m[0]
         df = pd.DataFrame(sorted_m)[["strategy", "satisfaction_rate", "spatial_utilization",
                                      "avg_wait_time_s", "shift_count", "shift_distance_m",
+                                     "secondary_shift_count",
                                      "total_drive_distance_m", "rejected_count", "runtime_s"]]
         df.columns = ["策略", "满足率", "利用率", "平均等待(s)", "移位次数",
-                      "移位距离(m)", "行驶距离(m)", "拒绝数", "耗时(s)"]
+                      "移位距离(m)", "二次移位", "行驶距离(m)", "拒绝数", "耗时(s)"]
         st.markdown(f'> 🏆 推荐: **{STRATEGY_LABELS.get(best["strategy"], best["strategy"])}**'
                     f' 满足率 {best["satisfaction_rate"]:.1%}')
         cpsat_rate = st.session_state.get("sim_cpsat_rate")

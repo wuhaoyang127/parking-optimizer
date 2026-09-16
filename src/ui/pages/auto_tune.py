@@ -28,7 +28,11 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
     vehs = _tune_vehicles(base_vehicles, n_vehicles, env_params, pe, seed)
     ranking = ranking_config_from_session()
     eng_kwargs = dict(car_speed=env_params["car_speed"],
-                      max_wait_time=env_params["max_wait_time"])
+                      max_wait_time=env_params["max_wait_time"],
+                      buffer_w_distance=env_params.get("buffer_w_distance", 1.0),
+                      buffer_w_idle=env_params.get("buffer_w_idle", 1.0),
+                      buffer_w_secondary=env_params.get("buffer_w_secondary", 2.0),
+                      buffer_idle_half_life=env_params.get("buffer_idle_half_life", 300.0))
     label = STRATEGY_LABELS.get(strategy_name, strategy_name)
     prog = st.progress(0.0, text=f"🎯 自动调参：{label}（0/{tune_trials}）…")
 

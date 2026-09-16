@@ -8,21 +8,29 @@ from parking_opt.evaluation.metrics import compute_metrics
 
 
 def run_single(net, spots, vehicles, strategy, seed, wait_policy="fifo",
-               car_speed=1.39, max_wait_time=1800):
+               car_speed=1.39, max_wait_time=1800,
+               buffer_w_distance=1.0, buffer_w_idle=1.0,
+               buffer_w_secondary=2.0, buffer_idle_half_life=300.0):
     # 重置车位状态，避免多次运行时复用污染（compare_all 循环会复用 spots）
     for s in spots:
         s.is_occupied = False
         s.occupied_by = None
+        s.last_freed_at = None
     pe = PathEngine(net); lot = ParkingLot(spots)
     engine = SimulationEngine(lot, pe, vehicles, strategy, seed=seed, wait_policy=wait_policy,
-                              car_speed=car_speed, max_wait_time=max_wait_time)
+                              car_speed=car_speed, max_wait_time=max_wait_time,
+                              buffer_w_distance=buffer_w_distance,
+                              buffer_w_idle=buffer_w_idle,
+                              buffer_w_secondary=buffer_w_secondary,
+                              buffer_idle_half_life=buffer_idle_half_life)
     t0 = time.time(); events = engine.run()
     m = compute_metrics(events, len(spots)); m["runtime_s"] = round(time.time() - t0, 3)
     m["strategy"] = strategy.name; return m, events, lot
 
 
 # 计数类指标（次数）：多种子取平均后四舍五入为整数，避免显示成小数
-COUNT_FIELDS = {"shift_count", "rejected_count", "buffer_failed_count"}
+COUNT_FIELDS = {"shift_count", "rejected_count", "buffer_failed_count",
+                "secondary_shift_count"}
 
 
 def _avg_metrics(metrics_list):
