@@ -9,7 +9,9 @@ from local_compute._layouts import (LAYOUT_BUILDERS, LAYOUTS, BUILTIN_LAYOUT_KEY
                                     build_triangle, build_circle, build_layout_from_json)
 from local_compute._run import (run_single, COUNT_FIELDS, _avg_metrics,  # noqa: F401
                                 _vehicle_to_dict)
-from local_compute._tuning import (TUNE_TRIALS_DEFAULT, run_tuning,  # noqa: F401
-                                   sample_params, best_trial, tunable_specs)
-from local_compute._groups import run_group  # noqa: F401
+from local_compute._tuning import (TUNE_TRIALS_DEFAULT, TUNE_TRIALS_MIN,  # noqa: F401
+                                   TUNE_BATCH_SIZE, run_tuning,
+                                   sample_params, best_trial, tunable_specs,
+                                   resolve_strategy_flags)
+from local_compute._groups import run_group, tune_all_strategies  # noqa: F401
 from local_compute._compress import compress_result, decompress_result  # noqa: F401

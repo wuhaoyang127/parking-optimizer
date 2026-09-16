@@ -7,8 +7,31 @@ from __future__ import annotations
 import time
 
 from local_compute._run import run_single, _avg_metrics, _vehicle_to_dict
+from local_compute._tuning import run_tuning, tunable_specs
 from parking_opt.simulation.arrival import generate_demand
 from parking_opt.strategies import StrategyRegistry
+
+
+def tune_all_strategies(strategies, net, spots, base_vehicles, demand_kwargs, seed,
+                        wait_policy, eng_kwargs, trials, rank_mode, rank_weights,
+                        rank_priority, budget, progress_cb=None):
+    """对一组策略各自调参，返回 {name: best_params}（worker 与云端共用）。"""
+    tuned = {}
+    for nm, cls in strategies:
+        if not tunable_specs(nm):
+            continue
+        vehs = (list(base_vehicles) if base_vehicles is not None
+                else generate_demand(seed=seed, **demand_kwargs))
+
+        def cb(done, total, params, _nm=nm, _cls=cls, _base=progress_cb):
+            if _base is not None:
+                _base(done, total, params, _nm, _cls)
+
+        res = run_tuning(nm, net, spots, vehs, seed, wait_policy, eng_kwargs,
+                         trials, rank_mode, rank_weights, rank_priority, budget=budget,
+                         progress_cb=cb)
+        tuned[nm] = res["best_params"] or {}
+    return tuned
 
 
 def _events_raw(events) -> list:

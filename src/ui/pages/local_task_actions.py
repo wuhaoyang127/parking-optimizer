@@ -8,6 +8,29 @@ def _apply_sim_state(result, ctx):
     if not isinstance(result, dict) or not result:
         st.error("结果为空，无法载入")
         st.stop()
+    # 只调参任务：没有正式仿真结果，仅回填最优参数并显示摘要，不跳指标页
+    if result.get("metrics") is None and result.get("tuned_params"):
+        tuned_params = result.get("tuned_params") or {}
+        for nm, params in tuned_params.items():
+            if isinstance(params, dict) and params:
+                st.session_state.setdefault("last_params", {})[nm] = params
+                persist_last_params(nm, params)
+        if result.get("mode") == "compare_all":
+            st.session_state.last_tune_summary = {
+                "strategy": "compare_all", "tuned_params": tuned_params,
+                "trials_per_algo": result.get("tune_trials_count")}
+            st.success("✅ 本机自动调参完成，各算法最优参数已保存。\n\n"
+                       "想继续看对比：回到上方勾选「🚀 用最优参数跑排序」后再点运行。")
+        else:
+            trials = result.get("tune_trials") or []
+            best_params = tuned_params.get(ctx.get("strategy_name") or "") or {}
+            st.session_state.last_tune_summary = {
+                "strategy": ctx.get("strategy_name"), "best_params": best_params,
+                "trials": trials, "failed": result.get("tune_failed", 0)}
+            st.success("✅ 本机自动调参完成，最优参数已回填上方控件。\n\n"
+                       "想直接看结果：勾选「🚀 用最优参数跑仿真」后再点运行；"
+                       "或点「▶️ 运行」用当前参数跑。")
+        st.rerun()
     if ctx.get("custom_layout"):
         st.session_state.setdefault("custom_layouts", {}).update(ctx["custom_layout"])
         _sync_custom_layouts_to_globals()

@@ -1,21 +1,14 @@
-"""云端仿真运行（单策略；全部对比委托 compare_all_run）。"""
+"""云端仿真运行（单策略；全部对比由 compare_all_run 负责）。"""
 from ui.common import *
 from ui.pages.cloud_store import _n_runs_for, _store_cloud_common_state
-from ui.pages.compare_all_run import _run_compare_all_cloud
 
 
 def _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed, n_runs,
                           wait_policy, strategy_name, strategy_category, random_reps,
-                          strat_params, env_params, tune_compare,
-                          base_vehicles, demand_source_used, imported_meta):
-    """云端运行仿真：全部对比（含可选最优参数组）/ 单策略。"""
-    if strategy_name == "compare_all":
-        _run_compare_all_cloud(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
-                               n_runs, wait_policy, strategy_category, random_reps,
-                               strat_params, env_params, base_vehicles,
-                               demand_source_used, imported_meta, tune_compare)
-        return
-
+                          strat_params, env_params,
+                          base_vehicles, demand_source_used, imported_meta,
+                          rerun_after=True):
+    """云端运行单策略仿真；rerun_after=False 时跑完不跳页（供连续跑多组）。"""
     with st.spinner("仿真运行中..."):
         net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
         pe = PathEngine(net)
@@ -96,4 +89,5 @@ def _run_cloud_simulation(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
                                   env_params, sim_vehicles_candidate, demand_source_used,
                                   imported_meta, demand_kwargs, base_vehicles)
 
-    st.rerun()
+    if rerun_after:
+        st.rerun()

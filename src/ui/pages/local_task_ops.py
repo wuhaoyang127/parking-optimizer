@@ -44,11 +44,12 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                 strategy_category, strat_params,
                                 env_params, wait_policy, seed, n_runs, random_reps,
                                 base_vehicles, demand_source_used, n_vehicles, ctx_kwargs,
-                                auto_tune=False, tune_compare=False):
+                                run_default=True, auto_tune=False, tune_run=False,
+                                tune_trials=TUNE_TRIALS_DEFAULT):
     """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。
 
-    auto_tune=True：单策略先调参再用最优参数跑正式仿真（一步到位）。
-    tune_compare=True：全部对比时额外产出最优参数组。
+    三动作可独立勾选：run_default=按当前参数跑；auto_tune=自动调参选最优；
+    tune_run=调参后用最优参数跑。
     """
     token = st.session_state.get("token")
     if not token:
@@ -76,9 +77,10 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
         "demand": demand_payload,
         "strategy": {"name": strategy_name, "params": strat_params,
                      "category": strategy_category,
+                     "run_default": bool(run_default),
                      "auto_tune": bool(auto_tune),
-                     "tune_compare": bool(tune_compare),
-                     "tune_trials": int(TUNE_TRIALS_DEFAULT)},
+                     "tune_run": bool(tune_run),
+                     "tune_trials": int(tune_trials)},
         "ranking": ranking_config_from_session(),
         "engine": {"wait_policy": wait_policy,
                    "car_speed": env_params["car_speed"],

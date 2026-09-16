@@ -1,6 +1,16 @@
 """worker 计算层：按任务 payload 在本机执行仿真/自动调参。"""
 import time
 
+try:
+    from local_compute import resolve_strategy_flags
+    from local_compute._groups import tune_all_strategies
+except Exception:  # pragma: no cover
+    def resolve_strategy_flags(strategy, default_trials=10):
+        return True, False, False, default_trials
+
+    def tune_all_strategies(*_a, **_k):
+        return {}
+
 
 def _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs):
     from parking_opt.simulation.parking_lot import ParkingLot
@@ -16,28 +26,6 @@ def _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs):
     except Exception:
         pass
     return None
-
-
-def _tune_all(strategies, net, spots, base_vehicles, demand_kwargs, seed, wait_policy,
-              eng_kwargs, trials, rank_mode, rank_weights, rank_priority, budget):
-    """对一组策略各自调参，返回 {name: best_params}。"""
-    from local_compute import run_tuning, tunable_specs
-    from parking_opt.simulation.arrival import generate_demand
-    tuned = {}
-    for nm, cls in strategies:
-        if not tunable_specs(nm):
-            continue
-
-        def cb(done, total, params, _nm=nm, _cls=cls):
-            print(f"[🎯] 调参 {getattr(_cls, 'label', _nm)}：第 {done}/{total} 组…", flush=True)
-
-        vehs = (list(base_vehicles) if base_vehicles is not None
-                else generate_demand(seed=seed, **demand_kwargs))
-        res = run_tuning(nm, net, spots, vehs, seed, wait_policy, eng_kwargs,
-                         trials, rank_mode, rank_weights, rank_priority,
-                         budget=budget, progress_cb=cb)
-        tuned[nm] = res["best_params"]
-    return tuned
 
 
 def run_local_task(payload: dict) -> dict:
@@ -79,9 +67,7 @@ def run_local_task(payload: dict) -> dict:
     strategy = payload.get("strategy") or {}
     strategy_name = strategy.get("name", "duration_greedy")
     strat_params = strategy.get("params") or {}
-    auto_tune = bool(strategy.get("auto_tune"))
-    tune_compare = bool(strategy.get("tune_compare"))
-    tune_trials = int(strategy.get("tune_trials", TUNE_TRIALS_DEFAULT) or TUNE_TRIALS_DEFAULT)
+    run_default, auto_tune, tune_run, tune_trials = resolve_strategy_flags(strategy)
     ranking_cfg = payload.get("ranking") or {}
     rank_mode = ranking_cfg.get("mode") or "加权评分"
     rank_weights = ranking_cfg.get("weights") or {}
@@ -106,7 +92,8 @@ def run_local_task(payload: dict) -> dict:
         if total_runs > 1 and (total_runs <= 10 or r % 10 == 0):
             print(f"    ├─ {nm}：第 {r}/{total_runs} 次…", flush=True)
 
-    result = {"mode": "compare_all" if strategy_name == "compare_all" else "single"}
+    result = {"mode": "compare_all" if strategy_name == "compare_all" else "single",
+              "metrics": None}
 
     if strategy_name == "compare_all":
         category = strategy.get("category")
@@ -115,30 +102,48 @@ def run_local_task(payload: dict) -> dict:
         else:
             strategies = list(StrategyRegistry.all().items())
         tuned_params = {}
-        if tune_compare:
-            tuned_params = _tune_all(strategies, net, spots, base_vehicles,
+        if auto_tune:
+            def _tune_cb(done, total, params, _nm="", _cls=None):
+                label = getattr(_cls, "label", _nm) if _cls is not None else _nm
+                print(f"[🎯] 调参 {label}：第 {done}/{total} 组…", flush=True)
+
+            tuned_params = tune_all_strategies(strategies, net, spots, base_vehicles,
                                      demand_kwargs, seed, wait_policy, eng_kwargs,
                                      tune_trials, rank_mode, rank_weights,
-                                     rank_priority, budget)
-        res = run_group(strategies, net, spots, base_vehicles, demand_kwargs, seed,
-                        wait_policy, eng_kwargs, _n_runs_for,
-                        params_by_strategy=None, budget=budget,
-                        log_cb=_log, seed_cb=_seed_cb)
-        all_m = res["all_m"]
-        tuned_m = []
-        if tune_compare:
+                                     rank_priority, budget, progress_cb=_tune_cb)
+            result["tune_trials_count"] = tune_trials
+        all_m, tuned_m = [], []
+        ev_by, veh_by, main_ev = {}, {}, None
+        timed_out, failed = [], []
+        if run_default:
+            res = run_group(strategies, net, spots, base_vehicles, demand_kwargs, seed,
+                            wait_policy, eng_kwargs, _n_runs_for,
+                            params_by_strategy=None, budget=budget,
+                            log_cb=_log, seed_cb=_seed_cb)
+            all_m = res["all_m"]
+            ev_by, veh_by, main_ev = (res["events_by_strategy"],
+                                      res["vehicles_by_strategy"], res["main_events"])
+            timed_out, failed = res["timed_out"], res["failed"]
+        if tune_run and tuned_params:
             res2 = run_group(strategies, net, spots, base_vehicles, demand_kwargs,
                              seed, wait_policy, eng_kwargs, _n_runs_for,
                              params_by_strategy=tuned_params, budget=budget,
                              log_cb=_log, seed_cb=_seed_cb)
             tuned_m = res2["all_m"]
+            if not ev_by:
+                ev_by, veh_by, main_ev = (res2["events_by_strategy"],
+                                          res2["vehicles_by_strategy"], res2["main_events"])
+            timed_out = sorted(set(timed_out) | set(res2["timed_out"]))
+            failed = failed + [f for f in res2["failed"] if f not in failed]
+        metrics = (next((m for m in all_m if m.get("strategy") == "duration_greedy"), None)
+                   or next((m for m in tuned_m if m.get("strategy") == "duration_greedy"), None))
         result.update({
             "all_m": all_m,
-            "metrics": next((m for m in all_m if m.get("strategy") == "duration_greedy"), None),
-            "timed_out": res["timed_out"], "failed": res["failed"],
-            "events_by_strategy": res["events_by_strategy"],
-            "vehicles_by_strategy": res["vehicles_by_strategy"],
-            "main_events": res["main_events"],
+            "metrics": metrics,
+            "timed_out": timed_out, "failed": failed,
+            "events_by_strategy": ev_by,
+            "vehicles_by_strategy": veh_by,
+            "main_events": main_ev,
             "tuned_m": tuned_m, "tuned_params": tuned_params,
             "cpsat_rate": _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs),
         })
@@ -155,18 +160,32 @@ def run_local_task(payload: dict) -> dict:
             strat_params = tune_res["best_params"] or {}
             result["tuned_params"] = {strategy_name: strat_params}
             result["tune_trials"] = tune_res["trials"]
-            print(f"[🎯] 调参完成，用最优参数运行正式仿真（{strategy_name}）…", flush=True)
-        print(f"[⚙️] 运行策略：{getattr(cls, 'label', strategy_name)}（{strategy_name}）…", flush=True)
-        res = run_group([(strategy_name, cls)], net, spots, base_vehicles, demand_kwargs,
-                        seed, wait_policy, eng_kwargs, _n_runs_for,
-                        params_by_strategy={strategy_name: strat_params}, budget=budget,
-                        log_cb=_log, seed_cb=_seed_cb)
-        result.update({
-            "metrics": res["all_m"][0] if res["all_m"] else None,
-            "timed_out": res["timed_out"], "failed": res["failed"],
-            "events_by_strategy": res["events_by_strategy"],
-            "vehicles_by_strategy": res["vehicles_by_strategy"],
-            "main_events": res["main_events"],
-            "cpsat_rate": _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs),
-        })
+            result["tune_trials_count"] = tune_trials
+            result["tune_failed"] = tune_res["failed"]
+            print(f"[🎯] 调参完成：{getattr(cls, 'label', strategy_name)}（{strategy_name}）"
+                  f"共 {len(tune_res['trials'])} 组，最优参数 {strat_params}",
+                  flush=True)
+        if run_default or (tune_run and auto_tune):
+            groups = []
+            if run_default:
+                groups.append(("default", strat_params if not auto_tune else strategy.get("params") or {}))
+            if tune_run and auto_tune:
+                groups.append(("tuned", strat_params))
+            for tag, params in groups:
+                print(f"[⚙️] 运行策略：{getattr(cls, 'label', strategy_name)}（{strategy_name}，"
+                      f"{'最优参数' if tag == 'tuned' else '当前参数'}）…", flush=True)
+                res = run_group([(strategy_name, cls)], net, spots, base_vehicles,
+                                demand_kwargs, seed, wait_policy, eng_kwargs, _n_runs_for,
+                                params_by_strategy={strategy_name: params}, budget=budget,
+                                log_cb=_log, seed_cb=_seed_cb)
+                m = res["all_m"][0] if res["all_m"] else None
+                result["metrics"] = m
+                result["timed_out"] = res["timed_out"]
+                result["failed"] = res["failed"]
+                result["events_by_strategy"] = res["events_by_strategy"]
+                result["vehicles_by_strategy"] = res["vehicles_by_strategy"]
+                result["main_events"] = res["main_events"]
+                if tag == "default":
+                    result["default_metrics"] = m
+            result["cpsat_rate"] = _cpsat_rate(net, spots, pe, base_vehicles, seed, demand_kwargs)
     return result

@@ -18,10 +18,10 @@ def _tune_vehicles(base_vehicles, n_vehicles, env_params, pe, seed):
 
 
 def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_policy,
-                         strategy_name, env_params, base_vehicles) -> dict:
+                         strategy_name, env_params, base_vehicles, tune_trials) -> dict:
     """云端进程内自动调参：跑 K 组单种子仿真，选最优回填参数控件并返回最优参数。
 
-    不在此处跑正式仿真（由调用方拿最优参数继续跑并跳指标页）。
+    不在此处跑正式仿真（由调用方决定是否用最优参数继续跑）。
     """
     net, spots = LAYOUT_BUILDERS[layout](n_spots, tandem_ratio)
     pe = PathEngine(net)
@@ -30,7 +30,7 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
     eng_kwargs = dict(car_speed=env_params["car_speed"],
                       max_wait_time=env_params["max_wait_time"])
     label = STRATEGY_LABELS.get(strategy_name, strategy_name)
-    prog = st.progress(0.0, text=f"🎯 自动调参：{label}（0/{TUNE_TRIALS_DEFAULT}）…")
+    prog = st.progress(0.0, text=f"🎯 自动调参：{label}（0/{tune_trials}）…")
 
     def cb(done, total, params):
         prog.progress(done / total,
@@ -38,7 +38,7 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
 
     try:
         res = run_tuning(strategy_name, net, spots, vehs, seed, wait_policy,
-                         eng_kwargs, TUNE_TRIALS_DEFAULT, ranking["mode"],
+                         eng_kwargs, tune_trials, ranking["mode"],
                          ranking["weights"], ranking["priority"],
                          budget=STRATEGY_TIME_BUDGET, progress_cb=cb)
     except Exception as exc:
@@ -58,9 +58,23 @@ def _run_auto_tune_cloud(layout, n_spots, tandem_ratio, n_vehicles, seed, wait_p
 
 
 def _render_tune_summary():
-    """设置页展示最近一次自动调参摘要（最优参数已回填控件）。"""
+    """设置页展示最近一次自动调参摘要（单策略：最优参数已回填；全部对比：各算法最优参数）。"""
     summary = st.session_state.get("last_tune_summary")
     if not summary:
+        return
+    if summary.get("strategy") == "compare_all":
+        tuned_params = summary.get("tuned_params") or {}
+        with st.expander("🎯 上次自动调参摘要（全部对比）", expanded=True):
+            st.caption(f"每个算法试 {summary.get('trials_per_algo', '')} 组，"
+                       "最优参数已保存；勾选「🚀 用最优参数跑排序」可再次运行。")
+            if tuned_params:
+                rows = [{"策略": STRATEGY_LABELS.get(n, n),
+                         "最优参数": ", ".join(f"{k}={v:.4g}" if isinstance(v, float)
+                                             else f"{k}={v}"
+                                             for k, v in params.items())}
+                        for n, params in tuned_params.items() if params]
+                if rows:
+                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
         return
     trials = summary.get("trials") or []
     best_params = summary.get("best_params") or {}

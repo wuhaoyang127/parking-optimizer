@@ -7,8 +7,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 import src.parking_opt.strategies  # noqa: F401  触发注册
-from src.local_compute import (LAYOUT_BUILDERS, TUNE_TRIALS_DEFAULT, best_trial,
-                               run_group, run_tuning, sample_params, tunable_specs)
+from src.local_compute import (LAYOUT_BUILDERS, TUNE_TRIALS_DEFAULT, TUNE_TRIALS_MIN,
+                               TUNE_BATCH_SIZE, best_trial,
+                               resolve_strategy_flags, run_group, run_tuning,
+                               sample_params, tunable_specs)
 from src.parking_opt.simulation.arrival import generate_demand
 from src.parking_opt.strategies import StrategyRegistry
 
@@ -110,3 +112,46 @@ def test_run_group_runs_default_and_tuned_groups():
 def test_tune_trials_default_is_ten():
     """用户确认的 K=10 常量。"""
     assert TUNE_TRIALS_DEFAULT == 10
+
+
+def test_tune_trials_min_is_five():
+    """调参组数最少 5。"""
+    assert TUNE_TRIALS_MIN == 5
+    assert TUNE_BATCH_SIZE == 20
+
+
+def test_run_tuning_batches_over_20():
+    """K>20 时每 20 个一批：全部组照跑，批内选优后比批间最优。"""
+    net, spots = LAYOUT_BUILDERS["linear"](6, 0.5)
+    vehs = generate_demand(total_vehicles=8, seed=5)
+    res = run_tuning("duration_greedy", net, spots, vehs, seed=5,
+                     wait_policy="fifo",
+                     eng_kwargs=dict(car_speed=1.39, max_wait_time=600),
+                     trials=25)
+    assert len(res["trials"]) == 25
+    assert set(res["best_params"].keys()) == {"threshold", "warmup"}
+    assert 600.0 <= res["best_params"]["threshold"] <= 7200.0
+
+
+def test_resolve_strategy_flags_new_fields():
+    """新任务三动作开关直接读字段。"""
+    s = {"name": "duration_greedy", "run_default": False, "auto_tune": True,
+         "tune_run": False, "tune_trials": 15}
+    assert resolve_strategy_flags(s) == (False, True, False, 15)
+
+
+def test_resolve_strategy_flags_legacy_tune_compare():
+    """旧 compare_all 任务 tune_compare=True 兼容为 默认组+调参+最优组。"""
+    s = {"name": "compare_all", "tune_compare": True, "tune_trials": 10}
+    assert resolve_strategy_flags(s) == (True, True, True, 10)
+
+
+def test_resolve_strategy_flags_legacy_auto_tune():
+    """旧单策略任务 auto_tune=True 兼容为 调参+最优跑（不跑默认）。"""
+    s = {"name": "duration_greedy", "auto_tune": True}
+    assert resolve_strategy_flags(s) == (False, True, True, 10)
+
+
+def test_resolve_strategy_flags_legacy_plain_run():
+    """旧普通任务无任何开关 → 只按当前参数跑。"""
+    assert resolve_strategy_flags({"name": "fcfs"}) == (True, False, False, 10)

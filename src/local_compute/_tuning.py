@@ -12,6 +12,8 @@ from parking_opt.evaluation.ranking import METRIC_DIRECTIONS, weighted_rank
 from parking_opt.strategies import StrategyRegistry
 
 TUNE_TRIALS_DEFAULT = 10
+TUNE_TRIALS_MIN = 5
+TUNE_BATCH_SIZE = 20  # 组数超过 20 时，每 20 个一批：批内选优，再比较各批最优
 TUNE_SEED_OFFSET = 900001  # 调参专用随机流，不污染仿真主随机流
 
 
@@ -85,37 +87,69 @@ def best_trial(trials: list, rank_mode: str, weights=None, priority=None):
     return best_params, best_metrics
 
 
+def resolve_strategy_flags(strategy: dict, default_trials: int = TUNE_TRIALS_DEFAULT):
+    """解析任务 strategy 的三动作开关，返回 (run_default, auto_tune, tune_run, tune_trials)。
+
+    run_default：按当前参数跑仿真/排序；auto_tune：自动调参选最优；
+    tune_run：用调出的最优参数跑仿真/排序。
+    新任务含 run_default/tune_run 字段直接读；旧任务兼容：
+    tune_compare=True → 默认组 + 调参 + 最优组；auto_tune=True → 调参 + 最优跑。
+    """
+    tune_trials = int(strategy.get("tune_trials", default_trials) or default_trials)
+    if "run_default" in strategy or "tune_run" in strategy:
+        return (bool(strategy.get("run_default", False)),
+                bool(strategy.get("auto_tune")),
+                bool(strategy.get("tune_run")),
+                tune_trials)
+    if strategy.get("tune_compare"):
+        return True, True, True, tune_trials
+    if strategy.get("auto_tune"):
+        return False, True, True, tune_trials
+    return True, False, False, tune_trials
+
+
 def run_tuning(strategy_name: str, net, spots, vehicles, seed, wait_policy,
                eng_kwargs: dict, trials: int = TUNE_TRIALS_DEFAULT,
                rank_mode: str = "加权评分", weights=None, priority=None,
                budget: float = 60.0, progress_cb=None) -> dict:
     """对单个策略随机采样 trials 组参数，跑单种子仿真并选最优。
 
+    trials > TUNE_BATCH_SIZE 时每 20 个一批：批内选优，再比较各批最优选出
+    全局最优（同 seed 同车辆序列，指标可直接比较，无需重跑）。
     返回 {"best_params": {...}, "best_metrics": {...},
           "trials": [{"params":..., "metrics":..., "timed_out": bool}, ...],
           "failed": int}
     """
     if not tunable_specs(strategy_name):
         return {"best_params": {}, "best_metrics": None, "trials": [], "failed": 0}
+    total = max(1, int(trials))
     rng = random.Random(int(seed) + TUNE_SEED_OFFSET)
     trials_out = []
     failed = 0
-    for i in range(int(trials)):
-        params = sample_params(strategy_name, rng)
-        t0 = time.time()
-        try:
-            m, _ev, _lot = run_single(net, spots, list(vehicles),
-                                      StrategyRegistry.create(strategy_name, **params),
-                                      seed, wait_policy, **eng_kwargs)
-        except Exception:
-            failed += 1
-            continue
-        trials_out.append({"params": params, "metrics": m,
-                           "timed_out": bool(time.time() - t0 > budget)})
-        if progress_cb:
-            progress_cb(i + 1, int(trials), params)
-    best_params, best_metrics = best_trial(
-        [(t["params"], t["metrics"]) for t in trials_out],
-        rank_mode, weights, priority)
+    batch_bests = []
+    done_count = 0
+    while done_count < total:
+        batch_end = min(done_count + TUNE_BATCH_SIZE, total)
+        batch_trials = []
+        for _ in range(done_count, batch_end):
+            params = sample_params(strategy_name, rng)
+            t0 = time.time()
+            try:
+                m, _ev, _lot = run_single(net, spots, list(vehicles),
+                                          StrategyRegistry.create(strategy_name, **params),
+                                          seed, wait_policy, **eng_kwargs)
+            except Exception:
+                failed += 1
+                continue
+            trials_out.append({"params": params, "metrics": m,
+                               "timed_out": bool(time.time() - t0 > budget)})
+            batch_trials.append((params, m))
+            done_count += 1
+            if progress_cb:
+                progress_cb(done_count, total, params)
+        best_params, best_metrics = best_trial(batch_trials, rank_mode, weights, priority)
+        if best_params is not None:
+            batch_bests.append((best_params, best_metrics))
+    best_params, best_metrics = best_trial(batch_bests, rank_mode, weights, priority)
     return {"best_params": best_params or {}, "best_metrics": best_metrics,
             "trials": trials_out, "failed": failed}
