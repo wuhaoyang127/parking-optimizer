@@ -31,9 +31,9 @@ def test_classic_contains_rule_and_optimization_algorithms():
         assert name in classic, name
 
 
-def test_ml_category_is_empty_until_real_ml_added():
-    """当前没有真正的机器学习算法，ml 分类为空（框架保留，接入后自动出现）。"""
-    assert StrategyRegistry.names_in_category(CATEGORY_ML) == []
+def test_ml_category_contains_duration_tree():
+    """接入 CART 回归树后，ml 分类自动出现该算法（框架按分类出下拉）。"""
+    assert StrategyRegistry.names_in_category(CATEGORY_ML) == ["ml_duration_tree"]
 
 
 def test_names_in_category_preserves_registration_order():

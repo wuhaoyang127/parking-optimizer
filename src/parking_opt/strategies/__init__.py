@@ -7,6 +7,7 @@ from .fusion import CompositeStrategy, PeakOffPeakFusion
 from .mosa import MosaStrategy
 from .risk_scoring import RiskScoringStrategy
 from .rho import RhoRollingStrategy
+from .ml_duration import MlDurationTreeStrategy
 
 # 登记内置策略（新增算法在此追加一行登记即可）
 StrategyRegistry.register(FCFS)
@@ -19,11 +20,13 @@ StrategyRegistry.register(PeakOffPeakFusion)
 StrategyRegistry.register(MosaStrategy)
 StrategyRegistry.register(RiskScoringStrategy)
 StrategyRegistry.register(RhoRollingStrategy)
+StrategyRegistry.register(MlDurationTreeStrategy)
 
 __all__ = [
     "BaseStrategy", "FCFS", "NearestPath", "RandomAssign",
     "GreedyStrategy", "DepartureOrderGreedy", "DurationAwareGreedy",
     "CompositeStrategy", "PeakOffPeakFusion", "MosaStrategy",
-    "RiskScoringStrategy", "RhoRollingStrategy", "StrategyRegistry",
+    "RiskScoringStrategy", "RhoRollingStrategy", "MlDurationTreeStrategy",
+    "StrategyRegistry",
     "CATEGORY_CLASSIC", "CATEGORY_ML",
 ]
