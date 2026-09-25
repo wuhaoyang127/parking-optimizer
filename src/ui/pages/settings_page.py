@@ -50,7 +50,7 @@ def render_settings(role):
 
     (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
      n_runs, wait_policy, strategy_name, strategy_category, random_reps, strat_params,
-     env_params, tune_trials) = _render_layout_and_strategy(disabled, import_mode)
+     env_params, tune_trials, compare_names) = _render_layout_and_strategy(disabled, import_mode)
 
     _render_mosa_hint(strategy_name, import_mode, imported_vehicles, real_layout_mode,
                       n_spots, tandem_ratio, n_vehicles, env_params, layout)
@@ -87,7 +87,9 @@ def render_settings(role):
 
     run_label = "▶️ 下发本地计算任务" if compute_mode == "local" else "▶️ 运行仿真"
     run_allowed = role["can_local_compute"] if compute_mode == "local" else role["can_run_simulation"]
-    run_disabled = (not run_allowed) or (not strategy_name) or not (run_default or auto_tune)
+    compare_empty = (strategy_name == "compare_all" and not compare_names)
+    run_disabled = (not run_allowed) or (not strategy_name) or compare_empty \
+        or not (run_default or auto_tune)
 
     _render_tune_summary()
 
@@ -99,14 +101,16 @@ def render_settings(role):
                                         base_vehicles, demand_source_used, n_vehicles,
                                         ctx_kwargs, run_default=run_default,
                                         auto_tune=auto_tune, tune_run=tune_run,
-                                        tune_trials=tune_trials)
+                                        tune_trials=tune_trials,
+                                        compare_names=compare_names)
             st.stop()
         if strategy_name == "compare_all":
             _run_compare_all_cloud(role, layout, n_spots, tandem_ratio, n_vehicles, seed,
                                    n_runs, wait_policy, strategy_category, random_reps,
                                    strat_params, env_params, base_vehicles,
                                    demand_source_used, imported_meta,
-                                   run_default, auto_tune, tune_run, tune_trials)
+                                   run_default, auto_tune, tune_run, tune_trials,
+                                   compare_names=compare_names)
         else:
             best_params = {}
             if auto_tune:

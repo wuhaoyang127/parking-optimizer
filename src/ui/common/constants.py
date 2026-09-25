@@ -22,6 +22,23 @@ def strategy_options_for(category: str) -> list:
     names = StrategyRegistry.names_in_category(category)
     return names + ["compare_all"] if names else []
 
+
+def all_strategy_options() -> list:
+    """全部算法名（跨分类）+「全部对比」，供单算法下拉使用。"""
+    return list(StrategyRegistry.all().keys()) + ["compare_all"]
+
+
+def strategy_option_label(name: str) -> str:
+    """下拉/勾选显示名：算法 label + 分类标记（机器学习算法一眼可辨）。"""
+    if name == "compare_all":
+        return STRATEGY_LABELS["compare_all"]
+    cls = StrategyRegistry.get(name)
+    if cls is None:
+        return name
+    if getattr(cls, "category", CATEGORY_CLASSIC) == CATEGORY_ML:
+        return f"{cls.label}（机器学习）"
+    return cls.label
+
 # 算法评估指标：显示名 -> (指标字段, 方向, 说明)
 # 方向: "max"=越大越好, "min"=越小越好
 PRIORITY_METRICS = {
@@ -52,7 +69,8 @@ LOCAL_LAYOUT_BACKUP_PATH = PROJECT_ROOT / "data" / "custom_layouts_backup.json"
 def strategy_description(name: str) -> str:
     """返回策略说明：优先读策略类的 DESCRIPTION 属性，新算法接入后无需改这里即可自动展示。"""
     if name == "compare_all":
-        return "**全部对比**\n\n同时运行当前分类下的所有策略（默认参数），按你设定的优先级排序并推荐最优策略。"
+        return ("**全部对比**\n\n勾选你想要的算法（经典与机器学习可混合勾选），"
+                "按你设定的优先级排序并推荐最优策略。")
     cls = StrategyRegistry.get(name)
     if cls and getattr(cls, "DESCRIPTION", ""):
         return cls.DESCRIPTION

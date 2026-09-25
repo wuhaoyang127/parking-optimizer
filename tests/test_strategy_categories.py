@@ -49,3 +49,20 @@ def test_classic_plus_ml_equals_all():
     ml = set(StrategyRegistry.names_in_category(CATEGORY_ML))
     assert classic | ml == set(StrategyRegistry.all())
     assert classic.isdisjoint(ml)
+
+
+def test_items_filtered_by_names_mixes_categories():
+    """勾选列表可跨分类混合取算法（ML 与贪心同场对比）。"""
+    items = StrategyRegistry.items_filtered(["greedy", "ml_duration_tree"])
+    names = [n for n, _ in items]
+    assert names == ["greedy", "ml_duration_tree"]
+
+
+def test_items_filtered_names_priority_and_fallback():
+    """names 优先于 category；names 中未登记的跳过；都给 None 返回全部。"""
+    items = StrategyRegistry.items_filtered(["greedy", "no_such"], CATEGORY_ML)
+    assert [n for n, _ in items] == ["greedy"]
+    assert StrategyRegistry.items_filtered(None, CATEGORY_ML) == \
+        StrategyRegistry.items_in_category(CATEGORY_ML)
+    assert StrategyRegistry.items_filtered(None, None) == \
+        list(StrategyRegistry.all().items())

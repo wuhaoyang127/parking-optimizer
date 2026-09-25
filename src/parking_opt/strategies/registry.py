@@ -74,3 +74,18 @@ class StrategyRegistry:
         """
         return [(n, c) for n, c in cls._strategies.items()
                 if getattr(c, "category", CATEGORY_CLASSIC) == category]
+
+    @classmethod
+    def items_filtered(cls, names: list | None = None,
+                       category: str | None = None) -> list:
+        """按「勾选算法列表」或分类取 [(name, class), ...]，云/本机共用口径。
+
+        - names 非空：只取勾选且已登记的算法（保持 names 顺序）；
+        - 否则 category 为 classic/ml 时按分类过滤（旧任务兼容）；
+        - 都给 None/空：返回全部（保持登记顺序）。
+        """
+        if names:
+            return [(n, cls._strategies[n]) for n in names if n in cls._strategies]
+        if category in (CATEGORY_CLASSIC, CATEGORY_ML):
+            return cls.items_in_category(category)
+        return list(cls._strategies.items())

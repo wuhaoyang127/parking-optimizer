@@ -52,24 +52,38 @@ def _render_layout_and_strategy(disabled, import_mode):
                                    format_func=lambda x: "先到先服务（FIFO）" if x == "fifo" else "短停车优先",
                                    disabled=disabled,
                                    help="FIFO 保留各策略差异（对比更明显）；短停车优先能减少等待但策略差异会被抹平")
-        # 两段式选择：先选大类，再选具体策略
-        strategy_category = st.radio(
-            "是否加入机器学习", [CATEGORY_CLASSIC, CATEGORY_ML],
-            format_func=lambda v: STRATEGY_CATEGORY_LABELS[v],
-            horizontal=True, key="use_ml", disabled=disabled,
-            help="新算法接入后会自动归入对应分类")
-        strategy_options = strategy_options_for(strategy_category)
-        if not strategy_options:
-            st.info("🧠 暂无机器学习算法。新算法接入后会自动出现在这里。")
-            strategy_name = None
+        # 策略选择：单算法下拉（跨分类）+「全部对比」勾选参与算法（可混合经典与机器学习）
+        strategy_options = all_strategy_options()
+        if st.session_state.get("strategy_name") not in strategy_options:
+            st.session_state.strategy_name = strategy_options[0]
+        strategy_name = st.selectbox("策略", strategy_options,
+                                     key="strategy_name",
+                                     format_func=strategy_option_label,
+                                     disabled=disabled,
+                                     help="选单个算法只跑它；选「全部对比」后勾选要对比的算法")
+        strategy_category = None
+        compare_names = None
+        if strategy_name != "compare_all":
+            cls = StrategyRegistry.get(strategy_name)
+            strategy_category = getattr(cls, "category", CATEGORY_CLASSIC)
         else:
-            if st.session_state.get("strategy_name") not in strategy_options:
-                st.session_state.strategy_name = strategy_options[0]
-            strategy_name = st.selectbox("策略", strategy_options,
-                                         key="strategy_name",
-                                         format_func=lambda x: STRATEGY_LABELS[x],
-                                         disabled=disabled)
-            st.caption(f"「全部对比」仅对比当前分类内的 {len(strategy_options) - 1} 个算法")
+            all_names = list(StrategyRegistry.all().keys())
+            saved = st.session_state.get("compare_names", None)
+            if saved is None:
+                saved = list(all_names)
+            else:
+                saved = [n for n in saved if n in all_names]
+            compare_names = st.multiselect(
+                "☑️ 勾选参与对比的算法（经典与机器学习可混合）",
+                all_names, default=saved, format_func=strategy_option_label,
+                disabled=disabled,
+                help="勾选哪些就跑哪些，与单算法模式使用同一套评分标准")
+            st.session_state.compare_names = list(compare_names)
+            if not compare_names:
+                st.warning("⚠️ 请至少勾选一个算法，否则无法运行对比")
+            else:
+                st.caption(f"已勾选 {len(compare_names)} 个算法："
+                           f"{'、'.join(strategy_option_label(n) for n in compare_names)}")
 
         # random 策略重复次数单独控制：随机性强，需 100+ 次取平均才有说服力；
         # 其他策略仍用上方「仿真次数」滑杆（1~10），避免被迫一起跑 100+ 次。
@@ -121,4 +135,4 @@ def _render_layout_and_strategy(disabled, import_mode):
 
     return (layout, real_layout_mode, n_spots, tandem_ratio, n_vehicles, seed,
             n_runs, wait_policy, strategy_name, strategy_category, random_reps,
-            strat_params, env_params, int(tune_trials))
+            strat_params, env_params, int(tune_trials), compare_names)

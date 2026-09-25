@@ -37,7 +37,6 @@ def run_local_task(payload: dict) -> dict:
     from parking_opt.simulation.arrival import generate_demand
     from parking_opt.io.demand_io import parse_demand_json
     from parking_opt.strategies import StrategyRegistry
-    from parking_opt.strategies.registry import CATEGORY_CLASSIC, CATEGORY_ML
 
     # 1. 布局
     layout = payload.get("layout") or {}
@@ -100,11 +99,8 @@ def run_local_task(payload: dict) -> dict:
               "metrics": None}
 
     if strategy_name == "compare_all":
-        category = strategy.get("category")
-        if category in (CATEGORY_CLASSIC, CATEGORY_ML):
-            strategies = StrategyRegistry.items_in_category(category)
-        else:
-            strategies = list(StrategyRegistry.all().items())
+        strategies = StrategyRegistry.items_filtered(strategy.get("names"),
+                                                     strategy.get("category"))
         tuned_params = {}
         if auto_tune:
             def _tune_cb(done, total, params, _nm="", _cls=None):

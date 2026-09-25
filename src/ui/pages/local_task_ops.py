@@ -45,7 +45,7 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
                                 env_params, wait_policy, seed, n_runs, random_reps,
                                 base_vehicles, demand_source_used, n_vehicles, ctx_kwargs,
                                 run_default=True, auto_tune=False, tune_run=False,
-                                tune_trials=TUNE_TRIALS_DEFAULT):
+                                tune_trials=TUNE_TRIALS_DEFAULT, compare_names=None):
     """下发本地计算任务并轮询状态（最多 120 秒），完成后自动载入结果。
 
     三动作可独立勾选：run_default=按当前参数跑；auto_tune=自动调参选最优；
@@ -77,6 +77,7 @@ def _submit_local_task_and_wait(layout, n_spots, tandem_ratio, strategy_name,
         "demand": demand_payload,
         "strategy": {"name": strategy_name, "params": strat_params,
                      "category": strategy_category,
+                     "names": list(compare_names or []),
                      "run_default": bool(run_default),
                      "auto_tune": bool(auto_tune),
                      "tune_run": bool(tune_run),

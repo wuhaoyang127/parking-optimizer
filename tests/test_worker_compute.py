@@ -71,6 +71,17 @@ def test_compare_all_default_only():
     assert res["tuned_m"] == []
 
 
+def test_compare_all_respects_names_filter():
+    """全部对比按勾选列表跨分类跑（只跑 ML 与贪心两个算法）。"""
+    strategy = {"name": "compare_all", "params": {}, "category": None,
+                "names": ["greedy", "ml_duration_tree"],
+                "run_default": True, "auto_tune": False, "tune_run": False}
+    res = worker_compute.run_local_task(_payload(strategy, n_vehicles=6))
+    assert res["mode"] == "compare_all"
+    got = sorted(m["strategy"] for m in res["all_m"])
+    assert got == ["greedy", "ml_duration_tree"]
+
+
 def test_compare_all_tune_only_saves_best_params():
     """全部对比只勾「自动调参选最优」：只调参保存各算法最优参数。"""
     strategy = {"name": "compare_all", "params": {}, "category": "classic",

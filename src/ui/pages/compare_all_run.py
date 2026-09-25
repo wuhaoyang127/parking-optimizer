@@ -36,7 +36,8 @@ def _tune_all_cloud(strategies, net, spots, base_vehicles, demand_kwargs, seed,
 def _run_compare_all_cloud(role, layout, n_spots, tandem_ratio, n_vehicles, seed, n_runs,
                            wait_policy, strategy_category, random_reps, strat_params,
                            env_params, base_vehicles, demand_source_used, imported_meta,
-                           run_default, auto_tune, tune_run, tune_trials):
+                           run_default, auto_tune, tune_run, tune_trials,
+                           compare_names=None):
     """云端全部对比：按当前参数跑排序 / 自动调参选最优 / 用最优参数跑排序。
 
     三动作可独立勾选：run_default=默认参数对比组；auto_tune=每个算法试 K 组；
@@ -59,9 +60,7 @@ def _run_compare_all_cloud(role, layout, n_spots, tandem_ratio, n_vehicles, seed
                           buffer_w_idle=env_params.get("buffer_w_idle", 1.0),
                           buffer_w_secondary=env_params.get("buffer_w_secondary", 2.0),
                           buffer_idle_half_life=env_params.get("buffer_idle_half_life", 300.0))
-        strategies = (StrategyRegistry.items_in_category(strategy_category)
-                      if strategy_category in (CATEGORY_CLASSIC, CATEGORY_ML)
-                      else list(StrategyRegistry.all().items()))
+        strategies = StrategyRegistry.items_filtered(compare_names, strategy_category)
         tuned_params = {}
         if auto_tune:
             tuned_params = _tune_all_cloud(strategies, net, spots, base_vehicles,
