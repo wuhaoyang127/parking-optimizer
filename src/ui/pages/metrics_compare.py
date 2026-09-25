@@ -83,7 +83,10 @@ def _render_compare_section(all_m, can_export, heading="🏆 多策略对比", k
                                key=f"{key_prefix}dl_lex")
 
     c1, c2 = st.columns(2)
-    with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200)
-    with c2: st.bar_chart(df.set_index("策略")["移位次数"], height=200)
+    with c1: st.bar_chart(df.set_index("策略")["满足率"], height=200,
+                           key=f"{key_prefix}bar_sat")
+    with c2: st.bar_chart(df.set_index("策略")["移位次数"], height=200,
+                           key=f"{key_prefix}bar_shift")
     st.markdown("#### 📡 多维指标雷达图（外圈=更好）")
-    st.plotly_chart(_plot_radar(all_m), use_container_width=True)
+    st.plotly_chart(_plot_radar(all_m), use_container_width=True,
+                    key=f"{key_prefix}radar")
