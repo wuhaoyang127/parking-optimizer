@@ -24,6 +24,19 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          # 诊断 1：secrets 是否已配置（只显示是否为空，不回显具体值）
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::SUPABASE_URL 为空：请到仓库 Settings → Secrets and variables → Actions 添加名为 SUPABASE_URL 的 secret"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_ANON_KEY 为空：请添加名为 SUPABASE_ANON_KEY 的 secret"
+            exit 1
+          fi
+          # 诊断 2：打印 URL 主机名（脱敏，方便确认 URL 没配错）
+          URL_HOST=$(echo "$SUPABASE_URL" | sed -E 's|https?://([^/]+).*|\1|')
+          echo "SUPABASE_URL 主机: $URL_HOST"
+          echo "SUPABASE_ANON_KEY 前 8 位: ${SUPABASE_ANON_KEY:0:8}..."
           HTTP_CODE=$(curl -s -o /tmp/keepalive.json -w "%{http_code}" \
             -X POST "$SUPABASE_URL/rest/v1/rpc/validate_session" \
             -H "apikey: $SUPABASE_ANON_KEY" \
@@ -31,10 +44,11 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"p_token":"__keepalive_probe__"}')
           echo "HTTP $HTTP_CODE"
+          echo "响应体:"
           cat /tmp/keepalive.json
           echo
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::error::keep-alive 请求失败（HTTP $HTTP_CODE），请检查 SUPABASE_URL / SUPABASE_ANON_KEY 或项目状态"
+            echo "::error::keep-alive 请求失败（HTTP $HTTP_CODE）"
             exit 1
           fi
           echo "keep-alive OK"
