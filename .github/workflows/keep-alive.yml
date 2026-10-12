@@ -1,8 +1,8 @@
 # Supabase 免费项目保活：每 2 天调用一次数据库 RPC，防止 7 天无活动被暂停。
 #
-# 需要先在 GitHub 仓库配置两个 secrets（Settings → Secrets and variables → Actions）：
-#   SUPABASE_URL       例如 https://xxxx.supabase.co
+# 需要先在 GitHub 仓库配置一个 secret（Settings → Secrets and variables → Actions）：
 #   SUPABASE_ANON_KEY  Supabase 控制台的 publishable key（anon key，不要放 service key）
+# Supabase URL 不是机密（浏览器端本来就会暴露），已直接写在下面的 env 里。
 #
 # 注意：GitHub 会在仓库 60 天没有任何提交/活动后自动禁用定时 workflow。
 # 如果发现保活停了，先到仓库 Actions 页面手动触发一次（Run workflow）。
@@ -21,14 +21,11 @@ jobs:
     steps:
       - name: Ping Supabase RPC (validate_session)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # Supabase URL 不是机密（浏览器端本来就会暴露），直接写死，省去一个 secret
+          SUPABASE_URL: "https://cxxoxbambqkpwpldsrnj.supabase.co"
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           # 诊断 1：secrets 是否已配置（只显示是否为空，不回显具体值）
-          if [ -z "$SUPABASE_URL" ]; then
-            echo "::error::SUPABASE_URL 为空：请到仓库 Settings → Secrets and variables → Actions 添加名为 SUPABASE_URL 的 secret"
-            exit 1
-          fi
           if [ -z "$SUPABASE_ANON_KEY" ]; then
             echo "::error::SUPABASE_ANON_KEY 为空：请添加名为 SUPABASE_ANON_KEY 的 secret"
             exit 1
