@@ -62,3 +62,6 @@ start_local_worker.bat
 install_local_worker_autostart.bat
 # worker 交互登录后缓存的本地凭据（本机使用不入库）
 worker_credentials.json
+
+# 数据库备份（scripts/backup_supabase.py 输出，含真实业务数据，不入库）
+backups/

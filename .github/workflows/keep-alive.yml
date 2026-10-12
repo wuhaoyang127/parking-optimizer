@@ -1,0 +1,40 @@
+# Supabase 免费项目保活：每 2 天调用一次数据库 RPC，防止 7 天无活动被暂停。
+#
+# 需要先在 GitHub 仓库配置两个 secrets（Settings → Secrets and variables → Actions）：
+#   SUPABASE_URL       例如 https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  Supabase 控制台的 publishable key（anon key，不要放 service key）
+#
+# 注意：GitHub 会在仓库 60 天没有任何提交/活动后自动禁用定时 workflow。
+# 如果发现保活停了，先到仓库 Actions 页面手动触发一次（Run workflow）。
+# 免费项目仍有极小概率被暂停（Supabase 政策可能调整），Pro 才是唯一硬保证。
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # UTC 时间每两天 03:17 运行一次（对应北京时间每两天 11:17）
+    - cron: "17 3 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase RPC (validate_session)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          HTTP_CODE=$(curl -s -o /tmp/keepalive.json -w "%{http_code}" \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/validate_session" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"p_token":"__keepalive_probe__"}')
+          echo "HTTP $HTTP_CODE"
+          cat /tmp/keepalive.json
+          echo
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::keep-alive 请求失败（HTTP $HTTP_CODE），请检查 SUPABASE_URL / SUPABASE_ANON_KEY 或项目状态"
+            exit 1
+          fi
+          echo "keep-alive OK"
