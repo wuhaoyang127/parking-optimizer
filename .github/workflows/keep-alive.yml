@@ -25,19 +25,22 @@ jobs:
           SUPABASE_URL: "https://cxxoxbambqkpwpldsrnj.supabase.co"
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          # 诊断 1：secrets 是否已配置（只显示是否为空，不回显具体值）
-          if [ -z "$SUPABASE_ANON_KEY" ]; then
+          # 清洗：网页粘贴 secret 时容易混入换行/空格，统一去掉
+          URL_CLEAN=$(printf '%s' "$SUPABASE_URL" | tr -d '\r\n ')
+          KEY_CLEAN=$(printf '%s' "$SUPABASE_ANON_KEY" | tr -d '\r\n ')
+          # 诊断 1：secrets 是否已配置
+          if [ -z "$KEY_CLEAN" ]; then
             echo "::error::SUPABASE_ANON_KEY 为空：请添加名为 SUPABASE_ANON_KEY 的 secret"
             exit 1
           fi
-          # 诊断 2：打印 URL 主机名（脱敏，方便确认 URL 没配错）
-          URL_HOST=$(echo "$SUPABASE_URL" | sed -E 's|https?://([^/]+).*|\1|')
+          # 诊断 2：脱敏信息
+          URL_HOST=$(echo "$URL_CLEAN" | sed -E 's|https?://([^/]+).*|\1|')
           echo "SUPABASE_URL 主机: $URL_HOST"
-          echo "SUPABASE_ANON_KEY 前 8 位: ${SUPABASE_ANON_KEY:0:8}..."
+          echo "SUPABASE_ANON_KEY 长度: ${#KEY_CLEAN}"
           HTTP_CODE=$(curl -s -o /tmp/keepalive.json -w "%{http_code}" \
-            -X POST "$SUPABASE_URL/rest/v1/rpc/validate_session" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -X POST "$URL_CLEAN/rest/v1/rpc/validate_session" \
+            -H "apikey: $KEY_CLEAN" \
+            -H "Authorization: Bearer $KEY_CLEAN" \
             -H "Content-Type: application/json" \
             -d '{"p_token":"__keepalive_probe__"}')
           echo "HTTP $HTTP_CODE"
