@@ -1,15 +1,13 @@
 """页面区块：推送到车主端（仅管理员或已开启 can_push_algo 的自定义角色）。"""
 from ui.common import *
+from ui.pages.driver_release_panel import publish_from_existing_button as auth_publish_algorithm
+from ui.pages.driver_release_panel import render_driver_releases
+from ui.pages.driver_release_panel import eligible_test_runs
+from driver_bridge.settings import configured, setting, _owner_app_connected  # noqa: F401
 
 
-def _owner_app_connected(value) -> bool:
-    """解析车主端接入开关：'1'/'true'/'yes'/'on' 视为已接入，其余视为未接入。"""
-    return str(value or "").strip().lower() in ("1", "true", "yes", "on")
-
-
-# 车主端接入开关：车主端 FastAPI 接入前，推送按钮仅备用（点击只提示，不写库）。
-# 车主端接入后设置环境变量 OWNER_APP_CONNECTED=1（或 true/yes/on）并重新部署即可启用。
-OWNER_APP_CONNECTED = _owner_app_connected(os.environ.get("OWNER_APP_CONNECTED", "0"))
+# Supports both environment variables and Streamlit Cloud's [driver_bridge] Secrets.
+OWNER_APP_CONNECTED = configured()
 
 
 def _best_algo_from_runs(runs, weights):
@@ -72,32 +70,48 @@ def render_algo_push_section(role):
 
     st.divider()
     st.subheader("🚀 推送到车主端")
-    st.caption("把研发端测试完成的算法发布为快照；车主端 FastAPI 读取最新发布记录进入实验。")
+    st.caption("发布算法到车主端暂存区，再校验和启用；不会自动替换当前算法。")
     if not OWNER_APP_CONNECTED:
-        st.info("📡 当前状态：**车主端未接入** —— 推送按钮仅备用，点击只提示、不会真正推送。"
-                "车主端接入后设置环境变量 `OWNER_APP_CONNECTED=1` 并重新部署即可启用。")
+        st.info("📡 车主端未接入：配置 `PARKING_DRIVER_API_URL` 与 `PARKING_PUBLISH_TOKEN` 后"
+                "自动显示发布/校验/启用面板；也可打开独立推送控制台。")
+        st.link_button("🚀 打开推送控制台（发布/校验/启用）",
+                       setting("PARKING_DRIVER_CONSOLE_URL", "http://127.0.0.1:8501"))
+
+    if OWNER_APP_CONNECTED:
+        render_driver_releases()
 
     registry = StrategyRegistry.all()
-    label_to_name = {cls.label: name for name, cls in registry.items()}
+    supported = ()
+    if OWNER_APP_CONNECTED:
+        try:
+            from driver_bridge.client import call
+            supported = call("/api/research/v1/capabilities")["supported"]
+        except Exception as exc:
+            st.error(str(exc))
+    label_to_name = {cls.label: name for name, cls in registry.items() if name in supported}
     labels = {name: cls.label for name, cls in registry.items()}
 
     tab_manual, tab_auto, tab_history = st.tabs(
-        ["🎯 选定算法推送", "🧠 自动推送当前最优", "📜 发布与实验"])
+        ["🎯 选定算法推送", "🧠 自动推送当前最优", "📜 历史研究记录"])
 
     # ── 手动选定算法推送 ──
     with tab_manual:
-        if not label_to_name:
-            st.warning("暂无可推送的算法（策略注册表为空）")
+        if not OWNER_APP_CONNECTED:
+            st.info("配置车主端连接后，此处可发布算法到暂存区（另行校验、启用）。")
+        elif not label_to_name:
+            st.warning("暂无可推送的算法（车主端支持列表未返回可用算法）")
         else:
             label = st.selectbox("选择算法", list(label_to_name.keys()),
                                  key="push_algo_label")
             algo = label_to_name[label]
             params = (st.session_state.get("last_params", {}).get(algo)
                       or StrategyRegistry.default_params(algo))
+            if algo == "ml_duration_tree":
+                params = st.session_state.get("driver_trained_params", params)
             st.caption(f"将发布参数：`{json.dumps(params, ensure_ascii=False)}`")
             note = st.text_input("备注（可选）", key="push_algo_note",
                                  placeholder="如：算法三 RHO 默认参数")
-            confirm = st.checkbox("我确认推送到车主端（车主端将读取该版本进入实验）",
+            confirm = st.checkbox("我确认发布到车主端暂存区（另行校验、启用）",
                                   key="push_algo_confirm")
             if st.button("📤 推送到车主端", type="primary",
                          disabled=not confirm, key="push_algo_btn"):
@@ -107,20 +121,20 @@ def render_algo_push_section(role):
                     res = auth_publish_algorithm(st.session_state.token, algo, params,
                                                  note or None)
                     if res.get("success"):
-                        st.success(f"✅ 已发布「{label}」（{algo}）到车主端")
-                        st.session_state.push_algo_confirm = False
+                        st.success(f"✅ 已暂存「{label}」（{algo}），请在上方选择版本校验、启用")
+                        st.rerun()
                     else:
                         st.error(res.get("error") or
-                                 "发布失败：请确认已在 Supabase 执行迁移 15")
+                                 "发布失败：请确认车主端服务已启动且密钥配置正确")
 
     # ── 自动推送当前测试最优 ──
     with tab_auto:
-        st.caption("自动从历史运行记录中选出当前测试最优的算法（优先最近一次「全部对比」）。")
+        st.caption("从历史测试中筛选可发布候选；排除离线策略和未绑定模型的ML，不代表生产优越性认证。")
         if st.button("🚀 自动推送当前测试最优", type="primary",
                      key="auto_push_btn"):
             runs = auth_list_sim_runs(st.session_state.token,
                                       all_users=True, limit=100)
-            best, ranked, source = _best_algo_from_runs(runs, RANK_DEFAULT_WEIGHTS)
+            best, ranked, source = _best_algo_from_runs(eligible_test_runs(runs, supported), RANK_DEFAULT_WEIGHTS)
             if not best:
                 st.warning("暂无可用的测试记录：请先运行一次「全部对比」或单策略仿真。")
             else:
@@ -143,6 +157,8 @@ def render_algo_push_section(role):
                 st.dataframe(df[show_cols])
             params = (st.session_state.get("last_params", {}).get(best)
                       or StrategyRegistry.default_params(best))
+            if best == "ml_duration_tree":
+                params = st.session_state.get("driver_trained_params", params)
             confirm2 = st.checkbox("我确认推送该最优算法", key="auto_push_confirm")
             if st.button("📤 确认推送", type="primary",
                          disabled=not confirm2, key="auto_push_ok"):
@@ -152,11 +168,11 @@ def render_algo_push_section(role):
                     res = auth_publish_algorithm(st.session_state.token, best, params,
                                                  f"自动推送：{source}")
                     if res.get("success"):
-                        st.success(f"✅ 已发布「{labels.get(best, best)}」（{best}）到车主端")
-                        st.session_state.auto_push_confirm = False
+                        st.success(f"✅ 已暂存「{labels.get(best, best)}」（{best}），请校验后启用")
+                        st.rerun()
                     else:
                         st.error(res.get("error") or
-                                 "发布失败：请确认已在 Supabase 执行迁移 15")
+                                 "发布失败：请确认车主端服务已启动且密钥配置正确")
 
     # ── 发布与实验记录 ──
     with tab_history:
@@ -175,7 +191,7 @@ def render_algo_push_section(role):
         st.divider()
         experiments = auth_list_experiments(st.session_state.token, limit=20)
         if experiments:
-            st.caption("🧪 当前实验（车主端读取）")
+            st.caption("🧪 历史实验记录（不控制当前车主端，当前版本以上方控制台为准）")
             for e in experiments[:5]:
                 st.markdown(f"- `{e.get('name')}`：{e.get('algo_default')}"
                             f" → {e.get('algo_new')}"
