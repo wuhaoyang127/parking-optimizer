@@ -1,0 +1,3577 @@
+{
+  "schema_version": "1.0.0",
+  "layout_id": "independent-fixed-total-b2-v1",
+  "coordinate_system": {
+    "kind": "local_meters",
+    "origin_note": "synthetic C2 local-metre baseline; not a surveyed layout"
+  },
+  "road_nodes": [
+    {
+      "road_node_id": "entry-main",
+      "x_m": 0.0,
+      "y_m": 0.0,
+      "node_kind": "entrance"
+    },
+    {
+      "road_node_id": "access-00",
+      "x_m": 10.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-01",
+      "x_m": 20.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-02",
+      "x_m": 30.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-03",
+      "x_m": 40.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-04",
+      "x_m": 50.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-05",
+      "x_m": 60.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-06",
+      "x_m": 70.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-07",
+      "x_m": 80.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-08",
+      "x_m": 90.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "access-09",
+      "x_m": 100.0,
+      "y_m": 0.0,
+      "node_kind": "position_access"
+    },
+    {
+      "road_node_id": "exit-main",
+      "x_m": 110.0,
+      "y_m": 0.0,
+      "node_kind": "exit"
+    }
+  ],
+  "road_edges": [
+    {
+      "road_edge_id": "road-01",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-00",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-02",
+      "from_node_id": "access-00",
+      "to_node_id": "access-01",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-03",
+      "from_node_id": "access-01",
+      "to_node_id": "access-02",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-04",
+      "from_node_id": "access-02",
+      "to_node_id": "access-03",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-05",
+      "from_node_id": "access-03",
+      "to_node_id": "access-04",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-06",
+      "from_node_id": "access-04",
+      "to_node_id": "access-05",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-07",
+      "from_node_id": "access-05",
+      "to_node_id": "access-06",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-08",
+      "from_node_id": "access-06",
+      "to_node_id": "access-07",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-09",
+      "from_node_id": "access-07",
+      "to_node_id": "access-08",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-10",
+      "from_node_id": "access-08",
+      "to_node_id": "access-09",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "road_edge_id": "road-11",
+      "from_node_id": "access-09",
+      "to_node_id": "exit-main",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": false,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    }
+  ],
+  "path_costs": [
+    {
+      "path_cost_id": "pc::access-00::access-00",
+      "from_node_id": "access-00",
+      "to_node_id": "access-00",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-00::access-01",
+      "from_node_id": "access-00",
+      "to_node_id": "access-01",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-02",
+      "from_node_id": "access-00",
+      "to_node_id": "access-02",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-02",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-03",
+      "from_node_id": "access-00",
+      "to_node_id": "access-03",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-04",
+      "from_node_id": "access-00",
+      "to_node_id": "access-04",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-05",
+      "from_node_id": "access-00",
+      "to_node_id": "access-05",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-06",
+      "from_node_id": "access-00",
+      "to_node_id": "access-06",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-07",
+      "from_node_id": "access-00",
+      "to_node_id": "access-07",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-08",
+      "from_node_id": "access-00",
+      "to_node_id": "access-08",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::access-09",
+      "from_node_id": "access-00",
+      "to_node_id": "access-09",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::entry-main",
+      "from_node_id": "access-00",
+      "to_node_id": "entry-main",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-00::exit-main",
+      "from_node_id": "access-00",
+      "to_node_id": "exit-main",
+      "distance_m": 100.0,
+      "travel_time_s": 100,
+      "road_edge_ids": [
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-00",
+      "from_node_id": "access-01",
+      "to_node_id": "access-00",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-01",
+      "from_node_id": "access-01",
+      "to_node_id": "access-01",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-01::access-02",
+      "from_node_id": "access-01",
+      "to_node_id": "access-02",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-03",
+      "from_node_id": "access-01",
+      "to_node_id": "access-03",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-03",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-04",
+      "from_node_id": "access-01",
+      "to_node_id": "access-04",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-05",
+      "from_node_id": "access-01",
+      "to_node_id": "access-05",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-06",
+      "from_node_id": "access-01",
+      "to_node_id": "access-06",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-07",
+      "from_node_id": "access-01",
+      "to_node_id": "access-07",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-08",
+      "from_node_id": "access-01",
+      "to_node_id": "access-08",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::access-09",
+      "from_node_id": "access-01",
+      "to_node_id": "access-09",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::entry-main",
+      "from_node_id": "access-01",
+      "to_node_id": "entry-main",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-01::exit-main",
+      "from_node_id": "access-01",
+      "to_node_id": "exit-main",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-00",
+      "from_node_id": "access-02",
+      "to_node_id": "access-00",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-01",
+      "from_node_id": "access-02",
+      "to_node_id": "access-01",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-02",
+      "from_node_id": "access-02",
+      "to_node_id": "access-02",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-02::access-03",
+      "from_node_id": "access-02",
+      "to_node_id": "access-03",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-04",
+      "from_node_id": "access-02",
+      "to_node_id": "access-04",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-04",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-05",
+      "from_node_id": "access-02",
+      "to_node_id": "access-05",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-06",
+      "from_node_id": "access-02",
+      "to_node_id": "access-06",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-07",
+      "from_node_id": "access-02",
+      "to_node_id": "access-07",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-08",
+      "from_node_id": "access-02",
+      "to_node_id": "access-08",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::access-09",
+      "from_node_id": "access-02",
+      "to_node_id": "access-09",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::entry-main",
+      "from_node_id": "access-02",
+      "to_node_id": "entry-main",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-02::exit-main",
+      "from_node_id": "access-02",
+      "to_node_id": "exit-main",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-00",
+      "from_node_id": "access-03",
+      "to_node_id": "access-00",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-01",
+      "from_node_id": "access-03",
+      "to_node_id": "access-01",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-02",
+      "from_node_id": "access-03",
+      "to_node_id": "access-02",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-03",
+      "from_node_id": "access-03",
+      "to_node_id": "access-03",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-03::access-04",
+      "from_node_id": "access-03",
+      "to_node_id": "access-04",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-05",
+      "from_node_id": "access-03",
+      "to_node_id": "access-05",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-05",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-06",
+      "from_node_id": "access-03",
+      "to_node_id": "access-06",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-05",
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-07",
+      "from_node_id": "access-03",
+      "to_node_id": "access-07",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-08",
+      "from_node_id": "access-03",
+      "to_node_id": "access-08",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::access-09",
+      "from_node_id": "access-03",
+      "to_node_id": "access-09",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::entry-main",
+      "from_node_id": "access-03",
+      "to_node_id": "entry-main",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-03::exit-main",
+      "from_node_id": "access-03",
+      "to_node_id": "exit-main",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-00",
+      "from_node_id": "access-04",
+      "to_node_id": "access-00",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-01",
+      "from_node_id": "access-04",
+      "to_node_id": "access-01",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-02",
+      "from_node_id": "access-04",
+      "to_node_id": "access-02",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-03",
+      "from_node_id": "access-04",
+      "to_node_id": "access-03",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-04",
+      "from_node_id": "access-04",
+      "to_node_id": "access-04",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-04::access-05",
+      "from_node_id": "access-04",
+      "to_node_id": "access-05",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-06",
+      "from_node_id": "access-04",
+      "to_node_id": "access-06",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-07",
+      "from_node_id": "access-04",
+      "to_node_id": "access-07",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-08",
+      "from_node_id": "access-04",
+      "to_node_id": "access-08",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::access-09",
+      "from_node_id": "access-04",
+      "to_node_id": "access-09",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::entry-main",
+      "from_node_id": "access-04",
+      "to_node_id": "entry-main",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-04::exit-main",
+      "from_node_id": "access-04",
+      "to_node_id": "exit-main",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-00",
+      "from_node_id": "access-05",
+      "to_node_id": "access-00",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-01",
+      "from_node_id": "access-05",
+      "to_node_id": "access-01",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-02",
+      "from_node_id": "access-05",
+      "to_node_id": "access-02",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-03",
+      "from_node_id": "access-05",
+      "to_node_id": "access-03",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-04",
+      "from_node_id": "access-05",
+      "to_node_id": "access-04",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-05",
+      "from_node_id": "access-05",
+      "to_node_id": "access-05",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-05::access-06",
+      "from_node_id": "access-05",
+      "to_node_id": "access-06",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-07",
+      "from_node_id": "access-05",
+      "to_node_id": "access-07",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-08",
+      "from_node_id": "access-05",
+      "to_node_id": "access-08",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::access-09",
+      "from_node_id": "access-05",
+      "to_node_id": "access-09",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::entry-main",
+      "from_node_id": "access-05",
+      "to_node_id": "entry-main",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-05::exit-main",
+      "from_node_id": "access-05",
+      "to_node_id": "exit-main",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-00",
+      "from_node_id": "access-06",
+      "to_node_id": "access-00",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-01",
+      "from_node_id": "access-06",
+      "to_node_id": "access-01",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-02",
+      "from_node_id": "access-06",
+      "to_node_id": "access-02",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-03",
+      "from_node_id": "access-06",
+      "to_node_id": "access-03",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-07",
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-04",
+      "from_node_id": "access-06",
+      "to_node_id": "access-04",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-07",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-05",
+      "from_node_id": "access-06",
+      "to_node_id": "access-05",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-06",
+      "from_node_id": "access-06",
+      "to_node_id": "access-06",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-06::access-07",
+      "from_node_id": "access-06",
+      "to_node_id": "access-07",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-08",
+      "from_node_id": "access-06",
+      "to_node_id": "access-08",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::access-09",
+      "from_node_id": "access-06",
+      "to_node_id": "access-09",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::entry-main",
+      "from_node_id": "access-06",
+      "to_node_id": "entry-main",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-06::exit-main",
+      "from_node_id": "access-06",
+      "to_node_id": "exit-main",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-00",
+      "from_node_id": "access-07",
+      "to_node_id": "access-00",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-01",
+      "from_node_id": "access-07",
+      "to_node_id": "access-01",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-02",
+      "from_node_id": "access-07",
+      "to_node_id": "access-02",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-03",
+      "from_node_id": "access-07",
+      "to_node_id": "access-03",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-04",
+      "from_node_id": "access-07",
+      "to_node_id": "access-04",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-05",
+      "from_node_id": "access-07",
+      "to_node_id": "access-05",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-08",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-06",
+      "from_node_id": "access-07",
+      "to_node_id": "access-06",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-07",
+      "from_node_id": "access-07",
+      "to_node_id": "access-07",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-07::access-08",
+      "from_node_id": "access-07",
+      "to_node_id": "access-08",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::access-09",
+      "from_node_id": "access-07",
+      "to_node_id": "access-09",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::entry-main",
+      "from_node_id": "access-07",
+      "to_node_id": "entry-main",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-07::exit-main",
+      "from_node_id": "access-07",
+      "to_node_id": "exit-main",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-00",
+      "from_node_id": "access-08",
+      "to_node_id": "access-00",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-01",
+      "from_node_id": "access-08",
+      "to_node_id": "access-01",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-02",
+      "from_node_id": "access-08",
+      "to_node_id": "access-02",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-03",
+      "from_node_id": "access-08",
+      "to_node_id": "access-03",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-04",
+      "from_node_id": "access-08",
+      "to_node_id": "access-04",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-05",
+      "from_node_id": "access-08",
+      "to_node_id": "access-05",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-06",
+      "from_node_id": "access-08",
+      "to_node_id": "access-06",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-09",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-07",
+      "from_node_id": "access-08",
+      "to_node_id": "access-07",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::access-08",
+      "from_node_id": "access-08",
+      "to_node_id": "access-08",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-08::access-09",
+      "from_node_id": "access-08",
+      "to_node_id": "access-09",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::entry-main",
+      "from_node_id": "access-08",
+      "to_node_id": "entry-main",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-08::exit-main",
+      "from_node_id": "access-08",
+      "to_node_id": "exit-main",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-00",
+      "from_node_id": "access-09",
+      "to_node_id": "access-00",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-01",
+      "from_node_id": "access-09",
+      "to_node_id": "access-01",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-02",
+      "from_node_id": "access-09",
+      "to_node_id": "access-02",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-03",
+      "from_node_id": "access-09",
+      "to_node_id": "access-03",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-04",
+      "from_node_id": "access-09",
+      "to_node_id": "access-04",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-05",
+      "from_node_id": "access-09",
+      "to_node_id": "access-05",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-06",
+      "from_node_id": "access-09",
+      "to_node_id": "access-06",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-07",
+      "from_node_id": "access-09",
+      "to_node_id": "access-07",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-10",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-08",
+      "from_node_id": "access-09",
+      "to_node_id": "access-08",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::access-09",
+      "from_node_id": "access-09",
+      "to_node_id": "access-09",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::access-09::entry-main",
+      "from_node_id": "access-09",
+      "to_node_id": "entry-main",
+      "distance_m": 100.0,
+      "travel_time_s": 100,
+      "road_edge_ids": [
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::access-09::exit-main",
+      "from_node_id": "access-09",
+      "to_node_id": "exit-main",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-00",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-00",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-01",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-01",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-01",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-02",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-02",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-03",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-03",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-04",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-04",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-05",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-05",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-06",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-06",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-07",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-07",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-08",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-08",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::access-09",
+      "from_node_id": "entry-main",
+      "to_node_id": "access-09",
+      "distance_m": 100.0,
+      "travel_time_s": 100,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::entry-main::entry-main",
+      "from_node_id": "entry-main",
+      "to_node_id": "entry-main",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    },
+    {
+      "path_cost_id": "pc::entry-main::exit-main",
+      "from_node_id": "entry-main",
+      "to_node_id": "exit-main",
+      "distance_m": 110.0,
+      "travel_time_s": 110,
+      "road_edge_ids": [
+        "road-01",
+        "road-02",
+        "road-03",
+        "road-04",
+        "road-05",
+        "road-06",
+        "road-07",
+        "road-08",
+        "road-09",
+        "road-10",
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-00",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-00",
+      "distance_m": 100.0,
+      "travel_time_s": 100,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-01",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-01",
+      "distance_m": 90.0,
+      "travel_time_s": 90,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-02",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-02",
+      "distance_m": 80.0,
+      "travel_time_s": 80,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-03",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-03",
+      "distance_m": 70.0,
+      "travel_time_s": 70,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-04",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-04",
+      "distance_m": 60.0,
+      "travel_time_s": 60,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-05",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-05",
+      "distance_m": 50.0,
+      "travel_time_s": 50,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-06",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-06",
+      "distance_m": 40.0,
+      "travel_time_s": 40,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-07",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-07",
+      "distance_m": 30.0,
+      "travel_time_s": 30,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-08",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-08",
+      "distance_m": 20.0,
+      "travel_time_s": 20,
+      "road_edge_ids": [
+        "road-11",
+        "road-10"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::access-09",
+      "from_node_id": "exit-main",
+      "to_node_id": "access-09",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": [
+        "road-11"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::entry-main",
+      "from_node_id": "exit-main",
+      "to_node_id": "entry-main",
+      "distance_m": 110.0,
+      "travel_time_s": 110,
+      "road_edge_ids": [
+        "road-11",
+        "road-10",
+        "road-09",
+        "road-08",
+        "road-07",
+        "road-06",
+        "road-05",
+        "road-04",
+        "road-03",
+        "road-02",
+        "road-01"
+      ],
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "path_cost_id": "pc::exit-main::exit-main",
+      "from_node_id": "exit-main",
+      "to_node_id": "exit-main",
+      "distance_m": 0,
+      "travel_time_s": 0,
+      "road_edge_ids": [],
+      "channel_zone_ids": []
+    }
+  ],
+  "slots": [
+    {
+      "position_id": "ind-s001",
+      "x_m": 10.0,
+      "y_m": 2.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g001",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s002",
+      "x_m": 20.0,
+      "y_m": 2.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g002",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s003",
+      "x_m": 30.0,
+      "y_m": 2.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g003",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s004",
+      "x_m": 40.0,
+      "y_m": 2.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g004",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s005",
+      "x_m": 50.0,
+      "y_m": 2.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g005",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s006",
+      "x_m": 60.0,
+      "y_m": 2.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g006",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s007",
+      "x_m": 70.0,
+      "y_m": 2.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g007",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s008",
+      "x_m": 80.0,
+      "y_m": 2.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g008",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s009",
+      "x_m": 90.0,
+      "y_m": 2.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g009",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s010",
+      "x_m": 100.0,
+      "y_m": 2.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g010",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s011",
+      "x_m": 10.0,
+      "y_m": 4.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g011",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s012",
+      "x_m": 20.0,
+      "y_m": 4.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g012",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s013",
+      "x_m": 30.0,
+      "y_m": 4.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g013",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s014",
+      "x_m": 40.0,
+      "y_m": 4.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g014",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s015",
+      "x_m": 50.0,
+      "y_m": 4.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g015",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s016",
+      "x_m": 60.0,
+      "y_m": 4.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g016",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s017",
+      "x_m": 70.0,
+      "y_m": 4.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g017",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s018",
+      "x_m": 80.0,
+      "y_m": 4.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g018",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s019",
+      "x_m": 90.0,
+      "y_m": 4.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g019",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s020",
+      "x_m": 100.0,
+      "y_m": 4.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g020",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s021",
+      "x_m": 10.0,
+      "y_m": 6.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g021",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s022",
+      "x_m": 20.0,
+      "y_m": 6.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g022",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s023",
+      "x_m": 30.0,
+      "y_m": 6.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g023",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s024",
+      "x_m": 40.0,
+      "y_m": 6.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g024",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s025",
+      "x_m": 50.0,
+      "y_m": 6.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g025",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s026",
+      "x_m": 60.0,
+      "y_m": 6.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g026",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s027",
+      "x_m": 70.0,
+      "y_m": 6.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g027",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s028",
+      "x_m": 80.0,
+      "y_m": 6.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g028",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s029",
+      "x_m": 90.0,
+      "y_m": 6.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g029",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s030",
+      "x_m": 100.0,
+      "y_m": 6.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g030",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s031",
+      "x_m": 10.0,
+      "y_m": 8.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g031",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s032",
+      "x_m": 20.0,
+      "y_m": 8.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g032",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s033",
+      "x_m": 30.0,
+      "y_m": 8.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g033",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s034",
+      "x_m": 40.0,
+      "y_m": 8.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g034",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s035",
+      "x_m": 50.0,
+      "y_m": 8.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g035",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s036",
+      "x_m": 60.0,
+      "y_m": 8.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g036",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s037",
+      "x_m": 70.0,
+      "y_m": 8.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g037",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s038",
+      "x_m": 80.0,
+      "y_m": 8.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g038",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s039",
+      "x_m": 90.0,
+      "y_m": 8.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g039",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s040",
+      "x_m": 100.0,
+      "y_m": 8.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g040",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s041",
+      "x_m": 10.0,
+      "y_m": 10.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g041",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s042",
+      "x_m": 20.0,
+      "y_m": 10.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g042",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s043",
+      "x_m": 30.0,
+      "y_m": 10.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g043",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s044",
+      "x_m": 40.0,
+      "y_m": 10.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g044",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s045",
+      "x_m": 50.0,
+      "y_m": 10.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g045",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s046",
+      "x_m": 60.0,
+      "y_m": 10.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g046",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s047",
+      "x_m": 70.0,
+      "y_m": 10.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g047",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s048",
+      "x_m": 80.0,
+      "y_m": 10.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g048",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s049",
+      "x_m": 90.0,
+      "y_m": 10.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g049",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s050",
+      "x_m": 100.0,
+      "y_m": 10.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g050",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s051",
+      "x_m": 10.0,
+      "y_m": 12.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g051",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s052",
+      "x_m": 20.0,
+      "y_m": 12.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g052",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s053",
+      "x_m": 30.0,
+      "y_m": 12.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g053",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s054",
+      "x_m": 40.0,
+      "y_m": 12.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g054",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s055",
+      "x_m": 50.0,
+      "y_m": 12.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g055",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s056",
+      "x_m": 60.0,
+      "y_m": 12.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g056",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s057",
+      "x_m": 70.0,
+      "y_m": 12.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g057",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s058",
+      "x_m": 80.0,
+      "y_m": 12.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g058",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s059",
+      "x_m": 90.0,
+      "y_m": 12.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g059",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s060",
+      "x_m": 100.0,
+      "y_m": 12.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g060",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s061",
+      "x_m": 10.0,
+      "y_m": 14.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g061",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s062",
+      "x_m": 20.0,
+      "y_m": 14.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g062",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s063",
+      "x_m": 30.0,
+      "y_m": 14.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g063",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s064",
+      "x_m": 40.0,
+      "y_m": 14.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g064",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s065",
+      "x_m": 50.0,
+      "y_m": 14.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g065",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s066",
+      "x_m": 60.0,
+      "y_m": 14.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g066",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s067",
+      "x_m": 70.0,
+      "y_m": 14.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g067",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s068",
+      "x_m": 80.0,
+      "y_m": 14.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g068",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s069",
+      "x_m": 90.0,
+      "y_m": 14.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g069",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s070",
+      "x_m": 100.0,
+      "y_m": 14.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g070",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s071",
+      "x_m": 10.0,
+      "y_m": 16.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g071",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s072",
+      "x_m": 20.0,
+      "y_m": 16.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g072",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s073",
+      "x_m": 30.0,
+      "y_m": 16.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g073",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s074",
+      "x_m": 40.0,
+      "y_m": 16.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g074",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s075",
+      "x_m": 50.0,
+      "y_m": 16.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g075",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s076",
+      "x_m": 60.0,
+      "y_m": 16.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g076",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s077",
+      "x_m": 70.0,
+      "y_m": 16.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g077",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s078",
+      "x_m": 80.0,
+      "y_m": 16.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g078",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s079",
+      "x_m": 90.0,
+      "y_m": 16.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g079",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s080",
+      "x_m": 100.0,
+      "y_m": 16.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g080",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s081",
+      "x_m": 10.0,
+      "y_m": 18.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g081",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s082",
+      "x_m": 20.0,
+      "y_m": 18.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g082",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s083",
+      "x_m": 30.0,
+      "y_m": 18.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g083",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s084",
+      "x_m": 40.0,
+      "y_m": 18.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g084",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s085",
+      "x_m": 50.0,
+      "y_m": 18.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g085",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s086",
+      "x_m": 60.0,
+      "y_m": 18.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g086",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s087",
+      "x_m": 70.0,
+      "y_m": 18.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g087",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s088",
+      "x_m": 80.0,
+      "y_m": 18.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g088",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s089",
+      "x_m": 90.0,
+      "y_m": 18.0,
+      "access_node_id": "access-08",
+      "stack_group_id": "ind-g089",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s090",
+      "x_m": 100.0,
+      "y_m": 18.0,
+      "access_node_id": "access-09",
+      "stack_group_id": "ind-g090",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s091",
+      "x_m": 10.0,
+      "y_m": 20.0,
+      "access_node_id": "access-00",
+      "stack_group_id": "ind-g091",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s092",
+      "x_m": 20.0,
+      "y_m": 20.0,
+      "access_node_id": "access-01",
+      "stack_group_id": "ind-g092",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s093",
+      "x_m": 30.0,
+      "y_m": 20.0,
+      "access_node_id": "access-02",
+      "stack_group_id": "ind-g093",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s094",
+      "x_m": 40.0,
+      "y_m": 20.0,
+      "access_node_id": "access-03",
+      "stack_group_id": "ind-g094",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s095",
+      "x_m": 50.0,
+      "y_m": 20.0,
+      "access_node_id": "access-04",
+      "stack_group_id": "ind-g095",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s096",
+      "x_m": 60.0,
+      "y_m": 20.0,
+      "access_node_id": "access-05",
+      "stack_group_id": "ind-g096",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s097",
+      "x_m": 70.0,
+      "y_m": 20.0,
+      "access_node_id": "access-06",
+      "stack_group_id": "ind-g097",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s098",
+      "x_m": 80.0,
+      "y_m": 20.0,
+      "access_node_id": "access-07",
+      "stack_group_id": "ind-g098",
+      "depth": 1,
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    }
+  ],
+  "buffer_slots": [
+    {
+      "position_id": "ind-s099",
+      "x_m": 90.0,
+      "y_m": 20.0,
+      "access_node_id": "access-08",
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    },
+    {
+      "position_id": "ind-s100",
+      "x_m": 100.0,
+      "y_m": 20.0,
+      "access_node_id": "access-09",
+      "channel_zone_ids": [
+        "zone-main"
+      ]
+    }
+  ],
+  "channel_zones": [
+    {
+      "channel_zone_id": "zone-main",
+      "capacity": 1
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "site_code": "d5-synthetic-anonymous-tiny",
+  "coordinate_reference": {
+    "kind": "local_meters",
+    "origin_note": "SYNTHETIC local origin; not surveyed coordinates"
+  },
+  "network_nodes": [
+    {"road_node_id": "entry-a", "x_m": 0.0, "y_m": 0.0, "node_kind": "entrance"},
+    {"road_node_id": "access-a", "x_m": 10.0, "y_m": 0.0, "node_kind": "position_access"},
+    {"road_node_id": "exit-a", "x_m": 20.0, "y_m": 0.0, "node_kind": "exit"}
+  ],
+  "network_edges": [
+    {
+      "road_edge_id": "edge-entry-access",
+      "from_node_id": "entry-a",
+      "to_node_id": "access-a",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": true,
+      "channel_zone_ids": ["zone-a"]
+    },
+    {
+      "road_edge_id": "edge-access-exit",
+      "from_node_id": "access-a",
+      "to_node_id": "exit-a",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "directed": true,
+      "channel_zone_ids": ["zone-a"]
+    }
+  ],
+  "route_costs": [
+    {
+      "path_cost_id": "path-entry-access",
+      "from_node_id": "entry-a",
+      "to_node_id": "access-a",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": ["edge-entry-access"],
+      "channel_zone_ids": ["zone-a"]
+    },
+    {
+      "path_cost_id": "path-access-exit",
+      "from_node_id": "access-a",
+      "to_node_id": "exit-a",
+      "distance_m": 10.0,
+      "travel_time_s": 10,
+      "road_edge_ids": ["edge-access-exit"],
+      "channel_zone_ids": ["zone-a"]
+    }
+  ],
+  "parking_spaces": [
+    {
+      "position_id": "stack-a-d1",
+      "x_m": 10.0,
+      "y_m": 1.0,
+      "access_node_id": "access-a",
+      "stack_group_id": "stack-a",
+      "depth": 1,
+      "channel_zone_ids": ["zone-a"]
+    },
+    {
+      "position_id": "stack-a-d2",
+      "x_m": 10.0,
+      "y_m": 2.0,
+      "access_node_id": "access-a",
+      "stack_group_id": "stack-a",
+      "depth": 2,
+      "channel_zone_ids": ["zone-a"]
+    }
+  ],
+  "temporary_buffers": [
+    {
+      "position_id": "buffer-a",
+      "x_m": 12.0,
+      "y_m": -1.0,
+      "access_node_id": "access-a",
+      "channel_zone_ids": ["zone-a"]
+    }
+  ],
+  "aisle_zones": [
+    {"channel_zone_id": "zone-a", "capacity": 1}
+  ]
+}

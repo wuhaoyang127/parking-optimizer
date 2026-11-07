@@ -1,0 +1,186 @@
+{
+  "$defs": {
+    "ArrivalObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "occurred_at": {
+          "format": "date-time",
+          "title": "Occurred At",
+          "type": "string"
+        },
+        "expected_duration_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 604800,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Duration S"
+        },
+        "estimate_source": {
+          "default": "unknown",
+          "enum": [
+            "user_estimate",
+            "prediction",
+            "unknown"
+          ],
+          "title": "Estimate Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "occurred_at"
+      ],
+      "title": "ArrivalObservation",
+      "type": "object"
+    },
+    "OccupantEstimate": {
+      "additionalProperties": false,
+      "properties": {
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "arrival_at": {
+          "format": "date-time",
+          "title": "Arrival At",
+          "type": "string"
+        },
+        "expected_departure_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Departure At"
+        },
+        "known_at": {
+          "format": "date-time",
+          "title": "Known At",
+          "type": "string"
+        },
+        "source": {
+          "default": "unknown",
+          "enum": [
+            "user_estimate",
+            "prediction",
+            "unknown"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "entrance_node_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entrance Node Id"
+        }
+      },
+      "required": [
+        "space_id",
+        "arrival_at",
+        "known_at"
+      ],
+      "title": "OccupantEstimate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "const": "visible-observations-1.0.0",
+      "default": "visible-observations-1.0.0",
+      "title": "Contract",
+      "type": "string"
+    },
+    "session_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Session Id",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_hash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Layout Hash",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "source": {
+      "enum": [
+        "synthetic",
+        "observed"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "arrivals": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ArrivalObservation"
+      },
+      "maxItems": 256,
+      "title": "Arrivals",
+      "type": "array"
+    },
+    "occupants": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/OccupantEstimate"
+      },
+      "maxItems": 512,
+      "title": "Occupants",
+      "type": "array"
+    }
+  },
+  "required": [
+    "session_id",
+    "parking_lot_id",
+    "layout_hash",
+    "observed_at",
+    "source"
+  ],
+  "title": "VisibleObservations",
+  "type": "object"
+}

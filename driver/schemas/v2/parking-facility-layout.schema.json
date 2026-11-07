@@ -1,0 +1,959 @@
+{
+  "$defs": {
+    "ChannelZone": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_zone_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Channel Zone Id",
+          "type": "string"
+        },
+        "capacity": {
+          "minimum": 1,
+          "title": "Capacity",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "channel_zone_id",
+        "capacity"
+      ],
+      "title": "ChannelZone",
+      "type": "object"
+    },
+    "Coordinate": {
+      "additionalProperties": false,
+      "properties": {
+        "x_m": {
+          "title": "X M",
+          "type": "number"
+        },
+        "y_m": {
+          "title": "Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "FacilityBounds": {
+      "additionalProperties": false,
+      "properties": {
+        "min_x_m": {
+          "title": "Min X M",
+          "type": "number"
+        },
+        "min_y_m": {
+          "title": "Min Y M",
+          "type": "number"
+        },
+        "max_x_m": {
+          "title": "Max X M",
+          "type": "number"
+        },
+        "max_y_m": {
+          "title": "Max Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "min_x_m",
+        "min_y_m",
+        "max_x_m",
+        "max_y_m"
+      ],
+      "title": "FacilityBounds",
+      "type": "object"
+    },
+    "FacilityBuffer": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "buffer_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Buffer Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "geometry": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityRectangle"
+        },
+        "access_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Access Node Id",
+          "type": "string"
+        },
+        "purpose": {
+          "const": "tandem_recovery",
+          "default": "tandem_recovery",
+          "title": "Purpose",
+          "type": "string"
+        },
+        "stack_group_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Stack Group Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "buffer_id",
+        "floor_id",
+        "zone_id",
+        "geometry",
+        "access_node_id",
+        "stack_group_ids"
+      ],
+      "title": "FacilityBuffer",
+      "type": "object"
+    },
+    "FacilityEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "from_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Node Id",
+          "type": "string"
+        },
+        "to_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Node Id",
+          "type": "string"
+        },
+        "centerline": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/Coordinate"
+          },
+          "minItems": 2,
+          "title": "Centerline",
+          "type": "array"
+        },
+        "width_m": {
+          "exclusiveMinimum": 0,
+          "title": "Width M",
+          "type": "number"
+        },
+        "distance_m": {
+          "exclusiveMinimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "base_travel_time_s": {
+          "exclusiveMinimum": 0,
+          "title": "Base Travel Time S",
+          "type": "number"
+        },
+        "directed": {
+          "default": false,
+          "title": "Directed",
+          "type": "boolean"
+        },
+        "traversal_kind": {
+          "default": "drive",
+          "enum": [
+            "drive",
+            "ramp",
+            "lift"
+          ],
+          "title": "Traversal Kind",
+          "type": "string"
+        },
+        "channel_zone_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Channel Zone Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "edge_id",
+        "from_node_id",
+        "to_node_id",
+        "centerline",
+        "width_m",
+        "distance_m",
+        "base_travel_time_s"
+      ],
+      "title": "FacilityEdge",
+      "type": "object"
+    },
+    "FacilityEntrance": {
+      "additionalProperties": false,
+      "properties": {
+        "entrance_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Entrance Id",
+          "type": "string"
+        },
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "initial_heading_deg": {
+          "exclusiveMaximum": 360,
+          "minimum": 0,
+          "title": "Initial Heading Deg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "entrance_id",
+        "node_id",
+        "label",
+        "initial_heading_deg"
+      ],
+      "title": "FacilityEntrance",
+      "type": "object"
+    },
+    "FacilityExit": {
+      "additionalProperties": false,
+      "properties": {
+        "exit_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Exit Id",
+          "type": "string"
+        },
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "exit_id",
+        "node_id",
+        "label"
+      ],
+      "title": "FacilityExit",
+      "type": "object"
+    },
+    "FacilityFloor": {
+      "additionalProperties": false,
+      "properties": {
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "elevation_m": {
+          "title": "Elevation M",
+          "type": "number"
+        },
+        "bounds": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityBounds"
+        }
+      },
+      "required": [
+        "floor_id",
+        "label",
+        "elevation_m",
+        "bounds"
+      ],
+      "title": "FacilityFloor",
+      "type": "object"
+    },
+    "FacilityImageRegistration": {
+      "additionalProperties": false,
+      "properties": {
+        "pixel_width": {
+          "minimum": 1,
+          "title": "Pixel Width",
+          "type": "integer"
+        },
+        "pixel_height": {
+          "minimum": 1,
+          "title": "Pixel Height",
+          "type": "integer"
+        },
+        "meters_to_pixels_affine": {
+          "maxItems": 6,
+          "minItems": 6,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Meters To Pixels Affine",
+          "type": "array"
+        }
+      },
+      "required": [
+        "pixel_width",
+        "pixel_height",
+        "meters_to_pixels_affine"
+      ],
+      "title": "FacilityImageRegistration",
+      "type": "object"
+    },
+    "FacilityInterFloorConnection": {
+      "additionalProperties": false,
+      "properties": {
+        "connection_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Connection Id",
+          "type": "string"
+        },
+        "from_floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Floor Id",
+          "type": "string"
+        },
+        "to_floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Floor Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "ramp",
+            "lift"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "edge_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Edge Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "connection_id",
+        "from_floor_id",
+        "to_floor_id",
+        "kind",
+        "edge_ids"
+      ],
+      "title": "FacilityInterFloorConnection",
+      "type": "object"
+    },
+    "FacilityNode": {
+      "additionalProperties": false,
+      "properties": {
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/Coordinate"
+        },
+        "kind": {
+          "enum": [
+            "entrance",
+            "exit",
+            "junction",
+            "space_access",
+            "buffer_access",
+            "inter_floor"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "floor_id",
+        "coordinate",
+        "kind",
+        "label"
+      ],
+      "title": "FacilityNode",
+      "type": "object"
+    },
+    "FacilityProvenance": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilitySourceKind"
+        },
+        "source_name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_revision": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Source Revision",
+          "type": "string"
+        },
+        "published_at": {
+          "format": "date-time",
+          "title": "Published At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_kind",
+        "source_name",
+        "source_revision",
+        "published_at"
+      ],
+      "title": "FacilityProvenance",
+      "type": "object"
+    },
+    "FacilityRectangle": {
+      "additionalProperties": false,
+      "properties": {
+        "center": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/Coordinate"
+        },
+        "width_m": {
+          "exclusiveMinimum": 0,
+          "title": "Width M",
+          "type": "number"
+        },
+        "length_m": {
+          "exclusiveMinimum": 0,
+          "title": "Length M",
+          "type": "number"
+        },
+        "heading_deg": {
+          "exclusiveMaximum": 360,
+          "minimum": 0,
+          "title": "Heading Deg",
+          "type": "number"
+        }
+      },
+      "required": [
+        "center",
+        "width_m",
+        "length_m",
+        "heading_deg"
+      ],
+      "title": "FacilityRectangle",
+      "type": "object"
+    },
+    "FacilityRestrictedArea": {
+      "additionalProperties": false,
+      "properties": {
+        "area_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Area Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "polygon": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/Coordinate"
+          },
+          "minItems": 3,
+          "title": "Polygon",
+          "type": "array"
+        }
+      },
+      "required": [
+        "area_id",
+        "floor_id",
+        "label",
+        "polygon"
+      ],
+      "title": "FacilityRestrictedArea",
+      "type": "object"
+    },
+    "FacilitySourceKind": {
+      "enum": [
+        "synthetic",
+        "imported",
+        "real"
+      ],
+      "title": "FacilitySourceKind",
+      "type": "string"
+    },
+    "FacilitySpace": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "geometry": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityRectangle"
+        },
+        "access_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Access Node Id",
+          "type": "string"
+        },
+        "charging": {
+          "default": false,
+          "title": "Charging",
+          "type": "boolean"
+        },
+        "stack_group_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stack Group Id"
+        },
+        "depth": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Depth",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "space_id",
+        "floor_id",
+        "zone_id",
+        "geometry",
+        "access_node_id"
+      ],
+      "title": "FacilitySpace",
+      "type": "object"
+    },
+    "FacilityTandemGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "stack_group_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Stack Group Id",
+          "type": "string"
+        },
+        "space_ids_near_to_deep": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Space Ids Near To Deep",
+          "type": "array"
+        },
+        "buffer_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Buffer Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stack_group_id",
+        "space_ids_near_to_deep",
+        "buffer_ids"
+      ],
+      "title": "FacilityTandemGroup",
+      "type": "object"
+    },
+    "FacilityZone": {
+      "additionalProperties": false,
+      "properties": {
+        "zone_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "parking",
+            "charging",
+            "tandem",
+            "buffer",
+            "restricted",
+            "service",
+            "pedestrian"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "polygon": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/Coordinate"
+          },
+          "minItems": 3,
+          "title": "Polygon",
+          "type": "array"
+        }
+      },
+      "required": [
+        "zone_id",
+        "floor_id",
+        "label",
+        "kind",
+        "polygon"
+      ],
+      "title": "FacilityZone",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "provenance": {
+      "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityProvenance"
+    },
+    "coordinate_system": {
+      "const": "local_meters",
+      "default": "local_meters",
+      "title": "Coordinate System",
+      "type": "string"
+    },
+    "coordinate_origin_note": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Coordinate Origin Note",
+      "type": "string"
+    },
+    "bounds": {
+      "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityBounds"
+    },
+    "default_floor_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Default Floor Id",
+      "type": "string"
+    },
+    "floors": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityFloor"
+      },
+      "minItems": 1,
+      "title": "Floors",
+      "type": "array"
+    },
+    "inter_floor_connections": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityInterFloorConnection"
+      },
+      "title": "Inter Floor Connections",
+      "type": "array"
+    },
+    "zones": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityZone"
+      },
+      "title": "Zones",
+      "type": "array"
+    },
+    "restricted_areas": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityRestrictedArea"
+      },
+      "title": "Restricted Areas",
+      "type": "array"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityNode"
+      },
+      "minItems": 2,
+      "title": "Nodes",
+      "type": "array"
+    },
+    "edges": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityEdge"
+      },
+      "minItems": 1,
+      "title": "Edges",
+      "type": "array"
+    },
+    "channel_zones": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/ChannelZone"
+      },
+      "title": "Channel Zones",
+      "type": "array"
+    },
+    "entrances": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityEntrance"
+      },
+      "minItems": 1,
+      "title": "Entrances",
+      "type": "array"
+    },
+    "exits": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityExit"
+      },
+      "minItems": 1,
+      "title": "Exits",
+      "type": "array"
+    },
+    "default_entrance_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Default Entrance Id",
+      "type": "string"
+    },
+    "spaces": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilitySpace"
+      },
+      "minItems": 1,
+      "title": "Spaces",
+      "type": "array"
+    },
+    "tandem_groups": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityTandemGroup"
+      },
+      "title": "Tandem Groups",
+      "type": "array"
+    },
+    "buffers": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityBuffer"
+      },
+      "title": "Buffers",
+      "type": "array"
+    },
+    "image_registration": {
+      "anyOf": [
+        {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json#/$defs/FacilityImageRegistration"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "layout_version",
+    "provenance",
+    "coordinate_origin_note",
+    "bounds",
+    "default_floor_id",
+    "floors",
+    "zones",
+    "nodes",
+    "edges",
+    "channel_zones",
+    "entrances",
+    "exits",
+    "default_entrance_id",
+    "spaces"
+  ],
+  "title": "ParkingFacilityLayout",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/parking-facility-layout.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

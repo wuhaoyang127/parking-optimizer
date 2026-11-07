@@ -1,0 +1,186 @@
+{
+  "protocol_version": "1.0.0",
+  "status": "approved_g3",
+  "data_source": "synthetic",
+  "time": {
+    "arrival_window_s": 28800,
+    "max_drain_s": 14400,
+    "decision_target_s": 1.0,
+    "decision_deadline_s": 3.0,
+    "fallback_target_s": 0.1,
+    "oracle_time_limit_s": 60.0,
+    "budget_sensitivity_s": [0.2, 1.0, 3.0, 10.0],
+    "ten_second_role": "offline_quality_upper_bound"
+  },
+  "seed_sets": {
+    "development": [1101, 1102, 1103, 1104, 1105],
+    "tuning": [2101, 2102, 2103, 2104, 2105, 2106, 2107, 2108, 2109, 2110],
+    "formal_core": [
+      3101,
+      3102,
+      3103,
+      3104,
+      3105,
+      3106,
+      3107,
+      3108,
+      3109,
+      3110,
+      3111,
+      3112,
+      3113,
+      3114,
+      3115,
+      3116,
+      3117,
+      3118,
+      3119,
+      3120
+    ],
+    "formal_extension": [3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109, 3110],
+    "statistics": 920260727
+  },
+  "synthetic_demand": {
+    "arrival_process": "homogeneous_poisson",
+    "offered_load_ratio": {
+      "low": 0.5,
+      "medium": 0.8,
+      "high": 1.1
+    },
+    "dwell_time_s": [1800, 3600, 7200, 14400],
+    "dwell_probability": [0.2, 0.35, 0.3, 0.15],
+    "expected_effective_dwell_in_arrival_window_s": 5040,
+    "entrance_selection": "uniform_over_valid_entrances",
+    "core_user_cancellation_probability": 0.0,
+    "cancellation_robustness_probability": 0.05
+  },
+  "algorithms": {
+    "online_rule_v1": {
+      "role": "required_online_baseline",
+      "visible_information": "observed_snapshot_only"
+    },
+    "rolling_candidate_v1": {
+      "role": "conditional_dynamic_candidate",
+      "visible_information": "same_snapshot_plus_legal_soft_information",
+      "feature_flag_default": false
+    },
+    "tiny_exhaustive_oracle_v1": {
+      "role": "tiny_truth",
+      "information": "offline_full_truth"
+    },
+    "small_cpsat_oracle_v1": {
+      "role": "conditional_small_oracle",
+      "information": "offline_full_truth"
+    }
+  },
+  "facility_modes": {
+    "primary": "fixed_total_positions",
+    "extension": "extra_buffer_space",
+    "buffer_selection": "predeclared_layout_order_before_tuning"
+  },
+  "core_matrix": {
+    "layout_class": ["mixed_depth"],
+    "load_level": ["low", "medium", "high"],
+    "buffer_count": [0, 1, 2],
+    "relocation_executor_capacity": [1],
+    "recoverability_policy": ["risk_accepting"],
+    "departure_information_source": ["unknown"],
+    "facility_comparison_mode": ["fixed_total_positions"]
+  },
+  "sensitivity_slices": {
+    "recoverability": {
+      "load_level": ["low", "medium", "high"],
+      "buffer_count": [1],
+      "relocation_executor_capacity": [1],
+      "recoverability_policy": ["strict_recoverable", "risk_accepting"]
+    },
+    "executor_capacity": {
+      "load_level": ["low", "medium", "high"],
+      "buffer_count": [1],
+      "relocation_executor_capacity": [1, 2],
+      "recoverability_policy": ["risk_accepting"]
+    },
+    "independent_reference": {
+      "layout_class": ["independent"],
+      "load_level": ["low", "medium", "high"],
+      "buffer_count": [0]
+    },
+    "extra_buffer_space": {
+      "layout_class": ["mixed_depth"],
+      "load_level": ["low", "medium", "high"],
+      "buffer_count": [1, 2],
+      "facility_comparison_mode": ["extra_buffer_space"]
+    },
+    "soft_information": {
+      "load_level": ["medium", "high"],
+      "buffer_count": [1],
+      "departure_information_source": [
+        "unknown",
+        "reservation",
+        "user_estimate",
+        "model_prediction"
+      ],
+      "error_s": [-3600, -1800, 0, 1800, 3600],
+      "error_probability": [0.1, 0.2, 0.4, 0.2, 0.1],
+      "error_applies_to": ["user_estimate", "model_prediction"]
+    },
+    "cancellation_robustness": {
+      "load_level": ["medium", "high"],
+      "buffer_count": [1],
+      "recoverability_policy": ["risk_accepting"],
+      "relocation_executor_capacity": [1],
+      "user_cancellation_probability": [0.0, 0.05]
+    }
+  },
+  "metrics": {
+    "feasibility_and_service_gate_metric_records": [
+      "demand_satisfaction_rate",
+      "sla_violation_count",
+      "manual_intervention_count",
+      "failed_action_count"
+    ],
+    "validation_counters": [
+      "state_invariant_violation_count",
+      "pending_request_count_at_horizon",
+      "hard_deadline_violation_count",
+      "unlogged_fallback_count"
+    ],
+    "co_primary": [
+      "normal_space_time_utilization",
+      "demand_satisfaction_rate",
+      "relocation_distance_m"
+    ],
+    "secondary": [
+      "facility_position_space_time_utilization",
+      "buffer_utilization",
+      "throughput_per_hour",
+      "relocation_count",
+      "arrival_wait_s",
+      "departure_wait_s",
+      "departure_delay_s",
+      "executor_utilization",
+      "channel_zone_utilization",
+      "fallback_count"
+    ],
+    "cancellation_primary_rule": "intention_to_serve_include_all_valid_arrivals",
+    "right_censoring": "retain_flag_and_lower_bound_at_T2"
+  },
+  "statistics": {
+    "paired_by": ["layout_family", "load_level", "seed", "event_truth_sha256"],
+    "bootstrap_resamples": 10000,
+    "confidence_level": 0.95,
+    "report": ["n", "mean", "standard_deviation", "median", "iqr", "paired_absolute_difference"],
+    "single_weighted_score": false
+  },
+  "rolling_research_gate": {
+    "state_invariant_violation_count": 0,
+    "hard_deadline_violation_count": 0,
+    "demand_satisfaction_ci_lower_bound_min": -0.01,
+    "minimum_practical_benefit_any": {
+      "normal_space_time_utilization_absolute": 0.005,
+      "relocation_distance_relative": -0.05,
+      "departure_delay_relative": -0.05
+    },
+    "must_not_use_stronger_information_or_budget": true
+  }
+}

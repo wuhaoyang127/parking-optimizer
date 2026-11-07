@@ -1,0 +1,20 @@
+{
+  "adapter_spec_version": "1.0.0",
+  "target_schema_version": "1.0.0",
+  "source_kind": "synthetic",
+  "privacy_classification": "anonymous",
+  "mode": "layout_and_events",
+  "timezone": "UTC",
+  "distance_unit": "m",
+  "time_unit": "s",
+  "layout_file": "layout-source.json",
+  "events_file": "events-source.jsonl",
+  "mapping_file": "field-mapping.json",
+  "calibration_parameters": {
+    "arrival_process": null,
+    "dwell_time_distribution": null,
+    "relocation_setup_s": null,
+    "relocation_speed_mps": null,
+    "sensor_error_rate": null
+  }
+}

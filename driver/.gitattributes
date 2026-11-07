@@ -1,0 +1,2 @@
+data/synthetic/fixtures/d4/** text eol=lf
+scripts/*.cmd text eol=crlf

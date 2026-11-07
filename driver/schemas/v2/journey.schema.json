@@ -1,0 +1,161 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "journey_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Journey Id",
+      "type": "string"
+    },
+    "attempt_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Attempt Id",
+      "type": "string"
+    },
+    "session_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Session Id",
+      "type": "string"
+    },
+    "namespace": {
+      "enum": [
+        "driver",
+        "defense"
+      ],
+      "title": "Namespace",
+      "type": "string"
+    },
+    "scenario_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "idle",
+        "waiting",
+        "soft_held",
+        "session_reserved",
+        "navigating",
+        "occupied",
+        "departed",
+        "cancelled",
+        "expired",
+        "failed"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "version": {
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    },
+    "space_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Space Id"
+    },
+    "recommendation_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommendation Id"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "expires_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Expires At"
+    },
+    "terminal_reason": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Terminal Reason"
+    },
+    "legal_operations": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Legal Operations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "journey_id",
+    "attempt_id",
+    "session_id",
+    "namespace",
+    "scenario_id",
+    "parking_lot_id",
+    "state",
+    "version",
+    "updated_at",
+    "legal_operations"
+  ],
+  "title": "Journey",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/journey.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

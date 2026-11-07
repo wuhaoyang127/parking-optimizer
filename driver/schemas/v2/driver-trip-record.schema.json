@@ -1,0 +1,108 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "journey_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Journey Id",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "space_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Space Id"
+    },
+    "state": {
+      "enum": [
+        "occupied",
+        "departed",
+        "cancelled",
+        "expired",
+        "failed"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Started At"
+    },
+    "parked_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parked At"
+    },
+    "ended_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ended At"
+    },
+    "terminal_reason": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Terminal Reason"
+    }
+  },
+  "required": [
+    "journey_id",
+    "parking_lot_id",
+    "state"
+  ],
+  "title": "DriverTripRecord",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-trip-record.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

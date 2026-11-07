@@ -1,0 +1,353 @@
+{
+  "schema_version": "2.0.0",
+  "scenario_id": "transport-hub-demo",
+  "seed": 20260812,
+  "parking_lot": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-transport-hub",
+    "name": "综合交通枢纽停车场",
+    "region_label": "交通枢纽",
+    "venue_type": "transport_hub",
+    "synthetic": true,
+    "opening_status": "open",
+    "total_spaces": 8,
+    "available_spaces": 5,
+    "charging_spaces": 1,
+    "pricing": {
+      "currency": "CNY",
+      "first_hour_yuan": 3.0,
+      "additional_hour_yuan": 2.0,
+      "daily_cap_yuan": 20.0,
+      "note": "模拟交通枢纽停车计费"
+    },
+    "updated_at": "2026-08-12T09:00:00Z",
+    "data_source": {
+      "schema_version": "2.0.0",
+      "parking_lot_id": "lot-transport-hub",
+      "mode": "synthetic",
+      "health": "healthy",
+      "source_name": "web-v2 deterministic fixture: transport-hub-demo",
+      "missing_fields": [],
+      "updated_at": "2026-08-12T09:00:00Z",
+      "fail_reason": null
+    }
+  },
+  "layout": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-transport-hub",
+    "layout_version": "layout-2026-08-12",
+    "coordinate_system": "local_meters",
+    "coordinate_origin_note": "deterministic synthetic coordinates; entrance origin; meters",
+    "entrance_node_ids": [
+      "entry"
+    ],
+    "exit_node_ids": [
+      "exit"
+    ],
+    "nodes": [
+      {
+        "node_id": "entry",
+        "coordinate": {
+          "x_m": 0.0,
+          "y_m": 0.0
+        },
+        "kind": "entrance",
+        "label": "入口"
+      },
+      {
+        "node_id": "junction-a",
+        "coordinate": {
+          "x_m": 20.0,
+          "y_m": 0.0
+        },
+        "kind": "junction",
+        "label": "A区路口"
+      },
+      {
+        "node_id": "access-a",
+        "coordinate": {
+          "x_m": 36.0,
+          "y_m": -8.0
+        },
+        "kind": "space_access",
+        "label": "A区车位"
+      },
+      {
+        "node_id": "access-b",
+        "coordinate": {
+          "x_m": 36.0,
+          "y_m": 8.0
+        },
+        "kind": "space_access",
+        "label": "B区纵深位"
+      },
+      {
+        "node_id": "buffer-access",
+        "coordinate": {
+          "x_m": 20.0,
+          "y_m": 14.0
+        },
+        "kind": "buffer_access",
+        "label": "临时移车区"
+      },
+      {
+        "node_id": "exit",
+        "coordinate": {
+          "x_m": 0.0,
+          "y_m": 18.0
+        },
+        "kind": "exit",
+        "label": "出口"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-entry-junction",
+        "from_node_id": "entry",
+        "to_node_id": "junction-a",
+        "distance_m": 20.0,
+        "base_travel_time_s": 16.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-main"
+        ]
+      },
+      {
+        "edge_id": "edge-junction-a",
+        "from_node_id": "junction-a",
+        "to_node_id": "access-a",
+        "distance_m": 18.0,
+        "base_travel_time_s": 15.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-a"
+        ]
+      },
+      {
+        "edge_id": "edge-junction-b",
+        "from_node_id": "junction-a",
+        "to_node_id": "access-b",
+        "distance_m": 18.0,
+        "base_travel_time_s": 19.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-b"
+        ]
+      },
+      {
+        "edge_id": "edge-junction-buffer",
+        "from_node_id": "junction-a",
+        "to_node_id": "buffer-access",
+        "distance_m": 14.0,
+        "base_travel_time_s": 13.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-buffer"
+        ]
+      },
+      {
+        "edge_id": "edge-buffer-exit",
+        "from_node_id": "buffer-access",
+        "to_node_id": "exit",
+        "distance_m": 24.0,
+        "base_travel_time_s": 24.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-main"
+        ]
+      }
+    ],
+    "channel_zones": [
+      {
+        "channel_zone_id": "channel-main",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-a",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-b",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-buffer",
+        "capacity": 1
+      }
+    ],
+    "spaces": [
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "A-01",
+        "coordinate": {
+          "x_m": 37.0,
+          "y_m": -11.0
+        },
+        "access_node_id": "access-a",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "independent-A-01",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "A-02",
+        "coordinate": {
+          "x_m": 41.0,
+          "y_m": -11.0
+        },
+        "access_node_id": "access-a",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "independent-A-02",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "A-03",
+        "coordinate": {
+          "x_m": 45.0,
+          "y_m": -11.0
+        },
+        "access_node_id": "access-a",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "independent-A-03",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "B-01",
+        "coordinate": {
+          "x_m": 37.0,
+          "y_m": 11.0
+        },
+        "access_node_id": "access-b",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "stack-B1",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "B-02",
+        "coordinate": {
+          "x_m": 37.0,
+          "y_m": 15.0
+        },
+        "access_node_id": "access-b",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "stack-B1",
+        "depth": 2,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "B-03",
+        "coordinate": {
+          "x_m": 45.0,
+          "y_m": 11.0
+        },
+        "access_node_id": "access-b",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "stack-B2",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "B-04",
+        "coordinate": {
+          "x_m": 45.0,
+          "y_m": 15.0
+        },
+        "access_node_id": "access-b",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "stack-B2",
+        "depth": 2,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "space_id": "C-01",
+        "coordinate": {
+          "x_m": 25.0,
+          "y_m": -11.0
+        },
+        "access_node_id": "junction-a",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "independent-C-01",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      }
+    ],
+    "tandem_groups": [
+      {
+        "stack_group_id": "stack-B1",
+        "space_ids_near_to_deep": [
+          "B-01",
+          "B-02"
+        ]
+      },
+      {
+        "stack_group_id": "stack-B2",
+        "space_ids_near_to_deep": [
+          "B-03",
+          "B-04"
+        ]
+      }
+    ],
+    "buffers": [
+      {
+        "parking_lot_id": "lot-transport-hub",
+        "buffer_id": "BUF-01",
+        "coordinate": {
+          "x_m": 23.0,
+          "y_m": 16.0
+        },
+        "access_node_id": "buffer-access",
+        "available": true,
+        "channel_zone_ids": [
+          "channel-buffer"
+        ]
+      }
+    ]
+  },
+  "cost_snapshot": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-transport-hub",
+    "layout_version": "layout-2026-08-12",
+    "cost_version": "cost-2026-08-12T090000Z",
+    "observed_at": "2026-08-12T09:00:00Z",
+    "edge_travel_time_s": {
+      "edge-entry-junction": 16.0,
+      "edge-junction-a": 15.0,
+      "edge-junction-b": 19.0,
+      "edge-junction-buffer": 13.0,
+      "edge-buffer-exit": 24.0
+    },
+    "unavailable_edge_ids": []
+  }
+}

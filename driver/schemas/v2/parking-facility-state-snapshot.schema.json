@@ -1,0 +1,330 @@
+{
+  "$defs": {
+    "DriverDemoProfile": {
+      "additionalProperties": false,
+      "description": "Human-readable identity for one deterministic synthetic driver state.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 1,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "label",
+        "description",
+        "ordinal",
+        "total"
+      ],
+      "title": "DriverDemoProfile",
+      "type": "object"
+    },
+    "FacilityBufferState": {
+      "additionalProperties": false,
+      "properties": {
+        "buffer_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Buffer Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/SpaceStatus"
+        },
+        "observation_source": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilityObservationSource"
+        },
+        "reason_codes": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "buffer_id",
+        "status",
+        "observation_source"
+      ],
+      "title": "FacilityBufferState",
+      "type": "object"
+    },
+    "FacilityClaimStatus": {
+      "enum": [
+        "none",
+        "soft_held",
+        "session_reserved",
+        "navigating"
+      ],
+      "title": "FacilityClaimStatus",
+      "type": "string"
+    },
+    "FacilityObservationSource": {
+      "enum": [
+        "synthetic_truth",
+        "observation",
+        "user_override"
+      ],
+      "title": "FacilityObservationSource",
+      "type": "string"
+    },
+    "FacilitySourceKind": {
+      "enum": [
+        "synthetic",
+        "imported",
+        "real"
+      ],
+      "title": "FacilitySourceKind",
+      "type": "string"
+    },
+    "FacilitySourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilitySourceKind"
+        },
+        "health": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/HealthStatus"
+        },
+        "source_name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "missing_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Fields",
+          "type": "array"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "fail_reason": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fail Reason"
+        }
+      },
+      "required": [
+        "source_kind",
+        "health",
+        "source_name",
+        "updated_at"
+      ],
+      "title": "FacilitySourceStatus",
+      "type": "object"
+    },
+    "FacilitySpaceState": {
+      "additionalProperties": false,
+      "properties": {
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "observed_status": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/SpaceStatus"
+        },
+        "observation_source": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilityObservationSource"
+        },
+        "claim_status": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilityClaimStatus",
+          "default": "none"
+        },
+        "effective_status": {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/SpaceStatus"
+        },
+        "assignable": {
+          "title": "Assignable",
+          "type": "boolean"
+        },
+        "reason_codes": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "space_id",
+        "observed_status",
+        "observation_source",
+        "effective_status",
+        "assignable"
+      ],
+      "title": "FacilitySpaceState",
+      "type": "object"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    },
+    "SpaceStatus": {
+      "enum": [
+        "available",
+        "occupied",
+        "unavailable",
+        "unknown"
+      ],
+      "title": "SpaceStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "scenario_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "scenario_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "state_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "State Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilitySourceStatus"
+    },
+    "demo_profile": {
+      "anyOf": [
+        {
+          "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/DriverDemoProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "spaces": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilitySpaceState"
+      },
+      "minItems": 1,
+      "title": "Spaces",
+      "type": "array"
+    },
+    "buffers": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json#/$defs/FacilityBufferState"
+      },
+      "title": "Buffers",
+      "type": "array"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "layout_version",
+    "scenario_id",
+    "scenario_version",
+    "state_version",
+    "observed_at",
+    "source",
+    "spaces"
+  ],
+  "title": "ParkingFacilityStateSnapshot",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/parking-facility-state-snapshot.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

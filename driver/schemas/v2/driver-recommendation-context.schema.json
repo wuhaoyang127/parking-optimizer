@@ -1,0 +1,378 @@
+{
+  "$defs": {
+    "Coordinate": {
+      "additionalProperties": false,
+      "properties": {
+        "x_m": {
+          "title": "X M",
+          "type": "number"
+        },
+        "y_m": {
+          "title": "Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "DataMode": {
+      "enum": [
+        "synthetic",
+        "real"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "DataSourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/DataMode"
+        },
+        "health": {
+          "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/HealthStatus"
+        },
+        "source_name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "missing_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Fields",
+          "type": "array"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "fail_reason": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fail Reason"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "mode",
+        "health",
+        "source_name",
+        "updated_at"
+      ],
+      "title": "DataSourceStatus",
+      "type": "object"
+    },
+    "DriverDemoProfile": {
+      "additionalProperties": false,
+      "description": "Human-readable identity for one deterministic synthetic driver state.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 1,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "label",
+        "description",
+        "ordinal",
+        "total"
+      ],
+      "title": "DriverDemoProfile",
+      "type": "object"
+    },
+    "DriverEntrance": {
+      "additionalProperties": false,
+      "properties": {
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "label"
+      ],
+      "title": "DriverEntrance",
+      "type": "object"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    },
+    "ParkingSpace": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/Coordinate"
+        },
+        "access_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Access Node Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/SpaceStatus"
+        },
+        "charging": {
+          "default": false,
+          "title": "Charging",
+          "type": "boolean"
+        },
+        "stack_group_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Stack Group Id",
+          "type": "string"
+        },
+        "depth": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Depth",
+          "type": "integer"
+        },
+        "assignable": {
+          "title": "Assignable",
+          "type": "boolean"
+        },
+        "assignability_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assignability Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "space_id",
+        "coordinate",
+        "access_node_id",
+        "status",
+        "stack_group_id",
+        "assignable"
+      ],
+      "title": "ParkingSpace",
+      "type": "object"
+    },
+    "SpaceStatus": {
+      "enum": [
+        "available",
+        "occupied",
+        "unavailable",
+        "unknown"
+      ],
+      "title": "SpaceStatus",
+      "type": "string"
+    },
+    "TandemGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "stack_group_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Stack Group Id",
+          "type": "string"
+        },
+        "space_ids_near_to_deep": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Space Ids Near To Deep",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stack_group_id",
+        "space_ids_near_to_deep"
+      ],
+      "title": "TandemGroup",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Server-derived inputs needed to start a driver recommendation.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "scenario_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "entrances": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/DriverEntrance"
+      },
+      "minItems": 1,
+      "title": "Entrances",
+      "type": "array"
+    },
+    "spaces": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/ParkingSpace"
+      },
+      "minItems": 1,
+      "title": "Spaces",
+      "type": "array"
+    },
+    "tandem_groups": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/TandemGroup"
+      },
+      "title": "Tandem Groups",
+      "type": "array"
+    },
+    "data_source": {
+      "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/DataSourceStatus"
+    },
+    "demo_profile": {
+      "anyOf": [
+        {
+          "$ref": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json#/$defs/DriverDemoProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "observed_at",
+    "scenario_id",
+    "parking_lot_id",
+    "layout_version",
+    "entrances",
+    "spaces",
+    "data_source"
+  ],
+  "title": "DriverRecommendationContext",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-recommendation-context.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

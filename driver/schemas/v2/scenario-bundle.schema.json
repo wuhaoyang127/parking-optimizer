@@ -1,0 +1,767 @@
+{
+  "$defs": {
+    "BufferSpace": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "buffer_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Buffer Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/Coordinate"
+        },
+        "access_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Access Node Id",
+          "type": "string"
+        },
+        "available": {
+          "title": "Available",
+          "type": "boolean"
+        },
+        "channel_zone_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Channel Zone Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "buffer_id",
+        "coordinate",
+        "access_node_id",
+        "available"
+      ],
+      "title": "BufferSpace",
+      "type": "object"
+    },
+    "ChannelZone": {
+      "additionalProperties": false,
+      "properties": {
+        "channel_zone_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Channel Zone Id",
+          "type": "string"
+        },
+        "capacity": {
+          "minimum": 1,
+          "title": "Capacity",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "channel_zone_id",
+        "capacity"
+      ],
+      "title": "ChannelZone",
+      "type": "object"
+    },
+    "Coordinate": {
+      "additionalProperties": false,
+      "properties": {
+        "x_m": {
+          "title": "X M",
+          "type": "number"
+        },
+        "y_m": {
+          "title": "Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "CostSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "cost_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Cost Version",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "edge_travel_time_s": {
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9._:-]*$": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": "Edge Travel Time S",
+          "type": "object"
+        },
+        "unavailable_edge_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Unavailable Edge Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "cost_version",
+        "observed_at",
+        "edge_travel_time_s"
+      ],
+      "title": "CostSnapshot",
+      "type": "object"
+    },
+    "DataMode": {
+      "enum": [
+        "synthetic",
+        "real"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "DataSourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/DataMode"
+        },
+        "health": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/HealthStatus"
+        },
+        "source_name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "missing_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Fields",
+          "type": "array"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "fail_reason": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fail Reason"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "mode",
+        "health",
+        "source_name",
+        "updated_at"
+      ],
+      "title": "DataSourceStatus",
+      "type": "object"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    },
+    "Layout": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "coordinate_system": {
+          "const": "local_meters",
+          "default": "local_meters",
+          "title": "Coordinate System",
+          "type": "string"
+        },
+        "coordinate_origin_note": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Coordinate Origin Note",
+          "type": "string"
+        },
+        "entrance_node_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Entrance Node Ids",
+          "type": "array"
+        },
+        "exit_node_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Exit Node Ids",
+          "type": "array"
+        },
+        "nodes": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/RoadNode"
+          },
+          "minItems": 2,
+          "title": "Nodes",
+          "type": "array"
+        },
+        "edges": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/RoadEdge"
+          },
+          "minItems": 1,
+          "title": "Edges",
+          "type": "array"
+        },
+        "channel_zones": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/ChannelZone"
+          },
+          "title": "Channel Zones",
+          "type": "array"
+        },
+        "spaces": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/ParkingSpace"
+          },
+          "minItems": 1,
+          "title": "Spaces",
+          "type": "array"
+        },
+        "tandem_groups": {
+          "default": [],
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/TandemGroup"
+          },
+          "title": "Tandem Groups",
+          "type": "array"
+        },
+        "buffers": {
+          "default": [],
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/BufferSpace"
+          },
+          "title": "Buffers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "coordinate_origin_note",
+        "entrance_node_ids",
+        "exit_node_ids",
+        "nodes",
+        "edges",
+        "channel_zones",
+        "spaces"
+      ],
+      "title": "Layout",
+      "type": "object"
+    },
+    "ParkingLot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "region_label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Region Label",
+          "type": "string"
+        },
+        "venue_type": {
+          "enum": [
+            "school",
+            "hospital",
+            "commercial",
+            "transport_hub"
+          ],
+          "title": "Venue Type",
+          "type": "string"
+        },
+        "synthetic": {
+          "title": "Synthetic",
+          "type": "boolean"
+        },
+        "opening_status": {
+          "enum": [
+            "open",
+            "closed",
+            "unknown"
+          ],
+          "title": "Opening Status",
+          "type": "string"
+        },
+        "total_spaces": {
+          "minimum": 1,
+          "title": "Total Spaces",
+          "type": "integer"
+        },
+        "available_spaces": {
+          "minimum": 0,
+          "title": "Available Spaces",
+          "type": "integer"
+        },
+        "charging_spaces": {
+          "minimum": 0,
+          "title": "Charging Spaces",
+          "type": "integer"
+        },
+        "pricing": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/PricingSummary"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "data_source": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/DataSourceStatus"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "name",
+        "region_label",
+        "venue_type",
+        "synthetic",
+        "opening_status",
+        "total_spaces",
+        "available_spaces",
+        "charging_spaces",
+        "pricing",
+        "updated_at",
+        "data_source"
+      ],
+      "title": "ParkingLot",
+      "type": "object"
+    },
+    "ParkingSpace": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/Coordinate"
+        },
+        "access_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Access Node Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/SpaceStatus"
+        },
+        "charging": {
+          "default": false,
+          "title": "Charging",
+          "type": "boolean"
+        },
+        "stack_group_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Stack Group Id",
+          "type": "string"
+        },
+        "depth": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Depth",
+          "type": "integer"
+        },
+        "assignable": {
+          "title": "Assignable",
+          "type": "boolean"
+        },
+        "assignability_reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Assignability Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "space_id",
+        "coordinate",
+        "access_node_id",
+        "status",
+        "stack_group_id",
+        "assignable"
+      ],
+      "title": "ParkingSpace",
+      "type": "object"
+    },
+    "PricingSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "currency": {
+          "const": "CNY",
+          "default": "CNY",
+          "title": "Currency",
+          "type": "string"
+        },
+        "first_hour_yuan": {
+          "minimum": 0,
+          "title": "First Hour Yuan",
+          "type": "number"
+        },
+        "additional_hour_yuan": {
+          "minimum": 0,
+          "title": "Additional Hour Yuan",
+          "type": "number"
+        },
+        "daily_cap_yuan": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Daily Cap Yuan"
+        },
+        "note": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "first_hour_yuan",
+        "additional_hour_yuan",
+        "note"
+      ],
+      "title": "PricingSummary",
+      "type": "object"
+    },
+    "RoadEdge": {
+      "additionalProperties": false,
+      "properties": {
+        "edge_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "from_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Node Id",
+          "type": "string"
+        },
+        "to_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Node Id",
+          "type": "string"
+        },
+        "distance_m": {
+          "exclusiveMinimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "base_travel_time_s": {
+          "exclusiveMinimum": 0,
+          "title": "Base Travel Time S",
+          "type": "number"
+        },
+        "directed": {
+          "default": false,
+          "title": "Directed",
+          "type": "boolean"
+        },
+        "channel_zone_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Channel Zone Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "edge_id",
+        "from_node_id",
+        "to_node_id",
+        "distance_m",
+        "base_travel_time_s"
+      ],
+      "title": "RoadEdge",
+      "type": "object"
+    },
+    "RoadNode": {
+      "additionalProperties": false,
+      "properties": {
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/Coordinate"
+        },
+        "kind": {
+          "enum": [
+            "entrance",
+            "exit",
+            "junction",
+            "space_access",
+            "buffer_access"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "node_id",
+        "coordinate",
+        "kind",
+        "label"
+      ],
+      "title": "RoadNode",
+      "type": "object"
+    },
+    "SpaceStatus": {
+      "enum": [
+        "available",
+        "occupied",
+        "unavailable",
+        "unknown"
+      ],
+      "title": "SpaceStatus",
+      "type": "string"
+    },
+    "TandemGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "stack_group_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Stack Group Id",
+          "type": "string"
+        },
+        "space_ids_near_to_deep": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Space Ids Near To Deep",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stack_group_id",
+        "space_ids_near_to_deep"
+      ],
+      "title": "TandemGroup",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "scenario_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "seed": {
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "parking_lot": {
+      "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/ParkingLot"
+    },
+    "layout": {
+      "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/Layout"
+    },
+    "cost_snapshot": {
+      "$ref": "https://parksim.example/schemas/v2/scenario-bundle.schema.json#/$defs/CostSnapshot"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "seed",
+    "parking_lot",
+    "layout",
+    "cost_snapshot"
+  ],
+  "title": "ScenarioBundle",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/scenario-bundle.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

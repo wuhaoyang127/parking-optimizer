@@ -1,0 +1,55 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "expected_version": {
+      "minimum": 1,
+      "title": "Expected Version",
+      "type": "integer"
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "replacement_journey_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Replacement Journey Id",
+      "type": "string"
+    },
+    "replacement_attempt_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Replacement Attempt Id",
+      "type": "string"
+    },
+    "replacement_request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Replacement Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_version",
+    "idempotency_key",
+    "replacement_journey_id",
+    "replacement_attempt_id",
+    "replacement_request_id"
+  ],
+  "title": "ExternalOccupancyRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/external-occupancy-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

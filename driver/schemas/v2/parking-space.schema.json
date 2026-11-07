@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "Coordinate": {
+      "additionalProperties": false,
+      "properties": {
+        "x_m": {
+          "title": "X M",
+          "type": "number"
+        },
+        "y_m": {
+          "title": "Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "SpaceStatus": {
+      "enum": [
+        "available",
+        "occupied",
+        "unavailable",
+        "unknown"
+      ],
+      "title": "SpaceStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "space_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Space Id",
+      "type": "string"
+    },
+    "coordinate": {
+      "$ref": "https://parksim.example/schemas/v2/parking-space.schema.json#/$defs/Coordinate"
+    },
+    "access_node_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Access Node Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "https://parksim.example/schemas/v2/parking-space.schema.json#/$defs/SpaceStatus"
+    },
+    "charging": {
+      "default": false,
+      "title": "Charging",
+      "type": "boolean"
+    },
+    "stack_group_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Stack Group Id",
+      "type": "string"
+    },
+    "depth": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Depth",
+      "type": "integer"
+    },
+    "assignable": {
+      "title": "Assignable",
+      "type": "boolean"
+    },
+    "assignability_reasons": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assignability Reasons",
+      "type": "array"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "space_id",
+    "coordinate",
+    "access_node_id",
+    "status",
+    "stack_group_id",
+    "assignable"
+  ],
+  "title": "ParkingSpace",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/parking-space.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

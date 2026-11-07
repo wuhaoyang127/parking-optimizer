@@ -1,0 +1,1290 @@
+{
+  "schema_version": "2.0.0",
+  "scenario_id": "hospital-full-v1",
+  "seed": 4301,
+  "parking_lot": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-hospital",
+    "name": "市立医院停车场",
+    "region_label": "医院",
+    "venue_type": "hospital",
+    "synthetic": true,
+    "opening_status": "open",
+    "total_spaces": 32,
+    "available_spaces": 10,
+    "charging_spaces": 6,
+    "pricing": {
+      "currency": "CNY",
+      "first_hour_yuan": 5.0,
+      "additional_hour_yuan": 3.0,
+      "daily_cap_yuan": 30.0,
+      "note": "模拟就诊高峰动态通行成本"
+    },
+    "updated_at": "2026-08-20T09:00:00Z",
+    "data_source": {
+      "schema_version": "2.0.0",
+      "parking_lot_id": "lot-hospital",
+      "mode": "synthetic",
+      "health": "healthy",
+      "source_name": "web-v2 public facility: hospital-full-v1",
+      "missing_fields": [],
+      "updated_at": "2026-08-20T09:00:00Z",
+      "fail_reason": null
+    }
+  },
+  "layout": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-hospital",
+    "layout_version": "hospital-full-v1-layout-1",
+    "coordinate_system": "local_meters",
+    "coordinate_origin_note": "south-west facility corner; local planar meters",
+    "entrance_node_ids": [
+      "entrance-west",
+      "entrance-east"
+    ],
+    "exit_node_ids": [
+      "exit-west",
+      "exit-east"
+    ],
+    "nodes": [
+      {
+        "node_id": "junction-nw",
+        "coordinate": {
+          "x_m": 15.0,
+          "y_m": 15.0
+        },
+        "kind": "junction",
+        "label": "西北路口"
+      },
+      {
+        "node_id": "junction-ne",
+        "coordinate": {
+          "x_m": 105.0,
+          "y_m": 15.0
+        },
+        "kind": "junction",
+        "label": "东北路口"
+      },
+      {
+        "node_id": "junction-se",
+        "coordinate": {
+          "x_m": 105.0,
+          "y_m": 65.0
+        },
+        "kind": "junction",
+        "label": "东南路口"
+      },
+      {
+        "node_id": "junction-sw",
+        "coordinate": {
+          "x_m": 15.0,
+          "y_m": 65.0
+        },
+        "kind": "junction",
+        "label": "西南路口"
+      },
+      {
+        "node_id": "entrance-west",
+        "coordinate": {
+          "x_m": 5.0,
+          "y_m": 15.0
+        },
+        "kind": "entrance",
+        "label": "西入口"
+      },
+      {
+        "node_id": "entrance-east",
+        "coordinate": {
+          "x_m": 115.0,
+          "y_m": 65.0
+        },
+        "kind": "entrance",
+        "label": "东入口"
+      },
+      {
+        "node_id": "exit-west",
+        "coordinate": {
+          "x_m": 5.0,
+          "y_m": 65.0
+        },
+        "kind": "exit",
+        "label": "西出口"
+      },
+      {
+        "node_id": "exit-east",
+        "coordinate": {
+          "x_m": 115.0,
+          "y_m": 15.0
+        },
+        "kind": "exit",
+        "label": "东出口"
+      },
+      {
+        "node_id": "access-north-220",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点1"
+      },
+      {
+        "node_id": "access-north-275",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点2"
+      },
+      {
+        "node_id": "access-north-330",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点3"
+      },
+      {
+        "node_id": "access-north-385",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点4"
+      },
+      {
+        "node_id": "access-north-440",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点5"
+      },
+      {
+        "node_id": "access-north-495",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点6"
+      },
+      {
+        "node_id": "access-north-550",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点7"
+      },
+      {
+        "node_id": "access-north-605",
+        "coordinate": {
+          "x_m": 60.5,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点8"
+      },
+      {
+        "node_id": "access-north-940",
+        "coordinate": {
+          "x_m": 94.0,
+          "y_m": 30.0
+        },
+        "kind": "space_access",
+        "label": "北停车巷接入点9"
+      },
+      {
+        "node_id": "access-south-220",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点1"
+      },
+      {
+        "node_id": "access-south-275",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点2"
+      },
+      {
+        "node_id": "access-south-330",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点3"
+      },
+      {
+        "node_id": "access-south-385",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点4"
+      },
+      {
+        "node_id": "access-south-440",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点5"
+      },
+      {
+        "node_id": "access-south-495",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点6"
+      },
+      {
+        "node_id": "access-south-550",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点7"
+      },
+      {
+        "node_id": "access-south-605",
+        "coordinate": {
+          "x_m": 60.5,
+          "y_m": 50.0
+        },
+        "kind": "space_access",
+        "label": "南停车巷接入点8"
+      },
+      {
+        "node_id": "lane-north-west",
+        "coordinate": {
+          "x_m": 15.0,
+          "y_m": 30.0
+        },
+        "kind": "junction",
+        "label": "北停车巷西口"
+      },
+      {
+        "node_id": "lane-north-east",
+        "coordinate": {
+          "x_m": 105.0,
+          "y_m": 30.0
+        },
+        "kind": "junction",
+        "label": "北停车巷东口"
+      },
+      {
+        "node_id": "lane-south-west",
+        "coordinate": {
+          "x_m": 15.0,
+          "y_m": 50.0
+        },
+        "kind": "junction",
+        "label": "南停车巷西口"
+      },
+      {
+        "node_id": "lane-south-east",
+        "coordinate": {
+          "x_m": 105.0,
+          "y_m": 50.0
+        },
+        "kind": "junction",
+        "label": "南停车巷东口"
+      },
+      {
+        "node_id": "buffer-access-1",
+        "coordinate": {
+          "x_m": 96.0,
+          "y_m": 68.0
+        },
+        "kind": "buffer_access",
+        "label": "移车缓冲区1"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "ring-north",
+        "from_node_id": "junction-nw",
+        "to_node_id": "junction-ne",
+        "distance_m": 90.0,
+        "base_travel_time_s": 22.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-ring"
+        ]
+      },
+      {
+        "edge_id": "ring-east",
+        "from_node_id": "junction-ne",
+        "to_node_id": "junction-se",
+        "distance_m": 50.0,
+        "base_travel_time_s": 12.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-ring"
+        ]
+      },
+      {
+        "edge_id": "ring-south",
+        "from_node_id": "junction-se",
+        "to_node_id": "junction-sw",
+        "distance_m": 90.0,
+        "base_travel_time_s": 22.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-ring"
+        ]
+      },
+      {
+        "edge_id": "ring-west",
+        "from_node_id": "junction-sw",
+        "to_node_id": "junction-nw",
+        "distance_m": 50.0,
+        "base_travel_time_s": 12.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-ring"
+        ]
+      },
+      {
+        "edge_id": "entry-west",
+        "from_node_id": "entrance-west",
+        "to_node_id": "junction-nw",
+        "distance_m": 10.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-entry"
+        ]
+      },
+      {
+        "edge_id": "exit-west",
+        "from_node_id": "junction-sw",
+        "to_node_id": "exit-west",
+        "distance_m": 10.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-exit"
+        ]
+      },
+      {
+        "edge_id": "entry-east",
+        "from_node_id": "entrance-east",
+        "to_node_id": "junction-se",
+        "distance_m": 10.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-entry"
+        ]
+      },
+      {
+        "edge_id": "exit-east",
+        "from_node_id": "junction-ne",
+        "to_node_id": "exit-east",
+        "distance_m": 10.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-exit"
+        ]
+      },
+      {
+        "edge_id": "lane-north-1",
+        "from_node_id": "junction-nw",
+        "to_node_id": "lane-north-west",
+        "distance_m": 15.0,
+        "base_travel_time_s": 4.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-2",
+        "from_node_id": "lane-north-west",
+        "to_node_id": "access-north-220",
+        "distance_m": 7.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-3",
+        "from_node_id": "access-north-220",
+        "to_node_id": "access-north-275",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-4",
+        "from_node_id": "access-north-275",
+        "to_node_id": "access-north-330",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-5",
+        "from_node_id": "access-north-330",
+        "to_node_id": "access-north-385",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-6",
+        "from_node_id": "access-north-385",
+        "to_node_id": "access-north-440",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-7",
+        "from_node_id": "access-north-440",
+        "to_node_id": "access-north-495",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-8",
+        "from_node_id": "access-north-495",
+        "to_node_id": "access-north-550",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-9",
+        "from_node_id": "access-north-550",
+        "to_node_id": "access-north-605",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-10",
+        "from_node_id": "access-north-605",
+        "to_node_id": "access-north-940",
+        "distance_m": 33.5,
+        "base_travel_time_s": 8.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-11",
+        "from_node_id": "access-north-940",
+        "to_node_id": "lane-north-east",
+        "distance_m": 11.0,
+        "base_travel_time_s": 3.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-north-12",
+        "from_node_id": "lane-north-east",
+        "to_node_id": "junction-ne",
+        "distance_m": 15.0,
+        "base_travel_time_s": 4.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-1",
+        "from_node_id": "junction-sw",
+        "to_node_id": "lane-south-west",
+        "distance_m": 15.0,
+        "base_travel_time_s": 4.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-2",
+        "from_node_id": "lane-south-west",
+        "to_node_id": "access-south-220",
+        "distance_m": 7.0,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-3",
+        "from_node_id": "access-south-220",
+        "to_node_id": "access-south-275",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-4",
+        "from_node_id": "access-south-275",
+        "to_node_id": "access-south-330",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-5",
+        "from_node_id": "access-south-330",
+        "to_node_id": "access-south-385",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-6",
+        "from_node_id": "access-south-385",
+        "to_node_id": "access-south-440",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-7",
+        "from_node_id": "access-south-440",
+        "to_node_id": "access-south-495",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-8",
+        "from_node_id": "access-south-495",
+        "to_node_id": "access-south-550",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-9",
+        "from_node_id": "access-south-550",
+        "to_node_id": "access-south-605",
+        "distance_m": 5.5,
+        "base_travel_time_s": 2.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-10",
+        "from_node_id": "access-south-605",
+        "to_node_id": "lane-south-east",
+        "distance_m": 44.5,
+        "base_travel_time_s": 11.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "lane-south-11",
+        "from_node_id": "lane-south-east",
+        "to_node_id": "junction-se",
+        "distance_m": 15.0,
+        "base_travel_time_s": 4.0,
+        "directed": true,
+        "channel_zone_ids": [
+          "channel-rows"
+        ]
+      },
+      {
+        "edge_id": "buffer-1",
+        "from_node_id": "junction-se",
+        "to_node_id": "buffer-access-1",
+        "distance_m": 9.486832980505138,
+        "base_travel_time_s": 2.0,
+        "directed": false,
+        "channel_zone_ids": [
+          "channel-buffer"
+        ]
+      }
+    ],
+    "channel_zones": [
+      {
+        "channel_zone_id": "channel-ring",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-entry",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-exit",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-rows",
+        "capacity": 1
+      },
+      {
+        "channel_zone_id": "channel-buffer",
+        "capacity": 1
+      }
+    ],
+    "spaces": [
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-01",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-220",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-01",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-02",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-220",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-02",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-03",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-220",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-03",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-04",
+        "coordinate": {
+          "x_m": 22.0,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-220",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-04",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-05",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-275",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-05",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-06",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-275",
+        "status": "available",
+        "charging": true,
+        "stack_group_id": "single-P-06",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-07",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-275",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-07",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-08",
+        "coordinate": {
+          "x_m": 27.5,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-275",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-08",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-09",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-330",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-09",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-10",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-330",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-10",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-11",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-330",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-11",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-12",
+        "coordinate": {
+          "x_m": 33.0,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-330",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-12",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-13",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-385",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-13",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-14",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-385",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-14",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-15",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-385",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-15",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-16",
+        "coordinate": {
+          "x_m": 38.5,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-385",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-16",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-17",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-440",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-17",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-18",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-440",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-18",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-19",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-440",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-19",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-20",
+        "coordinate": {
+          "x_m": 44.0,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-440",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-20",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-21",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-495",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-21",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-22",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-495",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-22",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-23",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-495",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-23",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-24",
+        "coordinate": {
+          "x_m": 49.5,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-495",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-24",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-25",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-550",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-25",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-26",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-550",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-26",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-27",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 44.0
+        },
+        "access_node_id": "access-south-550",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-27",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-28",
+        "coordinate": {
+          "x_m": 55.0,
+          "y_m": 56.0
+        },
+        "access_node_id": "access-south-550",
+        "status": "occupied",
+        "charging": false,
+        "stack_group_id": "single-P-28",
+        "depth": 1,
+        "assignable": false,
+        "assignability_reasons": [
+          "SPACE_OCCUPIED"
+        ]
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-29",
+        "coordinate": {
+          "x_m": 60.5,
+          "y_m": 24.0
+        },
+        "access_node_id": "access-north-605",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "single-P-29",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-30",
+        "coordinate": {
+          "x_m": 60.5,
+          "y_m": 36.0
+        },
+        "access_node_id": "access-north-605",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "single-P-30",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-31",
+        "coordinate": {
+          "x_m": 94.0,
+          "y_m": 35.5
+        },
+        "access_node_id": "access-north-940",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "stack-1",
+        "depth": 1,
+        "assignable": true,
+        "assignability_reasons": []
+      },
+      {
+        "parking_lot_id": "lot-hospital",
+        "space_id": "P-32",
+        "coordinate": {
+          "x_m": 94.0,
+          "y_m": 41.0
+        },
+        "access_node_id": "access-north-940",
+        "status": "available",
+        "charging": false,
+        "stack_group_id": "stack-1",
+        "depth": 2,
+        "assignable": true,
+        "assignability_reasons": []
+      }
+    ],
+    "tandem_groups": [
+      {
+        "stack_group_id": "stack-1",
+        "space_ids_near_to_deep": [
+          "P-31",
+          "P-32"
+        ]
+      }
+    ],
+    "buffers": [
+      {
+        "parking_lot_id": "lot-hospital",
+        "buffer_id": "BUF-01",
+        "coordinate": {
+          "x_m": 96.0,
+          "y_m": 74.0
+        },
+        "access_node_id": "buffer-access-1",
+        "available": true,
+        "channel_zone_ids": [
+          "channel-buffer"
+        ]
+      }
+    ]
+  },
+  "cost_snapshot": {
+    "schema_version": "2.0.0",
+    "parking_lot_id": "lot-hospital",
+    "layout_version": "hospital-full-v1-layout-1",
+    "cost_version": "cost-base-1",
+    "observed_at": "2026-08-20T09:00:00Z",
+    "edge_travel_time_s": {
+      "ring-north": 22.0,
+      "ring-east": 12.0,
+      "ring-south": 22.0,
+      "ring-west": 12.0,
+      "entry-west": 2.0,
+      "exit-west": 2.0,
+      "entry-east": 2.0,
+      "exit-east": 2.0,
+      "lane-north-1": 4.0,
+      "lane-north-2": 2.0,
+      "lane-north-3": 2.0,
+      "lane-north-4": 2.0,
+      "lane-north-5": 2.0,
+      "lane-north-6": 2.0,
+      "lane-north-7": 2.0,
+      "lane-north-8": 2.0,
+      "lane-north-9": 2.0,
+      "lane-north-10": 8.0,
+      "lane-north-11": 3.0,
+      "lane-north-12": 4.0,
+      "lane-south-1": 4.0,
+      "lane-south-2": 2.0,
+      "lane-south-3": 2.0,
+      "lane-south-4": 2.0,
+      "lane-south-5": 2.0,
+      "lane-south-6": 2.0,
+      "lane-south-7": 2.0,
+      "lane-south-8": 2.0,
+      "lane-south-9": 2.0,
+      "lane-south-10": 11.0,
+      "lane-south-11": 4.0,
+      "buffer-1": 2.0
+    },
+    "unavailable_edge_ids": []
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "SimulationCommandRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "simulation_time_s": {
+          "minimum": 0,
+          "title": "Simulation Time S",
+          "type": "integer"
+        },
+        "priority": {
+          "title": "Priority",
+          "type": "integer"
+        },
+        "sequence_hint": {
+          "minimum": 0,
+          "title": "Sequence Hint",
+          "type": "integer"
+        },
+        "event_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "vehicle_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Vehicle Id",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        }
+      },
+      "required": [
+        "simulation_time_s",
+        "priority",
+        "sequence_hint",
+        "event_type",
+        "vehicle_id"
+      ],
+      "title": "SimulationCommandRequest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "seed": {
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "wall_time_origin": {
+      "format": "date-time",
+      "title": "Wall Time Origin",
+      "type": "string"
+    },
+    "commands": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/simulation-run-request.schema.json#/$defs/SimulationCommandRequest"
+      },
+      "title": "Commands",
+      "type": "array"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "seed",
+    "wall_time_origin",
+    "commands"
+  ],
+  "title": "SimulationRunRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/simulation-run-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

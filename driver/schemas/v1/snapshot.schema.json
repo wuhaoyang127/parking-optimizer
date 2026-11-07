@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/snapshot.schema.json",
+  "title": "ObservedSnapshot v1",
+  "description": "Immutable allow-list projection. It must not contain future truth, event queues, simulator objects, or oracle results.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "snapshot_content_sha256",
+    "run_id",
+    "scenario_id",
+    "layout_id",
+    "decision_time_s",
+    "vehicles",
+    "positions",
+    "reservations",
+    "locks",
+    "actions",
+    "transactions",
+    "executor_resource",
+    "channel_zone_resources",
+    "pending_requests"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "snapshot_id": {"$ref": "common.schema.json#/$defs/id"},
+    "snapshot_content_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "run_id": {"$ref": "common.schema.json#/$defs/id"},
+    "scenario_id": {"$ref": "common.schema.json#/$defs/id"},
+    "layout_id": {"$ref": "common.schema.json#/$defs/id"},
+    "decision_time_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "vehicles": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/vehicleState"}
+    },
+    "positions": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/positionState"}
+    },
+    "reservations": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/positionReservation"}
+    },
+    "locks": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/resourceLock"}
+    },
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/action"}
+    },
+    "transactions": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/transaction"}
+    },
+    "executor_resource": {
+      "$ref": "common.schema.json#/$defs/executorResourceState"
+    },
+    "channel_zone_resources": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/channelZoneResourceState"}
+    },
+    "pending_requests": {
+      "type": "array",
+      "items": {"$ref": "common.schema.json#/$defs/pendingRequest"}
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "cost_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Cost Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "edge_travel_time_s": {
+      "patternProperties": {
+        "^[A-Za-z0-9][A-Za-z0-9._:-]*$": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "propertyNames": {
+        "maxLength": 128,
+        "minLength": 1
+      },
+      "title": "Edge Travel Time S",
+      "type": "object"
+    },
+    "unavailable_edge_ids": {
+      "default": [],
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+        "type": "string"
+      },
+      "title": "Unavailable Edge Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "layout_version",
+    "cost_version",
+    "observed_at",
+    "edge_travel_time_s"
+  ],
+  "title": "CostSnapshot",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/cost-snapshot.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

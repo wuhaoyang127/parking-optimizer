@@ -1,0 +1,18 @@
+{
+  "example_only": true,
+  "contract_status": "proposal_not_existing_api",
+  "contract_version": "1.0.0",
+  "request_id": "example-request",
+  "input_sha256": "REPLACE_WITH_ACTUAL_INPUT_SHA256",
+  "release_sha256": "REPLACE_WITH_VALIDATED_RELEASE_SHA256",
+  "parking_lot_id": "lot-school",
+  "algorithm_id": "research-example",
+  "algorithm_version": "0.1.0",
+  "status": "success",
+  "ranked_space_ids": ["P-01", "P-02"],
+  "reason_codes": ["EXAMPLE_ONLY_NOT_A_REAL_SOLVE"],
+  "seed": 2026,
+  "feasibility_validation": "not_run",
+  "claim_status": "not_created",
+  "note": "Illustrative ordering only, not an executed result. FastAPI must validate scope, visibility, constraints, route and atomically create a claim before driver use."
+}

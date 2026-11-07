@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "DataMode": {
+      "enum": [
+        "synthetic",
+        "real"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "mode": {
+      "$ref": "https://parksim.example/schemas/v2/data-source-status.schema.json#/$defs/DataMode"
+    },
+    "health": {
+      "$ref": "https://parksim.example/schemas/v2/data-source-status.schema.json#/$defs/HealthStatus"
+    },
+    "source_name": {
+      "maxLength": 100,
+      "minLength": 1,
+      "title": "Source Name",
+      "type": "string"
+    },
+    "missing_fields": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Fields",
+      "type": "array"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "fail_reason": {
+      "anyOf": [
+        {
+          "maxLength": 300,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Fail Reason"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "mode",
+    "health",
+    "source_name",
+    "updated_at"
+  ],
+  "title": "DataSourceStatus",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/data-source-status.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,57 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "scenario_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "state_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "State Version",
+      "type": "string"
+    },
+    "entrance_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Entrance Id",
+      "type": "string"
+    },
+    "target_space_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Target Space Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "layout_version",
+    "scenario_version",
+    "state_version",
+    "entrance_id",
+    "target_space_id"
+  ],
+  "title": "RoutePreviewRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/route-preview-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

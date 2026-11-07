@@ -1,0 +1,217 @@
+{
+  "$defs": {
+    "Route": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "cost_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Cost Version",
+          "type": "string"
+        },
+        "from_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Node Id",
+          "type": "string"
+        },
+        "to_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Node Id",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "edge_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Edge Ids",
+          "type": "array"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "dynamic_eta_s": {
+          "minimum": 0,
+          "title": "Dynamic Eta S",
+          "type": "number"
+        },
+        "instructions": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/route-preview.schema.json#/$defs/RouteInstruction"
+          },
+          "title": "Instructions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "cost_version",
+        "from_node_id",
+        "to_node_id",
+        "node_ids",
+        "edge_ids",
+        "distance_m",
+        "dynamic_eta_s",
+        "instructions"
+      ],
+      "title": "Route",
+      "type": "object"
+    },
+    "RouteInstruction": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "edge_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "travel_time_s": {
+          "minimum": 0,
+          "title": "Travel Time S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sequence",
+        "edge_id",
+        "text",
+        "distance_m",
+        "travel_time_s"
+      ],
+      "title": "RouteInstruction",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "scenario_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "state_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "State Version",
+      "type": "string"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "entrance_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Entrance Id",
+      "type": "string"
+    },
+    "target_space_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Target Space Id",
+      "type": "string"
+    },
+    "route": {
+      "$ref": "https://parksim.example/schemas/v2/route-preview.schema.json#/$defs/Route"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "layout_version",
+    "scenario_version",
+    "state_version",
+    "observed_at",
+    "entrance_id",
+    "target_space_id",
+    "route"
+  ],
+  "title": "RoutePreview",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/route-preview.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

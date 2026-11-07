@@ -1,0 +1,1700 @@
+{
+  "schema_version": "1.0.0",
+  "parking_lot_id": "lot-school",
+  "layout_version": "school-full-v1-layout-1",
+  "provenance": {
+    "source_kind": "synthetic",
+    "source_name": "web-v2 public deterministic facility generator",
+    "source_revision": "m4-r1-v1",
+    "published_at": "2026-08-20T09:00:00Z"
+  },
+  "coordinate_system": "local_meters",
+  "coordinate_origin_note": "south-west facility corner; local planar meters",
+  "bounds": {
+    "min_x_m": 0.0,
+    "min_y_m": 0.0,
+    "max_x_m": 120.0,
+    "max_y_m": 80.0
+  },
+  "default_floor_id": "floor-1",
+  "floors": [
+    {
+      "floor_id": "floor-1",
+      "label": "地面层",
+      "elevation_m": 0.0,
+      "bounds": {
+        "min_x_m": 0.0,
+        "min_y_m": 0.0,
+        "max_x_m": 120.0,
+        "max_y_m": 80.0
+      }
+    }
+  ],
+  "inter_floor_connections": [],
+  "zones": [
+    {
+      "zone_id": "zone-parking",
+      "floor_id": "floor-1",
+      "label": "普通停车区",
+      "kind": "parking",
+      "polygon": [
+        {
+          "x_m": 18.0,
+          "y_m": 20.0
+        },
+        {
+          "x_m": 48.0,
+          "y_m": 20.0
+        },
+        {
+          "x_m": 48.0,
+          "y_m": 60.0
+        },
+        {
+          "x_m": 18.0,
+          "y_m": 60.0
+        }
+      ]
+    },
+    {
+      "zone_id": "zone-charging",
+      "floor_id": "floor-1",
+      "label": "充电停车区",
+      "kind": "charging",
+      "polygon": [
+        {
+          "x_m": 18.0,
+          "y_m": 20.0
+        },
+        {
+          "x_m": 40.0,
+          "y_m": 20.0
+        },
+        {
+          "x_m": 40.0,
+          "y_m": 60.0
+        },
+        {
+          "x_m": 18.0,
+          "y_m": 60.0
+        }
+      ]
+    },
+    {
+      "zone_id": "zone-tandem",
+      "floor_id": "floor-1",
+      "label": "纵深停车区",
+      "kind": "tandem",
+      "polygon": [
+        {
+          "x_m": 66.0,
+          "y_m": 31.0
+        },
+        {
+          "x_m": 98.0,
+          "y_m": 31.0
+        },
+        {
+          "x_m": 98.0,
+          "y_m": 45.0
+        },
+        {
+          "x_m": 66.0,
+          "y_m": 45.0
+        }
+      ]
+    },
+    {
+      "zone_id": "zone-buffer",
+      "floor_id": "floor-1",
+      "label": "移车缓冲区",
+      "kind": "buffer",
+      "polygon": [
+        {
+          "x_m": 90.0,
+          "y_m": 68.0
+        },
+        {
+          "x_m": 116.0,
+          "y_m": 68.0
+        },
+        {
+          "x_m": 116.0,
+          "y_m": 79.0
+        },
+        {
+          "x_m": 90.0,
+          "y_m": 79.0
+        }
+      ]
+    }
+  ],
+  "restricted_areas": [],
+  "nodes": [
+    {
+      "node_id": "junction-nw",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 15.0,
+        "y_m": 15.0
+      },
+      "kind": "junction",
+      "label": "西北路口"
+    },
+    {
+      "node_id": "junction-ne",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 105.0,
+        "y_m": 15.0
+      },
+      "kind": "junction",
+      "label": "东北路口"
+    },
+    {
+      "node_id": "junction-se",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 105.0,
+        "y_m": 65.0
+      },
+      "kind": "junction",
+      "label": "东南路口"
+    },
+    {
+      "node_id": "junction-sw",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 15.0,
+        "y_m": 65.0
+      },
+      "kind": "junction",
+      "label": "西南路口"
+    },
+    {
+      "node_id": "entrance-west",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 5.0,
+        "y_m": 15.0
+      },
+      "kind": "entrance",
+      "label": "西入口"
+    },
+    {
+      "node_id": "exit-west",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 5.0,
+        "y_m": 65.0
+      },
+      "kind": "exit",
+      "label": "西出口"
+    },
+    {
+      "node_id": "access-north-220",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 22.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点1"
+    },
+    {
+      "node_id": "access-north-275",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 27.5,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点2"
+    },
+    {
+      "node_id": "access-north-330",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 33.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点3"
+    },
+    {
+      "node_id": "access-north-385",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 38.5,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点4"
+    },
+    {
+      "node_id": "access-north-440",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 44.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点5"
+    },
+    {
+      "node_id": "access-north-700",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 70.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点6"
+    },
+    {
+      "node_id": "access-north-780",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 78.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点7"
+    },
+    {
+      "node_id": "access-north-860",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 86.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点8"
+    },
+    {
+      "node_id": "access-north-940",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 94.0,
+        "y_m": 30.0
+      },
+      "kind": "space_access",
+      "label": "北停车巷接入点9"
+    },
+    {
+      "node_id": "access-south-220",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 22.0,
+        "y_m": 50.0
+      },
+      "kind": "space_access",
+      "label": "南停车巷接入点1"
+    },
+    {
+      "node_id": "access-south-275",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 27.5,
+        "y_m": 50.0
+      },
+      "kind": "space_access",
+      "label": "南停车巷接入点2"
+    },
+    {
+      "node_id": "access-south-330",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 33.0,
+        "y_m": 50.0
+      },
+      "kind": "space_access",
+      "label": "南停车巷接入点3"
+    },
+    {
+      "node_id": "access-south-385",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 38.5,
+        "y_m": 50.0
+      },
+      "kind": "space_access",
+      "label": "南停车巷接入点4"
+    },
+    {
+      "node_id": "access-south-440",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 44.0,
+        "y_m": 50.0
+      },
+      "kind": "space_access",
+      "label": "南停车巷接入点5"
+    },
+    {
+      "node_id": "lane-north-west",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 15.0,
+        "y_m": 30.0
+      },
+      "kind": "junction",
+      "label": "北停车巷西口"
+    },
+    {
+      "node_id": "lane-north-east",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 105.0,
+        "y_m": 30.0
+      },
+      "kind": "junction",
+      "label": "北停车巷东口"
+    },
+    {
+      "node_id": "lane-south-west",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 15.0,
+        "y_m": 50.0
+      },
+      "kind": "junction",
+      "label": "南停车巷西口"
+    },
+    {
+      "node_id": "lane-south-east",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 105.0,
+        "y_m": 50.0
+      },
+      "kind": "junction",
+      "label": "南停车巷东口"
+    },
+    {
+      "node_id": "buffer-access-1",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 96.0,
+        "y_m": 68.0
+      },
+      "kind": "buffer_access",
+      "label": "移车缓冲区1"
+    },
+    {
+      "node_id": "buffer-access-2",
+      "floor_id": "floor-1",
+      "coordinate": {
+        "x_m": 106.0,
+        "y_m": 68.0
+      },
+      "kind": "buffer_access",
+      "label": "移车缓冲区2"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "ring-north",
+      "from_node_id": "junction-nw",
+      "to_node_id": "junction-ne",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 15.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 15.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 90.0,
+      "base_travel_time_s": 22.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-ring"
+      ]
+    },
+    {
+      "edge_id": "ring-east",
+      "from_node_id": "junction-ne",
+      "to_node_id": "junction-se",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 15.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 65.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 50.0,
+      "base_travel_time_s": 12.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-ring"
+      ]
+    },
+    {
+      "edge_id": "ring-south",
+      "from_node_id": "junction-se",
+      "to_node_id": "junction-sw",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 15.0,
+          "y_m": 65.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 90.0,
+      "base_travel_time_s": 22.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-ring"
+      ]
+    },
+    {
+      "edge_id": "ring-west",
+      "from_node_id": "junction-sw",
+      "to_node_id": "junction-nw",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 15.0,
+          "y_m": 15.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 50.0,
+      "base_travel_time_s": 12.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-ring"
+      ]
+    },
+    {
+      "edge_id": "entry-west",
+      "from_node_id": "entrance-west",
+      "to_node_id": "junction-nw",
+      "centerline": [
+        {
+          "x_m": 5.0,
+          "y_m": 15.0
+        },
+        {
+          "x_m": 15.0,
+          "y_m": 15.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 10.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-entry"
+      ]
+    },
+    {
+      "edge_id": "exit-west",
+      "from_node_id": "junction-sw",
+      "to_node_id": "exit-west",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 5.0,
+          "y_m": 65.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 10.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-exit"
+      ]
+    },
+    {
+      "edge_id": "lane-north-1",
+      "from_node_id": "junction-nw",
+      "to_node_id": "lane-north-west",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 15.0
+        },
+        {
+          "x_m": 15.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 15.0,
+      "base_travel_time_s": 4.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-2",
+      "from_node_id": "lane-north-west",
+      "to_node_id": "access-north-220",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 22.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 7.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-3",
+      "from_node_id": "access-north-220",
+      "to_node_id": "access-north-275",
+      "centerline": [
+        {
+          "x_m": 22.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 27.5,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-4",
+      "from_node_id": "access-north-275",
+      "to_node_id": "access-north-330",
+      "centerline": [
+        {
+          "x_m": 27.5,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 33.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-5",
+      "from_node_id": "access-north-330",
+      "to_node_id": "access-north-385",
+      "centerline": [
+        {
+          "x_m": 33.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 38.5,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-6",
+      "from_node_id": "access-north-385",
+      "to_node_id": "access-north-440",
+      "centerline": [
+        {
+          "x_m": 38.5,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 44.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-7",
+      "from_node_id": "access-north-440",
+      "to_node_id": "access-north-700",
+      "centerline": [
+        {
+          "x_m": 44.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 70.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 26.0,
+      "base_travel_time_s": 6.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-8",
+      "from_node_id": "access-north-700",
+      "to_node_id": "access-north-780",
+      "centerline": [
+        {
+          "x_m": 70.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 78.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 8.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-9",
+      "from_node_id": "access-north-780",
+      "to_node_id": "access-north-860",
+      "centerline": [
+        {
+          "x_m": 78.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 86.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 8.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-10",
+      "from_node_id": "access-north-860",
+      "to_node_id": "access-north-940",
+      "centerline": [
+        {
+          "x_m": 86.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 94.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 8.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-11",
+      "from_node_id": "access-north-940",
+      "to_node_id": "lane-north-east",
+      "centerline": [
+        {
+          "x_m": 94.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 30.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 11.0,
+      "base_travel_time_s": 3.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-north-12",
+      "from_node_id": "lane-north-east",
+      "to_node_id": "junction-ne",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 30.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 15.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 15.0,
+      "base_travel_time_s": 4.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-1",
+      "from_node_id": "junction-sw",
+      "to_node_id": "lane-south-west",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 15.0,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 15.0,
+      "base_travel_time_s": 4.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-2",
+      "from_node_id": "lane-south-west",
+      "to_node_id": "access-south-220",
+      "centerline": [
+        {
+          "x_m": 15.0,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 22.0,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 7.0,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-3",
+      "from_node_id": "access-south-220",
+      "to_node_id": "access-south-275",
+      "centerline": [
+        {
+          "x_m": 22.0,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 27.5,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-4",
+      "from_node_id": "access-south-275",
+      "to_node_id": "access-south-330",
+      "centerline": [
+        {
+          "x_m": 27.5,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 33.0,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-5",
+      "from_node_id": "access-south-330",
+      "to_node_id": "access-south-385",
+      "centerline": [
+        {
+          "x_m": 33.0,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 38.5,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-6",
+      "from_node_id": "access-south-385",
+      "to_node_id": "access-south-440",
+      "centerline": [
+        {
+          "x_m": 38.5,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 44.0,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 5.5,
+      "base_travel_time_s": 2.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-7",
+      "from_node_id": "access-south-440",
+      "to_node_id": "lane-south-east",
+      "centerline": [
+        {
+          "x_m": 44.0,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 50.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 61.0,
+      "base_travel_time_s": 15.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "lane-south-8",
+      "from_node_id": "lane-south-east",
+      "to_node_id": "junction-se",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 50.0
+        },
+        {
+          "x_m": 105.0,
+          "y_m": 65.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 15.0,
+      "base_travel_time_s": 4.0,
+      "directed": true,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-rows"
+      ]
+    },
+    {
+      "edge_id": "buffer-1",
+      "from_node_id": "junction-se",
+      "to_node_id": "buffer-access-1",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 96.0,
+          "y_m": 68.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 9.486832980505138,
+      "base_travel_time_s": 2.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-buffer"
+      ]
+    },
+    {
+      "edge_id": "buffer-2",
+      "from_node_id": "junction-se",
+      "to_node_id": "buffer-access-2",
+      "centerline": [
+        {
+          "x_m": 105.0,
+          "y_m": 65.0
+        },
+        {
+          "x_m": 106.0,
+          "y_m": 68.0
+        }
+      ],
+      "width_m": 6.0,
+      "distance_m": 3.1622776601683795,
+      "base_travel_time_s": 2.0,
+      "directed": false,
+      "traversal_kind": "drive",
+      "channel_zone_ids": [
+        "channel-buffer"
+      ]
+    }
+  ],
+  "channel_zones": [
+    {
+      "channel_zone_id": "channel-ring",
+      "capacity": 1
+    },
+    {
+      "channel_zone_id": "channel-entry",
+      "capacity": 1
+    },
+    {
+      "channel_zone_id": "channel-exit",
+      "capacity": 1
+    },
+    {
+      "channel_zone_id": "channel-rows",
+      "capacity": 1
+    },
+    {
+      "channel_zone_id": "channel-buffer",
+      "capacity": 1
+    }
+  ],
+  "entrances": [
+    {
+      "entrance_id": "entrance-1",
+      "node_id": "entrance-west",
+      "label": "西入口",
+      "initial_heading_deg": 0.0
+    }
+  ],
+  "exits": [
+    {
+      "exit_id": "exit-1",
+      "node_id": "exit-west",
+      "label": "西出口"
+    }
+  ],
+  "default_entrance_id": "entrance-1",
+  "spaces": [
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-01",
+      "floor_id": "floor-1",
+      "zone_id": "zone-charging",
+      "geometry": {
+        "center": {
+          "x_m": 22.0,
+          "y_m": 24.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-220",
+      "charging": true,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-02",
+      "floor_id": "floor-1",
+      "zone_id": "zone-charging",
+      "geometry": {
+        "center": {
+          "x_m": 22.0,
+          "y_m": 36.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-220",
+      "charging": true,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-03",
+      "floor_id": "floor-1",
+      "zone_id": "zone-charging",
+      "geometry": {
+        "center": {
+          "x_m": 22.0,
+          "y_m": 44.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-220",
+      "charging": true,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-04",
+      "floor_id": "floor-1",
+      "zone_id": "zone-charging",
+      "geometry": {
+        "center": {
+          "x_m": 22.0,
+          "y_m": 56.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-220",
+      "charging": true,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-05",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 27.5,
+          "y_m": 24.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-275",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-06",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 27.5,
+          "y_m": 36.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-275",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-07",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 27.5,
+          "y_m": 44.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-275",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-08",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 27.5,
+          "y_m": 56.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-275",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-09",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 33.0,
+          "y_m": 24.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-330",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-10",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 33.0,
+          "y_m": 36.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-330",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-11",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 33.0,
+          "y_m": 44.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-330",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-12",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 33.0,
+          "y_m": 56.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-330",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-13",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 38.5,
+          "y_m": 24.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-385",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-14",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 38.5,
+          "y_m": 36.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-385",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-15",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 38.5,
+          "y_m": 44.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-385",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-16",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 38.5,
+          "y_m": 56.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-385",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-17",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 44.0,
+          "y_m": 24.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-440",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-18",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 44.0,
+          "y_m": 36.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-north-440",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-19",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 44.0,
+          "y_m": 44.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-440",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-20",
+      "floor_id": "floor-1",
+      "zone_id": "zone-parking",
+      "geometry": {
+        "center": {
+          "x_m": 44.0,
+          "y_m": 56.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "access-south-440",
+      "charging": false,
+      "stack_group_id": null,
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-21",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 70.0,
+          "y_m": 35.5
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-700",
+      "charging": false,
+      "stack_group_id": "stack-1",
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-22",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 70.0,
+          "y_m": 41.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-700",
+      "charging": false,
+      "stack_group_id": "stack-1",
+      "depth": 2
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-23",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 78.0,
+          "y_m": 35.5
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-780",
+      "charging": false,
+      "stack_group_id": "stack-2",
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-24",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 78.0,
+          "y_m": 41.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-780",
+      "charging": false,
+      "stack_group_id": "stack-2",
+      "depth": 2
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-25",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 86.0,
+          "y_m": 35.5
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-860",
+      "charging": false,
+      "stack_group_id": "stack-3",
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-26",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 86.0,
+          "y_m": 41.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-860",
+      "charging": false,
+      "stack_group_id": "stack-3",
+      "depth": 2
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-27",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 94.0,
+          "y_m": 35.5
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-940",
+      "charging": false,
+      "stack_group_id": "stack-4",
+      "depth": 1
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "space_id": "P-28",
+      "floor_id": "floor-1",
+      "zone_id": "zone-tandem",
+      "geometry": {
+        "center": {
+          "x_m": 94.0,
+          "y_m": 41.0
+        },
+        "width_m": 2.6,
+        "length_m": 5.2,
+        "heading_deg": 0.0
+      },
+      "access_node_id": "access-north-940",
+      "charging": false,
+      "stack_group_id": "stack-4",
+      "depth": 2
+    }
+  ],
+  "tandem_groups": [
+    {
+      "stack_group_id": "stack-1",
+      "space_ids_near_to_deep": [
+        "P-21",
+        "P-22"
+      ],
+      "buffer_ids": [
+        "BUF-01"
+      ]
+    },
+    {
+      "stack_group_id": "stack-2",
+      "space_ids_near_to_deep": [
+        "P-23",
+        "P-24"
+      ],
+      "buffer_ids": [
+        "BUF-02"
+      ]
+    },
+    {
+      "stack_group_id": "stack-3",
+      "space_ids_near_to_deep": [
+        "P-25",
+        "P-26"
+      ],
+      "buffer_ids": [
+        "BUF-01"
+      ]
+    },
+    {
+      "stack_group_id": "stack-4",
+      "space_ids_near_to_deep": [
+        "P-27",
+        "P-28"
+      ],
+      "buffer_ids": [
+        "BUF-02"
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "parking_lot_id": "lot-school",
+      "buffer_id": "BUF-01",
+      "floor_id": "floor-1",
+      "zone_id": "zone-buffer",
+      "geometry": {
+        "center": {
+          "x_m": 96.0,
+          "y_m": 74.0
+        },
+        "width_m": 3.0,
+        "length_m": 6.0,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "buffer-access-1",
+      "purpose": "tandem_recovery",
+      "stack_group_ids": [
+        "stack-1",
+        "stack-3"
+      ]
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "buffer_id": "BUF-02",
+      "floor_id": "floor-1",
+      "zone_id": "zone-buffer",
+      "geometry": {
+        "center": {
+          "x_m": 106.0,
+          "y_m": 74.0
+        },
+        "width_m": 3.0,
+        "length_m": 6.0,
+        "heading_deg": 90.0
+      },
+      "access_node_id": "buffer-access-2",
+      "purpose": "tandem_recovery",
+      "stack_group_ids": [
+        "stack-2",
+        "stack-4"
+      ]
+    }
+  ],
+  "image_registration": null
+}

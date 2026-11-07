@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/metric.schema.json",
+  "title": "MetricRecord v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "scenario_id",
+    "algorithm_id",
+    "algorithm_version",
+    "record_level",
+    "subject_vehicle_id",
+    "subject_request_id",
+    "window_start_s",
+    "window_end_s",
+    "measured_at_s",
+    "metric_name",
+    "value",
+    "unit",
+    "numerator",
+    "denominator",
+    "not_applicable_reason",
+    "event_observed",
+    "pending_at_horizon",
+    "observed_wait_lower_bound_s",
+    "dimensions"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "run_id": {"$ref": "common.schema.json#/$defs/id"},
+    "scenario_id": {"$ref": "common.schema.json#/$defs/id"},
+    "algorithm_id": {"$ref": "common.schema.json#/$defs/id"},
+    "algorithm_version": {"$ref": "common.schema.json#/$defs/id"},
+    "record_level": {
+      "enum": ["instantaneous", "request_observation", "run_aggregate"]
+    },
+    "subject_vehicle_id": {"$ref": "common.schema.json#/$defs/nullableId"},
+    "subject_request_id": {"$ref": "common.schema.json#/$defs/nullableId"},
+    "window_start_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "window_end_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "measured_at_s": {"$ref": "common.schema.json#/$defs/nullableSimTime"},
+    "metric_name": {
+      "enum": [
+        "occupancy_rate",
+        "normal_space_time_utilization",
+        "facility_position_space_time_utilization",
+        "buffer_utilization",
+        "demand_satisfaction_rate",
+        "throughput_per_hour",
+        "relocation_count",
+        "relocation_distance_m",
+        "arrival_wait_s",
+        "departure_wait_s",
+        "departure_delay_s",
+        "executor_utilization",
+        "channel_zone_utilization",
+        "fallback_count",
+        "manual_intervention_count",
+        "sla_violation_count",
+        "failed_action_count"
+      ]
+    },
+    "value": {
+      "oneOf": [
+        {"type": "number", "minimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "unit": {
+      "enum": ["ratio", "count", "meter", "second", "per_hour"]
+    },
+    "numerator": {
+      "oneOf": [
+        {"type": "number", "minimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "denominator": {
+      "oneOf": [
+        {"type": "number", "minimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "not_applicable_reason": {
+      "oneOf": [
+        {"type": "string", "minLength": 1, "maxLength": 256},
+        {"type": "null"}
+      ]
+    },
+    "event_observed": {
+      "oneOf": [
+        {"type": "boolean"},
+        {"type": "null"}
+      ]
+    },
+    "pending_at_horizon": {
+      "oneOf": [
+        {"type": "boolean"},
+        {"type": "null"}
+      ]
+    },
+    "observed_wait_lower_bound_s": {
+      "oneOf": [
+        {"$ref": "common.schema.json#/$defs/simTime"},
+        {"type": "null"}
+      ]
+    },
+    "dimensions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "load_level",
+        "layout_class",
+        "buffer_count",
+        "relocation_executor_capacity",
+        "recoverability_policy",
+        "facility_comparison_mode"
+      ],
+      "properties": {
+        "load_level": {"enum": ["low", "medium", "high", "manual_case"]},
+        "layout_class": {"enum": ["independent", "mixed_depth"]},
+        "buffer_count": {"type": "integer", "minimum": 0},
+        "relocation_executor_capacity": {"type": "integer", "minimum": 1},
+        "recoverability_policy": {"$ref": "common.schema.json#/$defs/recoverabilityPolicy"},
+        "facility_comparison_mode": {"enum": ["fixed_total_positions", "extra_buffer_space"]}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "metric_name": {
+            "enum": [
+              "occupancy_rate",
+              "normal_space_time_utilization",
+              "facility_position_space_time_utilization",
+              "buffer_utilization",
+              "demand_satisfaction_rate",
+              "executor_utilization",
+              "channel_zone_utilization"
+            ]
+          }
+        },
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {"unit": {"const": "ratio"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metric_name": {
+            "enum": [
+              "relocation_count",
+              "fallback_count",
+              "manual_intervention_count",
+              "sla_violation_count",
+              "failed_action_count"
+            ]
+          }
+        },
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {"unit": {"const": "count"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"metric_name": {"const": "relocation_distance_m"}},
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {"unit": {"const": "meter"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metric_name": {
+            "enum": ["arrival_wait_s", "departure_wait_s", "departure_delay_s"]
+          }
+        },
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {"unit": {"const": "second"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"metric_name": {"const": "throughput_per_hour"}},
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {"unit": {"const": "per_hour"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"metric_name": {"const": "occupancy_rate"}},
+        "required": ["metric_name"]
+      },
+      "then": {
+        "properties": {
+          "record_level": {"const": "instantaneous"},
+          "measured_at_s": {"$ref": "common.schema.json#/$defs/simTime"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "unit": {"const": "ratio"},
+          "value": {"type": "number"}
+        },
+        "required": ["unit", "value"]
+      },
+      "then": {
+        "properties": {
+          "value": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"pending_at_horizon": {"const": true}},
+        "required": ["pending_at_horizon"]
+      },
+      "then": {
+        "properties": {
+          "record_level": {"const": "request_observation"},
+          "subject_vehicle_id": {"$ref": "common.schema.json#/$defs/id"},
+          "subject_request_id": {"$ref": "common.schema.json#/$defs/id"},
+          "event_observed": {"const": false},
+          "observed_wait_lower_bound_s": {"$ref": "common.schema.json#/$defs/simTime"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"denominator": {"const": 0}},
+        "required": ["denominator"]
+      },
+      "then": {
+        "properties": {
+          "value": {"type": "null"},
+          "not_applicable_reason": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  ]
+}

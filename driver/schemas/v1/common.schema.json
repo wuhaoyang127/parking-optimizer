@@ -1,0 +1,598 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/common.schema.json",
+  "title": "Parking optimizer common definitions v1",
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "nullableId": {
+      "oneOf": [
+        {"$ref": "#/$defs/id"},
+        {"type": "null"}
+      ]
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "simTime": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableSimTime": {
+      "oneOf": [
+        {"$ref": "#/$defs/simTime"},
+        {"type": "null"}
+      ]
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0
+    },
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "executorType": {
+      "enum": [
+        "simulation_only",
+        "human_operator",
+        "external_system",
+        "autonomous_vehicle"
+      ]
+    },
+    "recoverabilityPolicy": {
+      "enum": ["strict_recoverable", "risk_accepting"]
+    },
+    "reservationStatus": {
+      "enum": [
+        "NONE",
+        "REQUESTED",
+        "CONFIRMED",
+        "CANCELLED",
+        "COMPLETED",
+        "EXPIRED"
+      ]
+    },
+    "departureInformation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_departure_time_s",
+        "source",
+        "known_at_time_s",
+        "source_record_id",
+        "model_id",
+        "generated_at_time_s",
+        "training_data_cutoff_s",
+        "feature_window_end_s"
+      ],
+      "properties": {
+        "expected_departure_time_s": {"$ref": "#/$defs/nullableSimTime"},
+        "source": {
+          "enum": [
+            "unknown",
+            "reservation",
+            "user_estimate",
+            "model_prediction"
+          ]
+        },
+        "known_at_time_s": {"$ref": "#/$defs/simTime"},
+        "source_record_id": {"$ref": "#/$defs/nullableId"},
+        "model_id": {"$ref": "#/$defs/nullableId"},
+        "generated_at_time_s": {"$ref": "#/$defs/nullableSimTime"},
+        "training_data_cutoff_s": {"$ref": "#/$defs/nullableSimTime"},
+        "feature_window_end_s": {"$ref": "#/$defs/nullableSimTime"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"source": {"const": "unknown"}},
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {"expected_departure_time_s": {"type": "null"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"source": {"const": "model_prediction"}},
+            "required": ["source"]
+          },
+          "then": {
+            "properties": {
+              "model_id": {"$ref": "#/$defs/id"},
+              "generated_at_time_s": {"$ref": "#/$defs/simTime"},
+              "training_data_cutoff_s": {"$ref": "#/$defs/simTime"},
+              "feature_window_end_s": {"$ref": "#/$defs/simTime"}
+            }
+          }
+        }
+      ]
+    },
+    "locationState": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {"kind": {"enum": ["ENTRY_QUEUE", "EXITED", "REJECTED"]}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "position_id"],
+          "properties": {
+            "kind": {"const": "AT_POSITION"},
+            "position_id": {"$ref": "#/$defs/id"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "action_id"],
+          "properties": {
+            "kind": {"enum": ["IN_TRANSIT", "POSITION_UNCERTAIN"]},
+            "action_id": {"$ref": "#/$defs/id"}
+          }
+        }
+      ]
+    },
+    "pendingRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_id",
+        "anonymous_vehicle_id",
+        "request_type",
+        "requested_at_s",
+        "event_sequence_no",
+        "entrance_node_id"
+      ],
+      "properties": {
+        "request_id": {"$ref": "#/$defs/id"},
+        "anonymous_vehicle_id": {"$ref": "#/$defs/id"},
+        "request_type": {
+          "enum": ["ARRIVAL", "DEPARTURE", "ADMITTED_ENTRY", "ACTION_CONFIRMATION"]
+        },
+        "requested_at_s": {"$ref": "#/$defs/simTime"},
+        "event_sequence_no": {"type": "integer", "minimum": 1},
+        "entrance_node_id": {"$ref": "#/$defs/nullableId"}
+      }
+    },
+    "vehicleState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "anonymous_vehicle_id",
+        "location_state",
+        "arrival_status",
+        "departure_status",
+        "manual_status",
+        "ever_admitted",
+        "admitted_at_s",
+        "waiting_since_s",
+        "action_context_id",
+        "active_transaction_id",
+        "reservation_status",
+        "departure_information"
+      ],
+      "properties": {
+        "anonymous_vehicle_id": {"$ref": "#/$defs/id"},
+        "location_state": {"$ref": "#/$defs/locationState"},
+        "arrival_status": {
+          "enum": [
+            "PENDING",
+            "RECOMMENDED",
+            "ADMITTED",
+            "ENTRY_COMPLETED",
+            "CANCELLED",
+            "REJECTED"
+          ]
+        },
+        "departure_status": {
+          "enum": ["NONE", "PENDING", "IN_SERVICE", "COMPLETED"]
+        },
+        "manual_status": {
+          "enum": [
+            "NONE",
+            "REQUESTED",
+            "ACKNOWLEDGED",
+            "IN_PROGRESS",
+            "COMPLETED",
+            "FAILED"
+          ]
+        },
+        "ever_admitted": {"type": "boolean"},
+        "admitted_at_s": {"$ref": "#/$defs/nullableSimTime"},
+        "waiting_since_s": {"$ref": "#/$defs/nullableSimTime"},
+        "action_context_id": {"$ref": "#/$defs/nullableId"},
+        "active_transaction_id": {"$ref": "#/$defs/nullableId"},
+        "reservation_status": {"$ref": "#/$defs/reservationStatus"},
+        "departure_information": {"$ref": "#/$defs/departureInformation"}
+      }
+    },
+    "positionState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position_id",
+        "position_kind",
+        "physically_available",
+        "assignable",
+        "planned_closure",
+        "occupant_vehicle_id"
+      ],
+      "properties": {
+        "position_id": {"$ref": "#/$defs/id"},
+        "position_kind": {"enum": ["normal", "buffer"]},
+        "physically_available": {"type": "boolean"},
+        "assignable": {"type": "boolean"},
+        "planned_closure": {"type": "boolean"},
+        "occupant_vehicle_id": {"$ref": "#/$defs/nullableId"}
+      }
+    },
+    "positionReservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reservation_id",
+        "position_id",
+        "owner_vehicle_id",
+        "transaction_id",
+        "purpose",
+        "created_at_s"
+      ],
+      "properties": {
+        "reservation_id": {"$ref": "#/$defs/id"},
+        "position_id": {"$ref": "#/$defs/id"},
+        "owner_vehicle_id": {"$ref": "#/$defs/id"},
+        "transaction_id": {"$ref": "#/$defs/nullableId"},
+        "purpose": {"enum": ["admitted_assignment", "buffer_destination", "restore_original"]},
+        "created_at_s": {"$ref": "#/$defs/simTime"}
+      }
+    },
+    "resourceLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lock_id",
+        "resource_type",
+        "resource_id",
+        "transaction_id",
+        "created_at_s"
+      ],
+      "properties": {
+        "lock_id": {"$ref": "#/$defs/id"},
+        "resource_type": {"enum": ["vehicle", "position", "stack_group", "channel_zone"]},
+        "resource_id": {"$ref": "#/$defs/id"},
+        "transaction_id": {"$ref": "#/$defs/id"},
+        "created_at_s": {"$ref": "#/$defs/simTime"}
+      }
+    },
+    "actionType": {
+      "enum": ["ASSIGN", "DIRECT_EXIT", "RELOCATE_TO_BUFFER", "RESTORE_ORIGINAL"]
+    },
+    "actionStatus": {
+      "enum": [
+        "RECOMMENDED",
+        "ACCEPTED",
+        "WAITING_FOR_RESOURCES",
+        "STARTED",
+        "COMPLETED",
+        "FAILED",
+        "ABORTED"
+      ]
+    },
+    "positionConfirmation": {
+      "enum": ["NOT_REQUIRED", "AT_ORIGIN", "AT_DESTINATION", "AT_OTHER_POSITION", "UNKNOWN"]
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "transaction_id",
+        "anonymous_vehicle_id",
+        "action_type",
+        "status",
+        "reason",
+        "origin_position_id",
+        "destination_position_id",
+        "destination_exit_id",
+        "distance_m",
+        "distance_value_source",
+        "modeled_duration_s",
+        "duration_value_source",
+        "recommended_at_s",
+        "accepted_at_s",
+        "started_at_s",
+        "ended_at_s",
+        "executor_type",
+        "executor_units",
+        "channel_zone_ids",
+        "failure_reason",
+        "position_confirmation"
+      ],
+      "properties": {
+        "action_id": {"$ref": "#/$defs/id"},
+        "transaction_id": {"$ref": "#/$defs/nullableId"},
+        "anonymous_vehicle_id": {"$ref": "#/$defs/id"},
+        "action_type": {"$ref": "#/$defs/actionType"},
+        "status": {"$ref": "#/$defs/actionStatus"},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+        "origin_position_id": {"$ref": "#/$defs/nullableId"},
+        "destination_position_id": {"$ref": "#/$defs/nullableId"},
+        "destination_exit_id": {"$ref": "#/$defs/nullableId"},
+        "distance_m": {"$ref": "#/$defs/nonNegativeNumber"},
+        "distance_value_source": {"enum": ["modeled", "measured"]},
+        "modeled_duration_s": {"$ref": "#/$defs/simTime"},
+        "duration_value_source": {"enum": ["modeled", "measured"]},
+        "recommended_at_s": {"$ref": "#/$defs/simTime"},
+        "accepted_at_s": {"$ref": "#/$defs/nullableSimTime"},
+        "started_at_s": {"$ref": "#/$defs/nullableSimTime"},
+        "ended_at_s": {"$ref": "#/$defs/nullableSimTime"},
+        "executor_type": {"$ref": "#/$defs/executorType"},
+        "executor_units": {"type": "integer", "minimum": 0},
+        "channel_zone_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/id"},
+          "uniqueItems": true
+        },
+        "failure_reason": {
+          "oneOf": [
+            {"type": "string", "minLength": 1, "maxLength": 256},
+            {"type": "null"}
+          ]
+        },
+        "position_confirmation": {"$ref": "#/$defs/positionConfirmation"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"action_type": {"const": "ASSIGN"}},
+            "required": ["action_type"]
+          },
+          "then": {
+            "properties": {
+              "transaction_id": {"type": "null"},
+              "destination_position_id": {"$ref": "#/$defs/id"},
+              "destination_exit_id": {"type": "null"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"action_type": {"const": "DIRECT_EXIT"}},
+            "required": ["action_type"]
+          },
+          "then": {
+            "properties": {
+              "origin_position_id": {"$ref": "#/$defs/id"},
+              "destination_position_id": {"type": "null"},
+              "destination_exit_id": {"$ref": "#/$defs/id"}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "action_type": {"enum": ["RELOCATE_TO_BUFFER", "RESTORE_ORIGINAL"]}
+            },
+            "required": ["action_type"]
+          },
+          "then": {
+            "properties": {
+              "transaction_id": {"$ref": "#/$defs/id"},
+              "origin_position_id": {"$ref": "#/$defs/id"},
+              "destination_position_id": {"$ref": "#/$defs/id"},
+              "destination_exit_id": {"type": "null"},
+              "executor_units": {"const": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "ACCEPTED",
+                  "WAITING_FOR_RESOURCES",
+                  "STARTED",
+                  "COMPLETED",
+                  "FAILED",
+                  "ABORTED"
+                ]
+              }
+            },
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"accepted_at_s": {"$ref": "#/$defs/simTime"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"enum": ["STARTED", "COMPLETED", "FAILED"]}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"started_at_s": {"$ref": "#/$defs/simTime"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"enum": ["COMPLETED", "FAILED", "ABORTED"]}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"ended_at_s": {"$ref": "#/$defs/simTime"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "FAILED"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"failure_reason": {"type": "string", "minLength": 1}}
+          },
+          "else": {
+            "properties": {"failure_reason": {"type": "null"}}
+          }
+        },
+        {
+          "if": {
+            "properties": {"status": {"const": "ABORTED"}},
+            "required": ["status"]
+          },
+          "then": {
+            "properties": {"started_at_s": {"type": "null"}}
+          }
+        }
+      ]
+    },
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transaction_id",
+        "target_vehicle_id",
+        "status",
+        "blocker_vehicle_ids",
+        "buffer_assignments",
+        "action_ids",
+        "precedence_edges",
+        "created_at_s",
+        "ended_at_s"
+      ],
+      "properties": {
+        "transaction_id": {"$ref": "#/$defs/id"},
+        "target_vehicle_id": {"$ref": "#/$defs/id"},
+        "status": {
+          "enum": [
+            "PROPOSED",
+            "RESERVED",
+            "MOVING_BLOCKERS_OUT",
+            "TARGET_EXITING",
+            "RESTORING_ORIGINALS",
+            "COMPLETED",
+            "CANCELLED",
+            "FAILED_MANUAL_PENDING",
+            "FAILED_RESOLVED"
+          ]
+        },
+        "blocker_vehicle_ids": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/id"},
+          "uniqueItems": true
+        },
+        "buffer_assignments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "blocker_vehicle_id",
+              "original_position_id",
+              "buffer_position_id"
+            ],
+            "properties": {
+              "blocker_vehicle_id": {"$ref": "#/$defs/id"},
+              "original_position_id": {"$ref": "#/$defs/id"},
+              "buffer_position_id": {"$ref": "#/$defs/id"}
+            }
+          }
+        },
+        "action_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/id"},
+          "uniqueItems": true
+        },
+        "precedence_edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["before_action_id", "after_action_id"],
+            "properties": {
+              "before_action_id": {"$ref": "#/$defs/id"},
+              "after_action_id": {"$ref": "#/$defs/id"}
+            }
+          }
+        },
+        "created_at_s": {"$ref": "#/$defs/simTime"},
+        "ended_at_s": {"$ref": "#/$defs/nullableSimTime"}
+      }
+    },
+    "executorResourceState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capacity", "used", "active_action_ids"],
+      "properties": {
+        "capacity": {"type": "integer", "minimum": 1},
+        "used": {"type": "integer", "minimum": 0},
+        "active_action_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/id"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "channelZoneResourceState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["channel_zone_id", "capacity", "used", "active_action_ids"],
+      "properties": {
+        "channel_zone_id": {"$ref": "#/$defs/id"},
+        "capacity": {"type": "integer", "minimum": 1},
+        "used": {"type": "integer", "minimum": 0},
+        "active_action_ids": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/id"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "solverStatus": {
+      "enum": [
+        "NOT_RUN",
+        "OPTIMAL",
+        "FEASIBLE",
+        "TIME_LIMIT_FEASIBLE",
+        "TIME_LIMIT_NO_FEASIBLE",
+        "INFEASIBLE",
+        "MODEL_INVALID",
+        "VALIDATION_FAILED",
+        "ERROR"
+      ]
+    },
+    "validationStatus": {
+      "enum": ["NOT_RUN", "VALID", "INVALID", "ERROR"]
+    },
+    "fallbackRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "original_method",
+        "original_solver_status",
+        "reason",
+        "used_strategy",
+        "elapsed_s",
+        "result_validation_status"
+      ],
+      "properties": {
+        "original_method": {"$ref": "#/$defs/id"},
+        "original_solver_status": {"$ref": "#/$defs/solverStatus"},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+        "used_strategy": {"$ref": "#/$defs/id"},
+        "elapsed_s": {"$ref": "#/$defs/nonNegativeNumber"},
+        "result_validation_status": {"$ref": "#/$defs/validationStatus"}
+      }
+    }
+  }
+}

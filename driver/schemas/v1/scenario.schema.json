@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/scenario.schema.json",
+  "title": "Scenario truth input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "layout_id",
+    "data_source",
+    "purpose",
+    "random_seed",
+    "arrival_window_end_s",
+    "drain_deadline_s",
+    "config",
+    "vehicle_requests",
+    "truth_events",
+    "information_updates"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "scenario_id": {"$ref": "common.schema.json#/$defs/id"},
+    "layout_id": {"$ref": "common.schema.json#/$defs/id"},
+    "data_source": {"enum": ["synthetic", "real_anonymized"]},
+    "purpose": {"enum": ["simulation_truth", "real_replay", "manual_case"]},
+    "random_seed": {
+      "oneOf": [
+        {"type": "integer", "minimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "arrival_window_end_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "drain_deadline_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recoverability_policy",
+        "buffer_count",
+        "active_buffer_position_ids",
+        "relocation_executor_capacity",
+        "executor_type",
+        "relocation_setup_s",
+        "relocation_speed_mps",
+        "arrival_wait_capacity",
+        "max_arrival_wait_s",
+        "max_departure_wait_s",
+        "fallback_target_s",
+        "minimum_logging_reserve_s"
+      ],
+      "properties": {
+        "recoverability_policy": {"$ref": "common.schema.json#/$defs/recoverabilityPolicy"},
+        "buffer_count": {"type": "integer", "minimum": 0},
+        "active_buffer_position_ids": {
+          "type": "array",
+          "items": {"$ref": "common.schema.json#/$defs/id"},
+          "uniqueItems": true
+        },
+        "relocation_executor_capacity": {"type": "integer", "minimum": 1},
+        "executor_type": {"$ref": "common.schema.json#/$defs/executorType"},
+        "relocation_setup_s": {"$ref": "common.schema.json#/$defs/nonNegativeNumber"},
+        "relocation_speed_mps": {"type": "number", "exclusiveMinimum": 0},
+        "arrival_wait_capacity": {"type": "integer", "minimum": 0},
+        "max_arrival_wait_s": {"$ref": "common.schema.json#/$defs/simTime"},
+        "max_departure_wait_s": {"$ref": "common.schema.json#/$defs/simTime"},
+        "fallback_target_s": {"type": "number", "exclusiveMinimum": 0},
+        "minimum_logging_reserve_s": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "vehicle_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "request_id",
+          "anonymous_vehicle_id",
+          "arrival_time_s",
+          "entrance_node_id",
+          "reservation_status",
+          "departure_information"
+        ],
+        "properties": {
+          "request_id": {"$ref": "common.schema.json#/$defs/id"},
+          "anonymous_vehicle_id": {"$ref": "common.schema.json#/$defs/id"},
+          "arrival_time_s": {"$ref": "common.schema.json#/$defs/simTime"},
+          "entrance_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "reservation_status": {"$ref": "common.schema.json#/$defs/reservationStatus"},
+          "departure_information": {"$ref": "common.schema.json#/$defs/departureInformation"}
+        }
+      }
+    },
+    "truth_events": {
+      "description": "Full truth for simulator, replay, and oracle only; never project future records to policies.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["truth_event_id", "anonymous_vehicle_id", "event_kind", "event_time_s"],
+        "properties": {
+          "truth_event_id": {"$ref": "common.schema.json#/$defs/id"},
+          "anonymous_vehicle_id": {"$ref": "common.schema.json#/$defs/id"},
+          "event_kind": {"enum": ["DEPARTURE_REQUEST", "USER_CANCELLED"]},
+          "event_time_s": {"$ref": "common.schema.json#/$defs/simTime"}
+        }
+      }
+    },
+    "information_updates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "information_update_id",
+          "anonymous_vehicle_id",
+          "reservation_status",
+          "departure_information"
+        ],
+        "properties": {
+          "information_update_id": {"$ref": "common.schema.json#/$defs/id"},
+          "anonymous_vehicle_id": {"$ref": "common.schema.json#/$defs/id"},
+          "reservation_status": {"$ref": "common.schema.json#/$defs/reservationStatus"},
+          "departure_information": {"$ref": "common.schema.json#/$defs/departureInformation"}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"data_source": {"const": "synthetic"}},
+        "required": ["data_source"]
+      },
+      "then": {
+        "properties": {"random_seed": {"type": "integer", "minimum": 0}}
+      }
+    }
+  ]
+}

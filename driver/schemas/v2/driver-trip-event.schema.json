@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "sequence_no": {
+      "minimum": 1,
+      "title": "Sequence No",
+      "type": "integer"
+    },
+    "event_type": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "reason_code": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason Code"
+    },
+    "occurred_at": {
+      "format": "date-time",
+      "title": "Occurred At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sequence_no",
+    "event_type",
+    "occurred_at"
+  ],
+  "title": "DriverTripEvent",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-trip-event.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

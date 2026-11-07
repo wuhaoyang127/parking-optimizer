@@ -1,0 +1,24 @@
+schema_version = "1.0.0"
+
+[session]
+driver_idle_ttl_s = 1800
+defense_idle_ttl_s = 7200
+soft_hold_ttl_s = 30
+driver_reservation_ttl_s = 300
+defense_reservation_ttl_s = 60
+eta_safety_margin_s = 60
+
+[driver_demo]
+profiles_enabled = true
+tandem_arrival_replay_enabled = true
+tandem_departure_replay_enabled = true
+
+[performance]
+state_command_p95_ms = 100
+recommend_and_hold_p95_ms = 500
+recommend_absolute_timeout_s = 3
+replan_p95_ms = 100
+replay_vehicle_count = 100
+replay_event_count = 10000
+replay_max_s = 2
+replay_incremental_memory_mb = 256

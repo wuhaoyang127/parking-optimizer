@@ -1,0 +1,163 @@
+{
+  "$defs": {
+    "SimulationEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "sequence_no": {
+          "minimum": 1,
+          "title": "Sequence No",
+          "type": "integer"
+        },
+        "simulation_time_s": {
+          "minimum": 0,
+          "title": "Simulation Time S",
+          "type": "integer"
+        },
+        "wall_time": {
+          "format": "date-time",
+          "title": "Wall Time",
+          "type": "string"
+        },
+        "event_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "subject_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "sequence_no",
+        "simulation_time_s",
+        "wall_time",
+        "event_type",
+        "subject_id",
+        "payload",
+        "before_sha256",
+        "after_sha256"
+      ],
+      "title": "SimulationEvent",
+      "type": "object"
+    },
+    "SimulationSummaryResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "vehicle_count": {
+          "minimum": 0,
+          "title": "Vehicle Count",
+          "type": "integer"
+        },
+        "occupied_space_count": {
+          "minimum": 0,
+          "title": "Occupied Space Count",
+          "type": "integer"
+        },
+        "waiting_vehicle_count": {
+          "minimum": 0,
+          "title": "Waiting Vehicle Count",
+          "type": "integer"
+        },
+        "relocation_count": {
+          "minimum": 0,
+          "title": "Relocation Count",
+          "type": "integer"
+        },
+        "failure_count": {
+          "minimum": 0,
+          "title": "Failure Count",
+          "type": "integer"
+        },
+        "final_state_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Final State Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "vehicle_count",
+        "occupied_space_count",
+        "waiting_vehicle_count",
+        "relocation_count",
+        "failure_count",
+        "final_state_sha256"
+      ],
+      "title": "SimulationSummaryResponse",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "events": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/simulation-run-response.schema.json#/$defs/SimulationEvent"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "summary": {
+      "$ref": "https://parksim.example/schemas/v2/simulation-run-response.schema.json#/$defs/SimulationSummaryResponse"
+    }
+  },
+  "required": [
+    "seed",
+    "events",
+    "summary"
+  ],
+  "title": "SimulationRunResponse",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/simulation-run-response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

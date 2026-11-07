@@ -1,0 +1,224 @@
+{
+  "$defs": {
+    "DataMode": {
+      "enum": [
+        "synthetic",
+        "real"
+      ],
+      "title": "DataMode",
+      "type": "string"
+    },
+    "DiscoveryLotSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "opening_hours_label": {
+          "description": "Display-only opening-hours label; clients must not derive opening status from it.",
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Opening Hours Label",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/DiscoveryPosition"
+        },
+        "offsite_estimates": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/OffsiteEstimate"
+          },
+          "minItems": 1,
+          "title": "Offsite Estimates",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "opening_hours_label",
+        "position",
+        "offsite_estimates"
+      ],
+      "title": "DiscoveryLotSummary",
+      "type": "object"
+    },
+    "DiscoveryPosition": {
+      "additionalProperties": false,
+      "properties": {
+        "x_pct": {
+          "description": "Horizontal percentage from the area canvas left edge.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "X Pct",
+          "type": "number"
+        },
+        "y_pct": {
+          "description": "Vertical percentage from the area canvas top edge.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Y Pct",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_pct",
+        "y_pct"
+      ],
+      "title": "DiscoveryPosition",
+      "type": "object"
+    },
+    "DiscoveryReferencePoint": {
+      "additionalProperties": false,
+      "properties": {
+        "reference_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Reference Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 40,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/DiscoveryPosition"
+        }
+      },
+      "required": [
+        "reference_id",
+        "label",
+        "position"
+      ],
+      "title": "DiscoveryReferencePoint",
+      "type": "object"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    },
+    "OffsiteEstimate": {
+      "additionalProperties": false,
+      "properties": {
+        "reference_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Reference Id",
+          "type": "string"
+        },
+        "distance_m": {
+          "description": "Source-provided offsite summary distance in metres; not an indoor route.",
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "integer"
+        },
+        "eta_s": {
+          "description": "Source-provided offsite summary ETA in seconds; not real-road navigation.",
+          "minimum": 0,
+          "title": "Eta S",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reference_id",
+        "distance_m",
+        "eta_s"
+      ],
+      "title": "OffsiteEstimate",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "area_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Area Id",
+      "type": "string"
+    },
+    "display_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Display Version",
+      "type": "string"
+    },
+    "coordinate_system": {
+      "const": "percentage_top_left",
+      "default": "percentage_top_left",
+      "title": "Coordinate System",
+      "type": "string"
+    },
+    "synthetic": {
+      "title": "Synthetic",
+      "type": "boolean"
+    },
+    "source_mode": {
+      "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/DataMode"
+    },
+    "source_health": {
+      "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/HealthStatus"
+    },
+    "default_reference_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Default Reference Id",
+      "type": "string"
+    },
+    "references": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/DiscoveryReferencePoint"
+      },
+      "minItems": 1,
+      "title": "References",
+      "type": "array"
+    },
+    "lots": {
+      "default": [],
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/discovery-area.schema.json#/$defs/DiscoveryLotSummary"
+      },
+      "title": "Lots",
+      "type": "array"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "area_id",
+    "display_version",
+    "synthetic",
+    "source_mode",
+    "source_health",
+    "default_reference_id",
+    "references",
+    "updated_at"
+  ],
+  "title": "DiscoveryArea",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/discovery-area.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

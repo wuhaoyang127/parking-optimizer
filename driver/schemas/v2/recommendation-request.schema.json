@@ -1,0 +1,110 @@
+{
+  "$defs": {
+    "DriverRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "request_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Request Id",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Idempotency Key",
+          "type": "string"
+        },
+        "session_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Session Id",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "entrance_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Entrance Node Id",
+          "type": "string"
+        },
+        "requires_charging": {
+          "default": false,
+          "title": "Requires Charging",
+          "type": "boolean"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "expected_departure_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Departure At"
+        }
+      },
+      "required": [
+        "request_id",
+        "idempotency_key",
+        "session_id",
+        "parking_lot_id",
+        "entrance_node_id",
+        "requested_at"
+      ],
+      "title": "DriverRequest",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "algorithm_id": {
+      "default": "online-rule-v2",
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Algorithm Id",
+      "type": "string"
+    },
+    "driver": {
+      "$ref": "https://parksim.example/schemas/v2/recommendation-request.schema.json#/$defs/DriverRequest"
+    }
+  },
+  "required": [
+    "driver"
+  ],
+  "title": "RecommendationRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/recommendation-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

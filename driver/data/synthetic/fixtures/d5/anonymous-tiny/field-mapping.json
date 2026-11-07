@@ -1,0 +1,38 @@
+{
+  "mapping_version": "1.0.0",
+  "target_schema_version": "1.0.0",
+  "layout": {
+    "constants": {
+      "/schema_version": "1.0.0"
+    },
+    "fields": [
+      {"source": "/site_code", "target": "/layout_id"},
+      {"source": "/coordinate_reference", "target": "/coordinate_system"},
+      {"source": "/network_nodes", "target": "/road_nodes"},
+      {"source": "/network_edges", "target": "/road_edges"},
+      {"source": "/route_costs", "target": "/path_costs"},
+      {"source": "/parking_spaces", "target": "/slots"},
+      {"source": "/temporary_buffers", "target": "/buffer_slots"},
+      {"source": "/aisle_zones", "target": "/channel_zones"}
+    ]
+  },
+  "events": {
+    "constants": {
+      "/schema_version": "1.0.0"
+    },
+    "fields": [
+      {"source": "/row_id", "target": "/event_id"},
+      {"source": "/run_key", "target": "/run_id"},
+      {"source": "/scenario_key", "target": "/scenario_id"},
+      {"source": "/order", "target": "/sequence_no"},
+      {"source": "/elapsed_s", "target": "/sim_time_s"},
+      {"source": "/logged_at", "target": "/recorded_at"},
+      {"source": "/kind", "target": "/event_type"},
+      {"source": "/vehicle_token", "target": "/anonymous_vehicle_id"},
+      {"source": "/move", "target": "/action"},
+      {"source": "/relocation_transaction_id", "target": "/transaction_id"},
+      {"source": "/transaction_record", "target": "/transaction"},
+      {"source": "/details", "target": "/payload"}
+    ]
+  }
+}

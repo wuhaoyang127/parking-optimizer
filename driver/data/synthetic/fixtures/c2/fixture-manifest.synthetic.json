@@ -1,0 +1,123 @@
+{
+  "schema_version": "1.0.0",
+  "data_source": "synthetic",
+  "purpose": "c2_development_fixture_manifest",
+  "random_seed": 1101,
+  "seed_partition": "development",
+  "generator": "scripts/generate_c2_fixtures.py",
+  "buffer_candidate_order": {
+    "independent": [
+      "ind-s099",
+      "ind-s100"
+    ],
+    "mixed_depth": [
+      "mix-i019",
+      "mix-i020"
+    ]
+  },
+  "extra_buffer_order": [
+    "mix-b001",
+    "mix-b002"
+  ],
+  "layouts": [
+    {
+      "layout_id": "independent-fixed-total-b0-v1",
+      "layout_family": "independent",
+      "buffer_count": 0,
+      "physical_position_count": 100,
+      "path": "layouts/independent-fixed-total-b0-v1.synthetic.json",
+      "content_sha256": "9abadc74df102cb77f8d6a3017ecbae9bf4097e70a3005dd2566d1878c6320e8",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "independent-fixed-total-b1-v1",
+      "layout_family": "independent",
+      "buffer_count": 1,
+      "physical_position_count": 100,
+      "path": "layouts/independent-fixed-total-b1-v1.synthetic.json",
+      "content_sha256": "0ae1440403a328dd4eec61cd2311f70e0b54e265ba76c5a5bbcc329a31aeabe7",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "independent-fixed-total-b2-v1",
+      "layout_family": "independent",
+      "buffer_count": 2,
+      "physical_position_count": 100,
+      "path": "layouts/independent-fixed-total-b2-v1.synthetic.json",
+      "content_sha256": "c2b56f70b35f6be64c1433b381c609d3d2f5a337777d0d928cac0fefacd68758",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "mixed-depth-fixed-total-b0-v1",
+      "layout_family": "mixed_depth",
+      "buffer_count": 0,
+      "physical_position_count": 100,
+      "path": "layouts/mixed-depth-fixed-total-b0-v1.synthetic.json",
+      "content_sha256": "f5c4865a11f039ef72e2e50ee30a6c10000c4efea00a71440903325d5f3804d3",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "mixed-depth-fixed-total-b1-v1",
+      "layout_family": "mixed_depth",
+      "buffer_count": 1,
+      "physical_position_count": 100,
+      "path": "layouts/mixed-depth-fixed-total-b1-v1.synthetic.json",
+      "content_sha256": "98f9138700200229adfc40af44a223eacdb7ac66cd1a7be67bc5f57348b6068e",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "mixed-depth-fixed-total-b2-v1",
+      "layout_family": "mixed_depth",
+      "buffer_count": 2,
+      "physical_position_count": 100,
+      "path": "layouts/mixed-depth-fixed-total-b2-v1.synthetic.json",
+      "content_sha256": "adfc1b88c4af4298f6e754fedbece056101fc2bd599ae4e56077b9c740a86cc5",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "mixed-depth-extra-buffer-b1-v1",
+      "layout_family": "mixed_depth",
+      "facility_capacity_mode": "extra_buffer_space",
+      "buffer_count": 1,
+      "normal_position_count": 100,
+      "physical_position_count": 101,
+      "path": "layouts/mixed-depth-extra-buffer-b1-v1.synthetic.json",
+      "content_sha256": "c30513f767279a87ba994306d14842cb17413ad5872aa6931932ebb9eb2ddd60",
+      "data_source": "synthetic",
+      "random_seed": null
+    },
+    {
+      "layout_id": "mixed-depth-extra-buffer-b2-v1",
+      "layout_family": "mixed_depth",
+      "facility_capacity_mode": "extra_buffer_space",
+      "buffer_count": 2,
+      "normal_position_count": 100,
+      "physical_position_count": 102,
+      "path": "layouts/mixed-depth-extra-buffer-b2-v1.synthetic.json",
+      "content_sha256": "ac166cfd7a9ee2720ebf399064d7b0e200e54c48210d334f7eecf7aa3350986b",
+      "data_source": "synthetic",
+      "random_seed": null
+    }
+  ],
+  "development_scenario": {
+    "scenario_id": "synthetic-mixed_depth-medium-1101",
+    "path": "scenarios/synthetic-mixed_depth-medium-seed-1101-development.json",
+    "scenario_content_sha256": "bc3d336f40c8109e9351e920f885da7c723645ffbc97e1012b2011aeb17a7423",
+    "event_truth_sha256": "dd6aa86657724f97a5b836bc674e7ff448cbb2dae1c55eb2eb0bf7867628f8f4",
+    "realized_offered_load_ratio": 0.8388805555555555,
+    "arrival_count": 468,
+    "data_source": "synthetic",
+    "random_seed": 1101
+  },
+  "limitations": [
+    "Synthetic fixtures are not real parking observations.",
+    "Layout files follow the frozen layout schema; synthetic lineage and the null layout seed are recorded in this manifest.",
+    "The development seed must not be used for formal conclusions."
+  ]
+}

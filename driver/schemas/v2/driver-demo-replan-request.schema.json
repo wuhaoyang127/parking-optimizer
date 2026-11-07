@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "Safe driver-demo action whose dynamic inputs are derived by the server.",
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "expected_version": {
+      "minimum": 1,
+      "title": "Expected Version",
+      "type": "integer"
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "action": {
+      "enum": [
+        "simulate_deviation",
+        "simulate_cost_update"
+      ],
+      "title": "Action",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_version",
+    "idempotency_key",
+    "action"
+  ],
+  "title": "DriverDemoReplanRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-demo-replan-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

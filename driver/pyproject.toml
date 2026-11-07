@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "parking-optimizer"
+version = "0.1.0"
+description = "Reproducible prototype for dynamic parking allocation and tandem-slot relocation."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "jsonschema[format-nongpl]>=4.25,<5",
+  "referencing>=0.36,<1",
+]
+
+[project.optional-dependencies]
+graph = ["networkx==3.6.1"]
+simulation = ["simpy==4.1.2"]
+oracle = ["ortools==9.15.6755"]
+report = ["matplotlib>=3.10,<4"]
+web-api = [
+  "fastapi==0.139.2",
+  "uvicorn==0.51.0",
+]
+app = [
+  "plotly==6.9.0",
+  "streamlit==1.60.0",
+]
+
+[dependency-groups]
+dev = [
+  "httpx==0.28.1",
+  "mypy>=2.3,<3",
+  "pytest>=9.1,<10",
+  "ruff>=0.15,<1",
+  "types-jsonschema>=4.26,<5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/parking_opt"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = ["prototypes", "scripts/validate_starter_package.py"]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "RUF", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src/parking_opt"]

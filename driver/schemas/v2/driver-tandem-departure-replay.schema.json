@@ -1,0 +1,926 @@
+{
+  "$defs": {
+    "Coordinate": {
+      "additionalProperties": false,
+      "properties": {
+        "x_m": {
+          "title": "X M",
+          "type": "number"
+        },
+        "y_m": {
+          "title": "Y M",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x_m",
+        "y_m"
+      ],
+      "title": "Coordinate",
+      "type": "object"
+    },
+    "DriverDemoProfile": {
+      "additionalProperties": false,
+      "description": "Human-readable identity for one deterministic synthetic driver state.",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "profile_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "ordinal": {
+          "minimum": 1,
+          "title": "Ordinal",
+          "type": "integer"
+        },
+        "total": {
+          "minimum": 1,
+          "title": "Total",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "profile_id",
+        "label",
+        "description",
+        "ordinal",
+        "total"
+      ],
+      "title": "DriverDemoProfile",
+      "type": "object"
+    },
+    "DriverTandemReplayLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "space",
+            "buffer",
+            "exit"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "location_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Location Id",
+          "type": "string"
+        },
+        "node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "floor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Floor Id",
+          "type": "string"
+        },
+        "coordinate": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/Coordinate"
+        }
+      },
+      "required": [
+        "kind",
+        "location_id",
+        "node_id",
+        "floor_id",
+        "coordinate"
+      ],
+      "title": "DriverTandemReplayLocation",
+      "type": "object"
+    },
+    "DriverTandemReplayStep": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "action": {
+          "enum": [
+            "relocate_to_buffer",
+            "direct_exit",
+            "restore_original"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "actor_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Actor Id",
+          "type": "string"
+        },
+        "actor_role": {
+          "enum": [
+            "driver",
+            "blocker"
+          ],
+          "title": "Actor Role",
+          "type": "string"
+        },
+        "label": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "from_location": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/DriverTandemReplayLocation"
+        },
+        "to_location": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/DriverTandemReplayLocation"
+        },
+        "route": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/Route"
+        },
+        "starts_at_s": {
+          "minimum": 0,
+          "title": "Starts At S",
+          "type": "number"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "title": "Duration S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sequence",
+        "action",
+        "actor_id",
+        "actor_role",
+        "label",
+        "from_location",
+        "to_location",
+        "route",
+        "starts_at_s",
+        "duration_s"
+      ],
+      "title": "DriverTandemReplayStep",
+      "type": "object"
+    },
+    "FacilityBufferState": {
+      "additionalProperties": false,
+      "properties": {
+        "buffer_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Buffer Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/SpaceStatus"
+        },
+        "observation_source": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilityObservationSource"
+        },
+        "reason_codes": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "buffer_id",
+        "status",
+        "observation_source"
+      ],
+      "title": "FacilityBufferState",
+      "type": "object"
+    },
+    "FacilityClaimStatus": {
+      "enum": [
+        "none",
+        "soft_held",
+        "session_reserved",
+        "navigating"
+      ],
+      "title": "FacilityClaimStatus",
+      "type": "string"
+    },
+    "FacilityObservationSource": {
+      "enum": [
+        "synthetic_truth",
+        "observation",
+        "user_override"
+      ],
+      "title": "FacilityObservationSource",
+      "type": "string"
+    },
+    "FacilitySourceKind": {
+      "enum": [
+        "synthetic",
+        "imported",
+        "real"
+      ],
+      "title": "FacilitySourceKind",
+      "type": "string"
+    },
+    "FacilitySourceStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "source_kind": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilitySourceKind"
+        },
+        "health": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/HealthStatus"
+        },
+        "source_name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "missing_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Fields",
+          "type": "array"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "fail_reason": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fail Reason"
+        }
+      },
+      "required": [
+        "source_kind",
+        "health",
+        "source_name",
+        "updated_at"
+      ],
+      "title": "FacilitySourceStatus",
+      "type": "object"
+    },
+    "FacilitySpaceState": {
+      "additionalProperties": false,
+      "properties": {
+        "space_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Space Id",
+          "type": "string"
+        },
+        "observed_status": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/SpaceStatus"
+        },
+        "observation_source": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilityObservationSource"
+        },
+        "claim_status": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilityClaimStatus",
+          "default": "none"
+        },
+        "effective_status": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/SpaceStatus"
+        },
+        "assignable": {
+          "title": "Assignable",
+          "type": "boolean"
+        },
+        "reason_codes": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "space_id",
+        "observed_status",
+        "observation_source",
+        "effective_status",
+        "assignable"
+      ],
+      "title": "FacilitySpaceState",
+      "type": "object"
+    },
+    "HealthStatus": {
+      "enum": [
+        "healthy",
+        "degraded",
+        "unavailable"
+      ],
+      "title": "HealthStatus",
+      "type": "string"
+    },
+    "Journey": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "journey_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Journey Id",
+          "type": "string"
+        },
+        "attempt_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "session_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Session Id",
+          "type": "string"
+        },
+        "namespace": {
+          "enum": [
+            "driver",
+            "defense"
+          ],
+          "title": "Namespace",
+          "type": "string"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "idle",
+            "waiting",
+            "soft_held",
+            "session_reserved",
+            "navigating",
+            "occupied",
+            "departed",
+            "cancelled",
+            "expired",
+            "failed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        },
+        "recommendation_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommendation Id"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "terminal_reason": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terminal Reason"
+        },
+        "legal_operations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Legal Operations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "journey_id",
+        "attempt_id",
+        "session_id",
+        "namespace",
+        "scenario_id",
+        "parking_lot_id",
+        "state",
+        "version",
+        "updated_at",
+        "legal_operations"
+      ],
+      "title": "Journey",
+      "type": "object"
+    },
+    "ParkingFacilityStateSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "scenario_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Scenario Version",
+          "type": "string"
+        },
+        "state_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "State Version",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilitySourceStatus"
+        },
+        "demo_profile": {
+          "anyOf": [
+            {
+              "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/DriverDemoProfile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "spaces": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilitySpaceState"
+          },
+          "minItems": 1,
+          "title": "Spaces",
+          "type": "array"
+        },
+        "buffers": {
+          "default": [],
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/FacilityBufferState"
+          },
+          "title": "Buffers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "scenario_id",
+        "scenario_version",
+        "state_version",
+        "observed_at",
+        "source",
+        "spaces"
+      ],
+      "title": "ParkingFacilityStateSnapshot",
+      "type": "object"
+    },
+    "Route": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "cost_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Cost Version",
+          "type": "string"
+        },
+        "from_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Node Id",
+          "type": "string"
+        },
+        "to_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Node Id",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "edge_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Edge Ids",
+          "type": "array"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "dynamic_eta_s": {
+          "minimum": 0,
+          "title": "Dynamic Eta S",
+          "type": "number"
+        },
+        "instructions": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/RouteInstruction"
+          },
+          "title": "Instructions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "cost_version",
+        "from_node_id",
+        "to_node_id",
+        "node_ids",
+        "edge_ids",
+        "distance_m",
+        "dynamic_eta_s",
+        "instructions"
+      ],
+      "title": "Route",
+      "type": "object"
+    },
+    "RouteInstruction": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "edge_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "travel_time_s": {
+          "minimum": 0,
+          "title": "Travel Time S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sequence",
+        "edge_id",
+        "text",
+        "distance_m",
+        "travel_time_s"
+      ],
+      "title": "RouteInstruction",
+      "type": "object"
+    },
+    "SpaceStatus": {
+      "enum": [
+        "available",
+        "occupied",
+        "unavailable",
+        "unknown"
+      ],
+      "title": "SpaceStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "replay_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Replay Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "journey_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Journey Id",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "layout_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Layout Version",
+      "type": "string"
+    },
+    "scenario_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Scenario Version",
+      "type": "string"
+    },
+    "state_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "State Version",
+      "type": "string"
+    },
+    "cost_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Cost Version",
+      "type": "string"
+    },
+    "profile_id": {
+      "const": "tandem-focus",
+      "default": "tandem-focus",
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "stack_group_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Stack Group Id",
+      "type": "string"
+    },
+    "target_space_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Target Space Id",
+      "type": "string"
+    },
+    "blocker_vehicle_ids": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Blocker Vehicle Ids",
+      "type": "array"
+    },
+    "buffer_ids": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Buffer Ids",
+      "type": "array"
+    },
+    "steps": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/DriverTandemReplayStep"
+      },
+      "minItems": 3,
+      "title": "Steps",
+      "type": "array"
+    },
+    "total_duration_s": {
+      "exclusiveMinimum": 0,
+      "title": "Total Duration S",
+      "type": "number"
+    },
+    "before_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Before Sha256",
+      "type": "string"
+    },
+    "after_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "After Sha256",
+      "type": "string"
+    },
+    "facility_state": {
+      "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/ParkingFacilityStateSnapshot"
+    },
+    "final_journey": {
+      "$ref": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json#/$defs/Journey"
+    }
+  },
+  "required": [
+    "replay_id",
+    "created_at",
+    "journey_id",
+    "parking_lot_id",
+    "layout_version",
+    "scenario_version",
+    "state_version",
+    "cost_version",
+    "stack_group_id",
+    "target_space_id",
+    "blocker_vehicle_ids",
+    "buffer_ids",
+    "steps",
+    "total_duration_s",
+    "before_sha256",
+    "after_sha256",
+    "facility_state",
+    "final_journey"
+  ],
+  "title": "DriverTandemDepartureReplay",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-tandem-departure-replay.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

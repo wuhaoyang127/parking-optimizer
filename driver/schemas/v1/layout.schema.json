@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/layout.schema.json",
+  "title": "Layout v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "layout_id",
+    "coordinate_system",
+    "road_nodes",
+    "road_edges",
+    "path_costs",
+    "slots",
+    "buffer_slots",
+    "channel_zones"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "layout_id": {"$ref": "common.schema.json#/$defs/id"},
+    "coordinate_system": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "origin_note"],
+      "properties": {
+        "kind": {"const": "local_meters"},
+        "origin_note": {"type": "string", "minLength": 1, "maxLength": 256}
+      }
+    },
+    "road_nodes": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["road_node_id", "x_m", "y_m", "node_kind"],
+        "properties": {
+          "road_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "x_m": {"type": "number"},
+          "y_m": {"type": "number"},
+          "node_kind": {"enum": ["entrance", "exit", "junction", "position_access"]}
+        }
+      }
+    },
+    "road_edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "road_edge_id",
+          "from_node_id",
+          "to_node_id",
+          "distance_m",
+          "travel_time_s",
+          "directed",
+          "channel_zone_ids"
+        ],
+        "properties": {
+          "road_edge_id": {"$ref": "common.schema.json#/$defs/id"},
+          "from_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "to_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "distance_m": {"$ref": "common.schema.json#/$defs/nonNegativeNumber"},
+          "travel_time_s": {"$ref": "common.schema.json#/$defs/simTime"},
+          "directed": {"type": "boolean"},
+          "channel_zone_ids": {
+            "type": "array",
+            "items": {"$ref": "common.schema.json#/$defs/id"},
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "path_costs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path_cost_id",
+          "from_node_id",
+          "to_node_id",
+          "distance_m",
+          "travel_time_s",
+          "road_edge_ids",
+          "channel_zone_ids"
+        ],
+        "properties": {
+          "path_cost_id": {"$ref": "common.schema.json#/$defs/id"},
+          "from_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "to_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "distance_m": {"$ref": "common.schema.json#/$defs/nonNegativeNumber"},
+          "travel_time_s": {"$ref": "common.schema.json#/$defs/simTime"},
+          "road_edge_ids": {
+            "type": "array",
+            "items": {"$ref": "common.schema.json#/$defs/id"}
+          },
+          "channel_zone_ids": {
+            "type": "array",
+            "items": {"$ref": "common.schema.json#/$defs/id"},
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "position_id",
+          "x_m",
+          "y_m",
+          "access_node_id",
+          "stack_group_id",
+          "depth",
+          "channel_zone_ids"
+        ],
+        "properties": {
+          "position_id": {"$ref": "common.schema.json#/$defs/id"},
+          "x_m": {"type": "number"},
+          "y_m": {"type": "number"},
+          "access_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "stack_group_id": {"$ref": "common.schema.json#/$defs/id"},
+          "depth": {"type": "integer", "minimum": 1},
+          "channel_zone_ids": {
+            "type": "array",
+            "items": {"$ref": "common.schema.json#/$defs/id"},
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "buffer_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["position_id", "x_m", "y_m", "access_node_id", "channel_zone_ids"],
+        "properties": {
+          "position_id": {"$ref": "common.schema.json#/$defs/id"},
+          "x_m": {"type": "number"},
+          "y_m": {"type": "number"},
+          "access_node_id": {"$ref": "common.schema.json#/$defs/id"},
+          "channel_zone_ids": {
+            "type": "array",
+            "items": {"$ref": "common.schema.json#/$defs/id"},
+            "uniqueItems": true
+          }
+        }
+      }
+    },
+    "channel_zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["channel_zone_id", "capacity"],
+        "properties": {
+          "channel_zone_id": {"$ref": "common.schema.json#/$defs/id"},
+          "capacity": {"type": "integer", "minimum": 1}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "$defs": {
+    "ChannelLoadSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "active_units_by_zone": {
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9._:-]*$": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": "Active Units By Zone",
+          "type": "object"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "observed_at",
+        "active_units_by_zone"
+      ],
+      "title": "ChannelLoadSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "expected_version": {
+      "minimum": 1,
+      "title": "Expected Version",
+      "type": "integer"
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Idempotency Key",
+      "type": "string"
+    },
+    "current_node_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Current Node Id",
+      "type": "string"
+    },
+    "trigger": {
+      "enum": [
+        "deviation",
+        "cost_update",
+        "manual_refresh"
+      ],
+      "title": "Trigger",
+      "type": "string"
+    },
+    "channel_load": {
+      "$ref": "https://parksim.example/schemas/v2/journey-replan-request.schema.json#/$defs/ChannelLoadSnapshot"
+    }
+  },
+  "required": [
+    "expected_version",
+    "idempotency_key",
+    "current_node_id",
+    "trigger",
+    "channel_load"
+  ],
+  "title": "JourneyReplanRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/journey-replan-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

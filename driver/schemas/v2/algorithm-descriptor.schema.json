@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "AlgorithmStatus": {
+      "enum": [
+        "online",
+        "pending"
+      ],
+      "title": "AlgorithmStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "algorithm_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Algorithm Id",
+      "type": "string"
+    },
+    "version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Version",
+      "type": "string"
+    },
+    "display_name": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Display Name",
+      "type": "string"
+    },
+    "category": {
+      "enum": [
+        "rule",
+        "metaheuristic",
+        "machine_learning",
+        "optimization"
+      ],
+      "title": "Category",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "https://parksim.example/schemas/v2/algorithm-descriptor.schema.json#/$defs/AlgorithmStatus"
+    },
+    "required_inputs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Inputs",
+      "type": "array"
+    },
+    "pending_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pending Reason"
+    }
+  },
+  "required": [
+    "algorithm_id",
+    "version",
+    "display_name",
+    "category",
+    "status",
+    "required_inputs"
+  ],
+  "title": "AlgorithmDescriptor",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/algorithm-descriptor.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

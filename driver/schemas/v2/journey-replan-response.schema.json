@@ -1,0 +1,481 @@
+{
+  "$defs": {
+    "CostSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "cost_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Cost Version",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "edge_travel_time_s": {
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9._:-]*$": {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": "Edge Travel Time S",
+          "type": "object"
+        },
+        "unavailable_edge_ids": {
+          "default": [],
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Unavailable Edge Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "cost_version",
+        "observed_at",
+        "edge_travel_time_s"
+      ],
+      "title": "CostSnapshot",
+      "type": "object"
+    },
+    "Journey": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "journey_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Journey Id",
+          "type": "string"
+        },
+        "attempt_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Attempt Id",
+          "type": "string"
+        },
+        "session_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Session Id",
+          "type": "string"
+        },
+        "namespace": {
+          "enum": [
+            "driver",
+            "defense"
+          ],
+          "title": "Namespace",
+          "type": "string"
+        },
+        "scenario_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Scenario Id",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "state": {
+          "enum": [
+            "idle",
+            "waiting",
+            "soft_held",
+            "session_reserved",
+            "navigating",
+            "occupied",
+            "departed",
+            "cancelled",
+            "expired",
+            "failed"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        },
+        "space_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space Id"
+        },
+        "recommendation_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recommendation Id"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "terminal_reason": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Terminal Reason"
+        },
+        "legal_operations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Legal Operations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "journey_id",
+        "attempt_id",
+        "session_id",
+        "namespace",
+        "scenario_id",
+        "parking_lot_id",
+        "state",
+        "version",
+        "updated_at",
+        "legal_operations"
+      ],
+      "title": "Journey",
+      "type": "object"
+    },
+    "ReplanDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "success",
+            "warning",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "trigger": {
+          "enum": [
+            "deviation",
+            "cost_update",
+            "manual_refresh"
+          ],
+          "title": "Trigger",
+          "type": "string"
+        },
+        "cost_snapshot": {
+          "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/CostSnapshot"
+        },
+        "previous_route": {
+          "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/Route"
+        },
+        "route": {
+          "anyOf": [
+            {
+              "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/Route"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "remaining_reservation_s": {
+          "minimum": 0,
+          "title": "Remaining Reservation S",
+          "type": "number"
+        },
+        "eta_with_safety_margin_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Eta With Safety Margin S"
+        },
+        "reason_codes": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "status",
+        "trigger",
+        "cost_snapshot",
+        "previous_route",
+        "remaining_reservation_s",
+        "reason_codes"
+      ],
+      "title": "ReplanDecision",
+      "type": "object"
+    },
+    "Route": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "layout_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Layout Version",
+          "type": "string"
+        },
+        "cost_version": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Cost Version",
+          "type": "string"
+        },
+        "from_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "From Node Id",
+          "type": "string"
+        },
+        "to_node_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "To Node Id",
+          "type": "string"
+        },
+        "node_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Node Ids",
+          "type": "array"
+        },
+        "edge_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "title": "Edge Ids",
+          "type": "array"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "dynamic_eta_s": {
+          "minimum": 0,
+          "title": "Dynamic Eta S",
+          "type": "number"
+        },
+        "instructions": {
+          "items": {
+            "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/RouteInstruction"
+          },
+          "title": "Instructions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "layout_version",
+        "cost_version",
+        "from_node_id",
+        "to_node_id",
+        "node_ids",
+        "edge_ids",
+        "distance_m",
+        "dynamic_eta_s",
+        "instructions"
+      ],
+      "title": "Route",
+      "type": "object"
+    },
+    "RouteInstruction": {
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "minimum": 1,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "edge_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "travel_time_s": {
+          "minimum": 0,
+          "title": "Travel Time S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sequence",
+        "edge_id",
+        "text",
+        "distance_m",
+        "travel_time_s"
+      ],
+      "title": "RouteInstruction",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "journey": {
+      "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/Journey"
+    },
+    "decision": {
+      "$ref": "https://parksim.example/schemas/v2/journey-replan-response.schema.json#/$defs/ReplanDecision"
+    }
+  },
+  "required": [
+    "journey",
+    "decision"
+  ],
+  "title": "JourneyReplanResponse",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/journey-replan-response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

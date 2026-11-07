@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "node_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Node Id",
+      "type": "string"
+    },
+    "label": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Label",
+      "type": "string"
+    }
+  },
+  "required": [
+    "node_id",
+    "label"
+  ],
+  "title": "DriverEntrance",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-entrance.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

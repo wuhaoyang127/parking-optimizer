@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "code": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Code",
+      "type": "string"
+    },
+    "message": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "details": {
+      "default": [],
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Details",
+      "type": "array"
+    },
+    "request_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Request Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "code",
+    "message",
+    "request_id"
+  ],
+  "title": "ErrorResponse",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/error-response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "SimulationEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0.0",
+          "default": "2.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "parking_lot_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Parking Lot Id",
+          "type": "string"
+        },
+        "sequence_no": {
+          "minimum": 1,
+          "title": "Sequence No",
+          "type": "integer"
+        },
+        "simulation_time_s": {
+          "minimum": 0,
+          "title": "Simulation Time S",
+          "type": "integer"
+        },
+        "wall_time": {
+          "format": "date-time",
+          "title": "Wall Time",
+          "type": "string"
+        },
+        "event_type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Event Type",
+          "type": "string"
+        },
+        "subject_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+          "title": "Subject Id",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "before_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Before Sha256",
+          "type": "string"
+        },
+        "after_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "After Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "parking_lot_id",
+        "sequence_no",
+        "simulation_time_s",
+        "wall_time",
+        "event_type",
+        "subject_id",
+        "payload",
+        "before_sha256",
+        "after_sha256"
+      ],
+      "title": "SimulationEvent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "parking_lot_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Parking Lot Id",
+      "type": "string"
+    },
+    "seed": {
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "wall_time_origin": {
+      "format": "date-time",
+      "title": "Wall Time Origin",
+      "type": "string"
+    },
+    "events": {
+      "items": {
+        "$ref": "https://parksim.example/schemas/v2/simulation-replay-request.schema.json#/$defs/SimulationEvent"
+      },
+      "title": "Events",
+      "type": "array"
+    }
+  },
+  "required": [
+    "parking_lot_id",
+    "seed",
+    "wall_time_origin",
+    "events"
+  ],
+  "title": "SimulationReplayRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/simulation-replay-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

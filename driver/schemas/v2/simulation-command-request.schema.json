@@ -1,0 +1,49 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "simulation_time_s": {
+      "minimum": 0,
+      "title": "Simulation Time S",
+      "type": "integer"
+    },
+    "priority": {
+      "title": "Priority",
+      "type": "integer"
+    },
+    "sequence_hint": {
+      "minimum": 0,
+      "title": "Sequence Hint",
+      "type": "integer"
+    },
+    "event_type": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Event Type",
+      "type": "string"
+    },
+    "vehicle_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Vehicle Id",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    }
+  },
+  "required": [
+    "simulation_time_s",
+    "priority",
+    "sequence_hint",
+    "event_type",
+    "vehicle_id"
+  ],
+  "title": "SimulationCommandRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/simulation-command-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

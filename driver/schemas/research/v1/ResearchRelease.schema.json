@@ -1,0 +1,208 @@
+{
+  "$defs": {
+    "HistoricalDurationModel": {
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "cart-duration-1.0.0",
+          "default": "cart-duration-1.0.0",
+          "title": "Contract",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "synthetic",
+            "observed"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "trained_before": {
+          "format": "date-time",
+          "title": "Trained Before",
+          "type": "string"
+        },
+        "training_hash": {
+          "pattern": "^[a-f0-9]{64}$",
+          "title": "Training Hash",
+          "type": "string"
+        },
+        "sample_count": {
+          "maximum": 1000,
+          "minimum": 10,
+          "title": "Sample Count",
+          "type": "integer"
+        },
+        "holdout_mae_s": {
+          "maximum": 604800,
+          "minimum": 0,
+          "title": "Holdout Mae S",
+          "type": "number"
+        },
+        "entries": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "type": "string"
+          },
+          "maxItems": 32,
+          "title": "Entries",
+          "type": "array"
+        },
+        "use_entry": {
+          "title": "Use Entry",
+          "type": "boolean"
+        },
+        "max_depth": {
+          "default": 4,
+          "maximum": 8,
+          "minimum": 2,
+          "title": "Max Depth",
+          "type": "integer"
+        },
+        "min_samples_leaf": {
+          "default": 5,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "Min Samples Leaf",
+          "type": "integer"
+        },
+        "threshold_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 604800,
+          "title": "Threshold S",
+          "type": "number"
+        },
+        "fallback_s": {
+          "exclusiveMinimum": 0,
+          "maximum": 604800,
+          "title": "Fallback S",
+          "type": "number"
+        },
+        "degenerate": {
+          "title": "Degenerate",
+          "type": "boolean"
+        },
+        "tree": {
+          "additionalProperties": true,
+          "title": "Tree",
+          "type": "object"
+        }
+      },
+      "required": [
+        "source",
+        "trained_before",
+        "training_hash",
+        "sample_count",
+        "holdout_mae_s",
+        "entries",
+        "use_entry",
+        "threshold_s",
+        "fallback_s",
+        "degenerate",
+        "tree"
+      ],
+      "title": "HistoricalDurationModel",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "release_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Release Id",
+      "type": "string"
+    },
+    "algorithm_id": {
+      "enum": [
+        "fcfs",
+        "nearest",
+        "random",
+        "greedy",
+        "departure_greedy",
+        "duration_greedy",
+        "risk_scoring",
+        "peak_offpeak_fusion",
+        "rho_rolling",
+        "ml_duration_tree"
+      ],
+      "title": "Algorithm Id",
+      "type": "string"
+    },
+    "algorithm_version": {
+      "default": "stage-d-bridge-2",
+      "enum": [
+        "stage-d-bridge-1",
+        "stage-d-bridge-2"
+      ],
+      "title": "Algorithm Version",
+      "type": "string"
+    },
+    "source_hash": {
+      "pattern": "^[a-f0-9]{64}$",
+      "title": "Source Hash",
+      "type": "string"
+    },
+    "params": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "maxProperties": 16,
+      "title": "Params",
+      "type": "object"
+    },
+    "seed": {
+      "default": 0,
+      "maximum": 4294967295,
+      "minimum": 0,
+      "title": "Seed",
+      "type": "integer"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HistoricalDurationModel"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "note": {
+      "default": "",
+      "maxLength": 500,
+      "title": "Note",
+      "type": "string"
+    }
+  },
+  "required": [
+    "release_id",
+    "algorithm_id",
+    "source_hash"
+  ],
+  "title": "ResearchRelease",
+  "type": "object"
+}

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/run-manifest.schema.json",
+  "title": "RunManifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "scenario_id",
+    "algorithm_id",
+    "algorithm_version",
+    "git_commit",
+    "git_dirty",
+    "config_sha256",
+    "input_data_sha256",
+    "random_seed",
+    "started_at",
+    "ended_at",
+    "python_version",
+    "dependencies",
+    "solver",
+    "operating_system",
+    "hardware_summary",
+    "command",
+    "run_status"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "run_id": {"$ref": "common.schema.json#/$defs/id"},
+    "scenario_id": {"$ref": "common.schema.json#/$defs/id"},
+    "algorithm_id": {"$ref": "common.schema.json#/$defs/id"},
+    "algorithm_version": {"$ref": "common.schema.json#/$defs/id"},
+    "git_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "git_dirty": {"type": "boolean"},
+    "config_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "input_data_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "random_seed": {
+      "oneOf": [
+        {"type": "integer", "minimum": 0},
+        {"type": "null"}
+      ]
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": "string", "format": "date-time"},
+    "python_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "version", "license"],
+        "properties": {
+          "name": {"$ref": "common.schema.json#/$defs/id"},
+          "version": {"type": "string", "minLength": 1, "maxLength": 128},
+          "license": {"type": "string", "minLength": 1, "maxLength": 128}
+        }
+      }
+    },
+    "solver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "oneOf": [
+            {"$ref": "common.schema.json#/$defs/id"},
+            {"type": "null"}
+          ]
+        },
+        "version": {
+          "oneOf": [
+            {"type": "string", "minLength": 1, "maxLength": 128},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "operating_system": {"type": "string", "minLength": 1, "maxLength": 256},
+    "hardware_summary": {"type": "string", "minLength": 1, "maxLength": 512},
+    "command": {"type": "string", "minLength": 1, "maxLength": 1024},
+    "run_status": {
+      "enum": ["COMPLETED", "FAILED", "ABORTED", "INVALID"]
+    }
+  }
+}

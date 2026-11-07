@@ -1,0 +1,557 @@
+{
+  "schema_version": "1.0.0",
+  "parking_lot_id": "lot-transport-hub",
+  "layout_version": "transport-hub-full-v1-layout-1",
+  "scenario_id": "transport-hub-full-v1",
+  "scenario_version": "scenario-1",
+  "state_version": "state-base-1",
+  "observed_at": "2026-08-20T09:00:00Z",
+  "source": {
+    "source_kind": "synthetic",
+    "health": "healthy",
+    "source_name": "web-v2 public deterministic facility generator",
+    "missing_fields": [],
+    "updated_at": "2026-08-20T09:00:00Z",
+    "fail_reason": null
+  },
+  "spaces": [
+    {
+      "space_id": "P-01",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-02",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-03",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-04",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-05",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-06",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-07",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-08",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-09",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-10",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-11",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-12",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-13",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-14",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-15",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-16",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-17",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-18",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-19",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-20",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-21",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-22",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-23",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-24",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-25",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-26",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-27",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-28",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-29",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-30",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-31",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-32",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-33",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-34",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-35",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-36",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-37",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-38",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-39",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-40",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-41",
+      "observed_status": "occupied",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "occupied",
+      "assignable": false,
+      "reason_codes": [
+        "SPACE_OCCUPIED"
+      ]
+    },
+    {
+      "space_id": "P-42",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-43",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-44",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-45",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-46",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-47",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-48",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-49",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-50",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-51",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    },
+    {
+      "space_id": "P-52",
+      "observed_status": "available",
+      "observation_source": "synthetic_truth",
+      "claim_status": "none",
+      "effective_status": "available",
+      "assignable": true,
+      "reason_codes": []
+    }
+  ],
+  "buffers": [
+    {
+      "buffer_id": "BUF-01",
+      "status": "available",
+      "observation_source": "synthetic_truth",
+      "reason_codes": []
+    }
+  ]
+}

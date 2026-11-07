@@ -1,0 +1,52 @@
+{
+  "additionalProperties": false,
+  "description": "Human-readable identity for one deterministic synthetic driver state.",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "profile_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Profile Id",
+      "type": "string"
+    },
+    "label": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Label",
+      "type": "string"
+    },
+    "description": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "ordinal": {
+      "minimum": 1,
+      "title": "Ordinal",
+      "type": "integer"
+    },
+    "total": {
+      "minimum": 1,
+      "title": "Total",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "profile_id",
+    "label",
+    "description",
+    "ordinal",
+    "total"
+  ],
+  "title": "DriverDemoProfile",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-demo-profile.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

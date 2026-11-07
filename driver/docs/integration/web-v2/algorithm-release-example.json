@@ -1,0 +1,26 @@
+{
+  "example_only": true,
+  "contract_status": "proposal_not_existing_api",
+  "contract_version": "1.0.0",
+  "release_id": "research-example-0.1.0",
+  "algorithm_id": "research-example",
+  "algorithm_version": "0.1.0",
+  "category": "allocation",
+  "release_state": "draft",
+  "artifact": {
+    "kind": "python_package",
+    "filename": "research_example-0.1.0-py3-none-any.whl",
+    "sha256": "REPLACE_WITH_ACTUAL_ARTIFACT_SHA256",
+    "dependency_lock_sha256": "REPLACE_WITH_ACTUAL_LOCK_SHA256",
+    "entrypoint": "research_example:rank_candidates",
+    "python": "3.11"
+  },
+  "input_contract": "visible-driver-input-1.0.0-proposal",
+  "output_contract": "ranked-candidates-1.0.0-proposal",
+  "visibility_policy": "as-of-only-no-future-no-oracle",
+  "supports_seed": true,
+  "validation": {"status": "not_run", "report_id": null},
+  "activation": {"requested": false, "scope": "driver-new-journeys", "pin_release_per_journey": true},
+  "rollback_release": "online-rule-v2@2.0.0",
+  "note": "Template only. Placeholder hashes and unvalidated releases must be rejected by a real publish endpoint."
+}

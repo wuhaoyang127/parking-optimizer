@@ -1,0 +1,634 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://parking-opt.local/schemas/v1/event.schema.json",
+  "title": "ParkingEvent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "run_id",
+    "scenario_id",
+    "sequence_no",
+    "sim_time_s",
+    "recorded_at",
+    "event_type",
+    "anonymous_vehicle_id",
+    "action",
+    "transaction_id",
+    "transaction",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"$ref": "common.schema.json#/$defs/schemaVersion"},
+    "event_id": {"$ref": "common.schema.json#/$defs/id"},
+    "run_id": {"$ref": "common.schema.json#/$defs/id"},
+    "scenario_id": {"$ref": "common.schema.json#/$defs/id"},
+    "sequence_no": {"type": "integer", "minimum": 1},
+    "sim_time_s": {"$ref": "common.schema.json#/$defs/simTime"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "event_type": {
+      "enum": [
+        "ARRIVAL_REQUESTED",
+        "ASSIGN_RECOMMENDED",
+        "ASSIGNMENT_ACCEPTED",
+        "DEPARTURE_REQUESTED",
+        "WAIT_DECIDED",
+        "REJECT_DECIDED",
+        "MANUAL_INTERVENTION_REQUESTED",
+        "MANUAL_STATUS_CHANGED",
+        "USER_CANCELLED",
+        "ACTION_RECOMMENDED",
+        "ACTION_ACCEPTED",
+        "ACTION_WAITING_FOR_RESOURCES",
+        "ACTION_STARTED",
+        "ACTION_COMPLETED",
+        "ACTION_FAILED_KNOWN_POSITION",
+        "ACTION_FAILED_POSITION_UNKNOWN",
+        "ABORTED_BEFORE_START",
+        "POSITION_RECONCILED",
+        "RELOCATION_TRANSACTION_CREATED",
+        "TRANSACTION_STAGE_ADVANCED",
+        "TRANSACTION_CANCELLED_BEFORE_EXECUTION",
+        "TRANSACTION_RECONCILED",
+        "FALLBACK_USED",
+        "INFORMATION_UPDATED",
+        "DECISION_TIMER_TRIGGERED"
+      ]
+    },
+    "anonymous_vehicle_id": {"$ref": "common.schema.json#/$defs/nullableId"},
+    "action": {
+      "oneOf": [
+        {"$ref": "common.schema.json#/$defs/action"},
+        {"type": "null"}
+      ]
+    },
+    "transaction_id": {"$ref": "common.schema.json#/$defs/nullableId"},
+    "transaction": {
+      "oneOf": [
+        {"$ref": "common.schema.json#/$defs/transaction"},
+        {"type": "null"}
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "request_id": {"$ref": "common.schema.json#/$defs/id"},
+        "decision_id": {"$ref": "common.schema.json#/$defs/id"},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 256},
+        "pending_request": {"$ref": "common.schema.json#/$defs/pendingRequest"},
+        "transaction_actions": {
+          "type": "array",
+          "items": {"$ref": "common.schema.json#/$defs/action"}
+        },
+        "created_reservations": {
+          "type": "array",
+          "items": {"$ref": "common.schema.json#/$defs/positionReservation"}
+        },
+        "created_locks": {
+          "type": "array",
+          "items": {"$ref": "common.schema.json#/$defs/resourceLock"}
+        },
+        "confirmed_location_state": {"$ref": "common.schema.json#/$defs/locationState"},
+        "manual_status": {
+          "enum": ["NONE", "REQUESTED", "ACKNOWLEDGED", "IN_PROGRESS", "COMPLETED", "FAILED"]
+        },
+        "departure_information": {
+          "$ref": "common.schema.json#/$defs/departureInformation"
+        },
+        "reservation_status": {"$ref": "common.schema.json#/$defs/reservationStatus"},
+        "fallback_record": {"$ref": "common.schema.json#/$defs/fallbackRecord"},
+        "timer_reason": {
+          "enum": [
+            "ARRIVAL_WAIT_DEADLINE",
+            "DEPARTURE_SLA_DEADLINE",
+            "ROLLING_WINDOW_TICK"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "ASSIGN_RECOMMENDED",
+              "ASSIGNMENT_ACCEPTED",
+              "ACTION_RECOMMENDED",
+              "ACTION_ACCEPTED",
+              "ACTION_WAITING_FOR_RESOURCES",
+              "ACTION_STARTED",
+              "ACTION_COMPLETED",
+              "ACTION_FAILED_KNOWN_POSITION",
+              "ACTION_FAILED_POSITION_UNKNOWN",
+              "ABORTED_BEFORE_START"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {"transaction": {"type": "null"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "DECISION_TIMER_TRIGGERED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "anonymous_vehicle_id": {"type": "null"},
+          "action": {"type": "null"},
+          "transaction_id": {"type": "null"},
+          "transaction": {"type": "null"},
+          "payload": {"required": ["timer_reason"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "ARRIVAL_REQUESTED",
+              "ASSIGN_RECOMMENDED",
+              "ASSIGNMENT_ACCEPTED",
+              "DEPARTURE_REQUESTED",
+              "WAIT_DECIDED",
+              "REJECT_DECIDED",
+              "MANUAL_INTERVENTION_REQUESTED",
+              "MANUAL_STATUS_CHANGED",
+              "USER_CANCELLED",
+              "ACTION_RECOMMENDED",
+              "ACTION_ACCEPTED",
+              "ACTION_WAITING_FOR_RESOURCES",
+              "ACTION_STARTED",
+              "ACTION_COMPLETED",
+              "ACTION_FAILED_KNOWN_POSITION",
+              "ACTION_FAILED_POSITION_UNKNOWN",
+              "ABORTED_BEFORE_START",
+              "POSITION_RECONCILED",
+              "INFORMATION_UPDATED"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "anonymous_vehicle_id": {"$ref": "common.schema.json#/$defs/id"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "FALLBACK_USED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["fallback_record"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ARRIVAL_REQUESTED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["pending_request"],
+            "properties": {
+              "pending_request": {
+                "allOf": [
+                  {"$ref": "common.schema.json#/$defs/pendingRequest"},
+                  {"properties": {"request_type": {"const": "ARRIVAL"}}}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "DEPARTURE_REQUESTED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["pending_request"],
+            "properties": {
+              "pending_request": {
+                "allOf": [
+                  {"$ref": "common.schema.json#/$defs/pendingRequest"},
+                  {"properties": {"request_type": {"const": "DEPARTURE"}}}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ASSIGN_RECOMMENDED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {
+                "properties": {
+                  "action_type": {"const": "ASSIGN"},
+                  "status": {"const": "RECOMMENDED"}
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ASSIGNMENT_ACCEPTED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["created_reservations"],
+            "properties": {
+              "created_reservations": {
+                "minItems": 1,
+                "maxItems": 1,
+                "items": {
+                  "allOf": [
+                    {"$ref": "common.schema.json#/$defs/positionReservation"},
+                    {
+                      "properties": {
+                        "transaction_id": {"type": "null"},
+                        "purpose": {"const": "admitted_assignment"}
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {
+                "properties": {
+                  "action_type": {"const": "ASSIGN"},
+                  "status": {"const": "ACCEPTED"}
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ACTION_RECOMMENDED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {
+                "properties": {
+                  "action_type": {
+                    "enum": [
+                      "DIRECT_EXIT",
+                      "RELOCATE_TO_BUFFER",
+                      "RESTORE_ORIGINAL"
+                    ]
+                  },
+                  "status": {"const": "RECOMMENDED"}
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ACTION_ACCEPTED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {
+                "properties": {
+                  "action_type": {
+                    "enum": [
+                      "DIRECT_EXIT",
+                      "RELOCATE_TO_BUFFER",
+                      "RESTORE_ORIGINAL"
+                    ]
+                  },
+                  "status": {"const": "ACCEPTED"}
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ACTION_WAITING_FOR_RESOURCES"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"status": {"const": "WAITING_FOR_RESOURCES"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ACTION_STARTED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"status": {"const": "STARTED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ACTION_COMPLETED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"status": {"const": "COMPLETED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": ["ACTION_FAILED_KNOWN_POSITION", "ACTION_FAILED_POSITION_UNKNOWN"]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"status": {"const": "FAILED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "ABORTED_BEFORE_START"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"status": {"const": "ABORTED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "POSITION_RECONCILED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {"required": ["confirmed_location_state"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"enum": ["WAIT_DECIDED", "REJECT_DECIDED", "USER_CANCELLED"]}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {"required": ["request_id"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "ACTION_FAILED_POSITION_UNKNOWN"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {"properties": {"position_confirmation": {"const": "UNKNOWN"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {"const": "ACTION_FAILED_KNOWN_POSITION"}
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["confirmed_location_state"],
+            "properties": {
+              "confirmed_location_state": {
+                "allOf": [
+                  {"$ref": "common.schema.json#/$defs/locationState"},
+                  {"properties": {"kind": {"const": "AT_POSITION"}}}
+                ]
+              }
+            }
+          },
+          "action": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/action"},
+              {
+                "properties": {
+                  "position_confirmation": {
+                    "enum": ["AT_ORIGIN", "AT_DESTINATION", "AT_OTHER_POSITION"]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "MANUAL_STATUS_CHANGED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {"required": ["manual_status"]}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "INFORMATION_UPDATED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": ["departure_information", "reservation_status"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event_type": {
+            "enum": [
+              "RELOCATION_TRANSACTION_CREATED",
+              "TRANSACTION_STAGE_ADVANCED",
+              "TRANSACTION_CANCELLED_BEFORE_EXECUTION",
+              "TRANSACTION_RECONCILED"
+            ]
+          }
+        },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "action": {"type": "null"},
+          "transaction_id": {"$ref": "common.schema.json#/$defs/id"},
+          "transaction": {"$ref": "common.schema.json#/$defs/transaction"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "RELOCATION_TRANSACTION_CREATED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "required": [
+              "transaction_actions",
+              "created_reservations",
+              "created_locks"
+            ],
+            "properties": {
+              "transaction_actions": {
+                "minItems": 1,
+                "items": {
+                  "allOf": [
+                    {"$ref": "common.schema.json#/$defs/action"},
+                    {"properties": {"status": {"const": "ACCEPTED"}}}
+                  ]
+                }
+              },
+              "created_reservations": {"minItems": 1},
+              "created_locks": {"minItems": 1}
+            }
+          },
+          "transaction": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/transaction"},
+              {"properties": {"status": {"const": "RESERVED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "TRANSACTION_CANCELLED_BEFORE_EXECUTION"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "transaction": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/transaction"},
+              {"properties": {"status": {"const": "CANCELLED"}}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"event_type": {"const": "TRANSACTION_RECONCILED"}},
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "transaction": {
+            "allOf": [
+              {"$ref": "common.schema.json#/$defs/transaction"},
+              {"properties": {"status": {"const": "FAILED_RESOLVED"}}}
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

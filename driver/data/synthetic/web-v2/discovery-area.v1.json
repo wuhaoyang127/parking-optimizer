@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0.0",
+  "area_id": "demo-city-core",
+  "display_version": "discovery-2026-08-13-a",
+  "coordinate_system": "percentage_top_left",
+  "synthetic": true,
+  "source_mode": "synthetic",
+  "source_health": "healthy",
+  "default_reference_id": "reference-south",
+  "references": [
+    {
+      "reference_id": "reference-south",
+      "label": "南侧参考点",
+      "position": {
+        "x_pct": 46.0,
+        "y_pct": 84.0
+      }
+    },
+    {
+      "reference_id": "reference-west",
+      "label": "西侧参考点",
+      "position": {
+        "x_pct": 12.0,
+        "y_pct": 48.0
+      }
+    },
+    {
+      "reference_id": "reference-east",
+      "label": "东侧参考点",
+      "position": {
+        "x_pct": 88.0,
+        "y_pct": 48.0
+      }
+    }
+  ],
+  "lots": [
+    {
+      "parking_lot_id": "lot-commercial",
+      "opening_hours_label": "每日 08:00-23:30",
+      "position": {
+        "x_pct": 78.0,
+        "y_pct": 20.0
+      },
+      "offsite_estimates": [
+        {
+          "reference_id": "reference-south",
+          "distance_m": 450,
+          "eta_s": 120
+        },
+        {
+          "reference_id": "reference-west",
+          "distance_m": 1080,
+          "eta_s": 250
+        },
+        {
+          "reference_id": "reference-east",
+          "distance_m": 380,
+          "eta_s": 95
+        }
+      ]
+    },
+    {
+      "parking_lot_id": "lot-school",
+      "opening_hours_label": "每日 06:30-23:00",
+      "position": {
+        "x_pct": 53.0,
+        "y_pct": 39.0
+      },
+      "offsite_estimates": [
+        {
+          "reference_id": "reference-south",
+          "distance_m": 680,
+          "eta_s": 150
+        },
+        {
+          "reference_id": "reference-west",
+          "distance_m": 730,
+          "eta_s": 165
+        },
+        {
+          "reference_id": "reference-east",
+          "distance_m": 620,
+          "eta_s": 140
+        }
+      ]
+    },
+    {
+      "parking_lot_id": "lot-hospital",
+      "opening_hours_label": "24 小时开放",
+      "position": {
+        "x_pct": 20.0,
+        "y_pct": 66.0
+      },
+      "offsite_estimates": [
+        {
+          "reference_id": "reference-south",
+          "distance_m": 920,
+          "eta_s": 210
+        },
+        {
+          "reference_id": "reference-west",
+          "distance_m": 310,
+          "eta_s": 80
+        },
+        {
+          "reference_id": "reference-east",
+          "distance_m": 1360,
+          "eta_s": 300
+        }
+      ]
+    },
+    {
+      "parking_lot_id": "lot-transport-hub",
+      "opening_hours_label": "24 小时开放",
+      "position": {
+        "x_pct": 71.0,
+        "y_pct": 70.0
+      },
+      "offsite_estimates": [
+        {
+          "reference_id": "reference-south",
+          "distance_m": 1250,
+          "eta_s": 280
+        },
+        {
+          "reference_id": "reference-west",
+          "distance_m": 1580,
+          "eta_s": 350
+        },
+        {
+          "reference_id": "reference-east",
+          "distance_m": 540,
+          "eta_s": 130
+        }
+      ]
+    }
+  ],
+  "updated_at": "2026-08-13T09:00:00Z"
+}

@@ -1,0 +1,39 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "expected_version": {
+      "minimum": 1,
+      "title": "Expected Version",
+      "type": "integer"
+    },
+    "expected_state_version": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Expected State Version",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+      "title": "Idempotency Key",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expected_version",
+    "expected_state_version",
+    "idempotency_key"
+  ],
+  "title": "DriverTandemDepartureRequest",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/driver-tandem-departure-request.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

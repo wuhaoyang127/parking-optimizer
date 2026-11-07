@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0.0",
+      "default": "2.0.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "vehicle_count": {
+      "minimum": 0,
+      "title": "Vehicle Count",
+      "type": "integer"
+    },
+    "occupied_space_count": {
+      "minimum": 0,
+      "title": "Occupied Space Count",
+      "type": "integer"
+    },
+    "waiting_vehicle_count": {
+      "minimum": 0,
+      "title": "Waiting Vehicle Count",
+      "type": "integer"
+    },
+    "relocation_count": {
+      "minimum": 0,
+      "title": "Relocation Count",
+      "type": "integer"
+    },
+    "failure_count": {
+      "minimum": 0,
+      "title": "Failure Count",
+      "type": "integer"
+    },
+    "final_state_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Final State Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "vehicle_count",
+    "occupied_space_count",
+    "waiting_vehicle_count",
+    "relocation_count",
+    "failure_count",
+    "final_state_sha256"
+  ],
+  "title": "SimulationSummaryResponse",
+  "type": "object",
+  "$id": "https://parksim.example/schemas/v2/simulation-summary-response.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}
