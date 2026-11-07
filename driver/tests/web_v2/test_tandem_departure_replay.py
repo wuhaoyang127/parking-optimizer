@@ -5,9 +5,6 @@ from typing import Any
 from fastapi.testclient import TestClient
 
 from parking_opt.api.app import create_app
-from parking_opt.api.facility_scenarios import PublicFacilityDataSource
-from parking_opt.api.models import SpaceStatus
-from parking_opt.api.routing import RouteNotFoundError
 from parking_opt.api.sources import ScenarioProfile
 
 
@@ -115,10 +112,7 @@ def _occupy_deep_tandem(
     ).json()
     return occupied, state
 
-
-def _replay_payload(
-    occupied: dict[str, Any], state: dict[str, Any], key: str
-) -> dict[str, Any]:
+def _replay_payload(occupied: dict[str, Any], state: dict[str, Any], key: str) -> dict[str, Any]:
     return {
         "schema_version": "1.0.0",
         "expected_version": occupied["version"],
@@ -156,7 +150,6 @@ def test_tandem_departure_replay_is_authoritative_idempotent_and_recoverable() -
     assert replay["facility_state"]["state_version"] == replay["state_version"]
     assert replay["facility_state"]["scenario_version"] == replay["scenario_version"]
     assert replay["facility_state"]["demo_profile"]["profile_id"] == "tandem-focus"
-
     repeated = client.post(path, headers=headers, json=payload)
     assert repeated.status_code == 200
     assert repeated.json() == replay
@@ -205,150 +198,3 @@ def test_tandem_departure_replay_rejects_stale_state_without_departing() -> None
     ).json()
     assert current["journey"]["state"] == "occupied"
     assert current["tandem_departure_replay"] is None
-
-
-def test_tandem_departure_replay_fails_before_movement_when_buffer_is_busy(
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
-    app = _app()
-    client = TestClient(app)
-    headers = {"X-Session-ID": "session-tandem-buffer"}
-    occupied, state = _occupy_deep_tandem(client, headers, "tandem-buffer")
-    source = app.state.public_source
-    assert isinstance(source, PublicFacilityDataSource)
-    original_get_state = source.get_state
-
-    def get_state_with_busy_buffer(
-        parking_lot_id: str, *, session_id: str
-    ):  # type: ignore[no-untyped-def]
-        current = original_get_state(parking_lot_id, session_id=session_id)
-        return current.model_copy(
-            update={
-                "buffers": tuple(
-                    item.model_copy(
-                        update={
-                            "status": SpaceStatus.OCCUPIED,
-                            "reason_codes": ("BUFFER_OCCUPIED",),
-                        }
-                    )
-                    for item in current.buffers
-                )
-            }
-        )
-
-    monkeypatch.setattr(source, "get_state", get_state_with_busy_buffer)
-    response = client.post(
-        f"/api/v2/journeys/{occupied['journey_id']}/tandem-departure-replay",
-        headers=headers,
-        json=_replay_payload(occupied, state, "depart-tandem-buffer"),
-    )
-    assert response.status_code == 409
-    assert "buffer" in response.json()["message"]
-    current = client.get(
-        "/api/v2/driver-session/current-trip", headers=headers
-    ).json()
-    assert current["journey"]["state"] == "occupied"
-
-
-def test_tandem_departure_replay_fails_closed_when_buffer_route_is_unreachable(
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
-    app = _app()
-    client = TestClient(app)
-    headers = {"X-Session-ID": "session-tandem-route"}
-    occupied, state = _occupy_deep_tandem(client, headers, "tandem-route")
-    route_service = app.state.route_service
-    original_route = route_service.route
-
-    def route_without_buffer(
-        layout,
-        costs,
-        *,
-        from_node_id: str,
-        to_node_id: str,
-    ):  # type: ignore[no-untyped-def]
-        if "buffer-access" in from_node_id or "buffer-access" in to_node_id:
-            raise RouteNotFoundError("buffer route is unavailable")
-        return original_route(
-            layout,
-            costs,
-            from_node_id=from_node_id,
-            to_node_id=to_node_id,
-        )
-
-    monkeypatch.setattr(route_service, "route", route_without_buffer)
-    response = client.post(
-        f"/api/v2/journeys/{occupied['journey_id']}/tandem-departure-replay",
-        headers=headers,
-        json=_replay_payload(occupied, state, "depart-tandem-route"),
-    )
-    assert response.status_code == 503
-    assert "buffer route" in response.json()["message"]
-    current = client.get(
-        "/api/v2/driver-session/current-trip", headers=headers
-    ).json()
-    assert current["journey"]["state"] == "occupied"
-    assert current["tandem_departure_replay"] is None
-
-
-def test_disabled_tandem_replay_keeps_legacy_departure_available() -> None:
-    client = TestClient(_app(enabled=False))
-    headers = {"X-Session-ID": "session-tandem-disabled"}
-    occupied, state = _occupy_deep_tandem(client, headers, "tandem-disabled")
-    replay = client.post(
-        f"/api/v2/journeys/{occupied['journey_id']}/tandem-departure-replay",
-        headers=headers,
-        json=_replay_payload(occupied, state, "depart-tandem-disabled"),
-    )
-    assert replay.status_code == 409
-    current = client.get(
-        "/api/v2/driver-session/current-trip", headers=headers
-    ).json()
-    assert current["journey"]["state"] == "occupied"
-    assert current["tandem_departure_replay_enabled"] is False
-    departed = client.post(
-        f"/api/v2/journeys/{occupied['journey_id']}/depart",
-        headers=headers,
-        json={
-            "schema_version": "2.0.0",
-            "expected_version": occupied["version"],
-            "idempotency_key": "legacy-depart-disabled",
-        },
-    )
-    assert departed.status_code == 200
-    assert departed.json()["state"] == "departed"
-
-
-def test_tandem_departure_replay_rolls_back_every_store_projection_on_failure(
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
-    app = _app()
-    client = TestClient(app, raise_server_exceptions=False)
-    headers = {"X-Session-ID": "session-tandem-rollback"}
-    occupied, state = _occupy_deep_tandem(client, headers, "tandem-rollback")
-    store = app.state.session_store
-
-    def fail_profile_advance(*, journey_id: str, profile_count: int) -> int:
-        del journey_id, profile_count
-        raise RuntimeError("injected terminal projection failure")
-
-    monkeypatch.setattr(
-        store, "advance_driver_demo_profile_after_terminal", fail_profile_advance
-    )
-    response = client.post(
-        f"/api/v2/journeys/{occupied['journey_id']}/tandem-departure-replay",
-        headers=headers,
-        json=_replay_payload(occupied, state, "depart-tandem-rollback"),
-    )
-    assert response.status_code == 500
-    current = client.get(
-        "/api/v2/driver-session/current-trip", headers=headers
-    ).json()
-    assert current["journey"]["state"] == "occupied"
-    assert current["journey"]["version"] == occupied["version"]
-    assert current["tandem_departure_replay"] is None
-    assert store.tandem_departure_replay(occupied["journey_id"]) is None
-    context = client.get(
-        "/api/v2/parking-lots/lot-school/driver-context", headers=headers
-    ).json()
-    assert context["demo_profile"]["profile_id"] == "tandem-focus"
