@@ -6,15 +6,13 @@ from pathlib import Path
 from time import monotonic
 from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse
-from parking_opt.api.research_models import (
-    ResearchRelease, DriverActivation, TrialStartRequest, TrialDecision, TrialRatioUpdate)
-from parking_opt.api.research_runtime import ResearchRuntime
+from parking_opt.api.research_models import ResearchRelease, DriverActivation, TrialStartRequest, TrialDecision, TrialRatioUpdate
+from parking_opt.api.research_runtime import ResearchRuntime, canonical_hash
 from parking_opt.api.research_store import ReleaseStore
 from parking_opt.api.research_dispatch import ResearchDispatcher
 from parking_opt.api.models import DriverRequest
 from parking_opt.api.research_inputs import VisibleObservations
 from parking_opt.api.research_projection import validation_observations
-from parking_opt.api.research_runtime import canonical_hash
 
 
 def connect_research(app, baseline, routes, repo_root):
