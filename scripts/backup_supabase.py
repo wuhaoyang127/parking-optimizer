@@ -1,17 +1,9 @@
-"""导出 Supabase 数据库 public schema 全部业务表为 CSV 备份。
+"""导出 Supabase public schema 全部业务表为 CSV 备份。
 
-用途：Supabase 免费项目可能因不活跃被暂停，本脚本在恢复后把数据导出到本地
-``backups/<时间戳>/`` 目录，每张表一个 CSV（含表头），并生成 manifest.json。
-
-用法：
-    py scripts/backup_supabase.py                 # 备份到 backups/<时间戳>/
-    py scripts/backup_supabase.py --out DIR       # 指定输出目录
-
-连接串读取优先级：环境变量 DATABASE_URL > .streamlit/secrets.toml 的
-[supabase] DATABASE_URL。脚本不会在输出中打印任何密钥或密码。
-
-导出策略：每张表独立连接；优先用 COPY 快速导出，若 COPY 失败（例如
-Supabase 连接池对大表 COPY 不稳定），自动降级为按主键分页逐批导出。
+用法：py scripts/backup_supabase.py [--out DIR] [--batch N]
+每张表一个 CSV（含表头）到 backups/<时间戳>/，并生成 manifest.json。
+连接串：环境变量 DATABASE_URL 或 .streamlit/secrets.toml 的 [supabase] DATABASE_URL。
+导出策略：优先 COPY；失败自动降级为按主键分页导出。
 """
 
 from __future__ import annotations
@@ -27,78 +19,8 @@ from datetime import datetime
 
 from psycopg2 import sql
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-_NUMERIC_TYPES = {
-    "bigint", "integer", "smallint", "numeric", "real", "double precision",
-}
-
-
-def _load_database_url() -> str:
-    url = os.environ.get("DATABASE_URL") or os.environ.get("SUPABASE_DATABASE_URL")
-    if url:
-        return url.strip()
-    secrets_path = os.path.join(ROOT, ".streamlit", "secrets.toml")
-    if os.path.exists(secrets_path):
-        with open(secrets_path, encoding="utf-8") as f:
-            text = f.read()
-        m = re.search(r'^DATABASE_URL\s*=\s*"([^"]+)"', text, re.MULTILINE)
-        if m:
-            return m.group(1)
-    raise SystemExit(
-        "找不到 DATABASE_URL：请设置环境变量 DATABASE_URL，"
-        "或确认 .streamlit/secrets.toml 中存在 [supabase] DATABASE_URL。"
-    )
-
-
-def _connect(url: str):
-    import psycopg2
-
-    sep = "&" if "?" in url else "?"
-    if "sslmode=" not in url:
-        url = url + sep + "sslmode=require"
-    conn = psycopg2.connect(url, connect_timeout=25)
-    conn.autocommit = True
-    conn.set_session(readonly=True)
-    with conn.cursor() as cur:
-        cur.execute("SET statement_timeout = '180000'")
-    return conn
-
-
-def _list_tables(conn) -> list[str]:
-    with conn.cursor() as cur:
-        cur.execute(
-            "SELECT tablename FROM pg_tables "
-            "WHERE schemaname = 'public' ORDER BY tablename"
-        )
-        return [row[0] for row in cur.fetchall()]
-
-
-def _pk_info(conn, table: str):
-    """返回 (主键列名列表, 对应 data_type 列表)。"""
-    with conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT c.column_name, c.data_type
-            FROM information_schema.table_constraints tc
-            JOIN information_schema.key_column_usage kcu
-              ON tc.constraint_name = kcu.constraint_name
-             AND tc.table_schema = kcu.table_schema
-            JOIN information_schema.columns c
-              ON c.table_schema = kcu.table_schema
-             AND c.table_name = kcu.table_name
-             AND c.column_name = kcu.column_name
-            WHERE tc.constraint_type = 'PRIMARY KEY'
-              AND tc.table_schema = 'public'
-              AND tc.table_name = %s
-            ORDER BY kcu.ordinal_position
-            """,
-            (table,),
-        )
-        rows = cur.fetchall()
-        cols = [r[0] for r in rows]
-        types = [r[1] for r in rows]
-        return cols, types
+from supabase_conn import (NUMERIC_TYPES, ROOT, connect, list_tables,
+                           load_database_url, pk_info)
 
 
 def _copy_table(conn, table: str, path: str) -> dict:
@@ -120,7 +42,7 @@ def _copy_table(conn, table: str, path: str) -> dict:
 def _paged_table(conn, table: str, path: str, batch: int) -> dict:
     """按主键分页导出，适配 Supabase 连接池对大表 COPY 不稳定的情况。"""
     info = {"status": "ok", "rows": 0, "bytes": 0, "error": None}
-    pk_cols, pk_types = _pk_info(conn, table)
+    pk_cols, pk_types = pk_info(conn, table)
     if not pk_cols:
         raise RuntimeError("表无主键，无法分页导出")
 
@@ -134,7 +56,7 @@ def _paged_table(conn, table: str, path: str, batch: int) -> dict:
 
             if len(pk_cols) == 1:
                 col = pk_cols[0]
-                numeric = pk_types[0] in _NUMERIC_TYPES
+                numeric = pk_types[0] in NUMERIC_TYPES
                 order_sql = sql.SQL(" ORDER BY {}").format(sql.Identifier(col))
                 limit_sql = sql.SQL(" LIMIT %s")
                 if numeric:
@@ -199,7 +121,7 @@ def _backup_table(url: str, table: str, out_dir: str, batch: int) -> dict:
     safe_name = re.sub(r"[^A-Za-z0-9_\-]", "_", table)
     path = os.path.join(out_dir, f"{safe_name}.csv")
 
-    conn = _connect(url)
+    conn = connect(url)
     try:
         try:
             info = _copy_table(conn, table, path)
@@ -210,7 +132,7 @@ def _backup_table(url: str, table: str, out_dir: str, batch: int) -> dict:
             conn.close()
             if os.path.exists(path):
                 os.remove(path)
-            conn = _connect(url)
+            conn = connect(url)
             info = _paged_table(conn, table, path, batch)
             result.update(info)
             result["method"] = "paged"
@@ -232,14 +154,14 @@ def main() -> int:
                         help="分页导出时每批行数（默认 2000）")
     args = parser.parse_args()
 
-    url = _load_database_url()
+    url = load_database_url()
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_dir = args.out or os.path.join(ROOT, "backups", f"backup_{stamp}")
     os.makedirs(out_dir, exist_ok=True)
 
-    conn = _connect(url)
+    conn = connect(url)
     try:
-        tables = _list_tables(conn)
+        tables = list_tables(conn)
     finally:
         conn.close()
 
