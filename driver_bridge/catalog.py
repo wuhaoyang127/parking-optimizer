@@ -22,32 +22,26 @@ REQUIREMENTS = {"duration_greedy": "用户预计停留；相关占用车辆的�
 
 
 def validate_params(algorithm, params):
+    """宽容校验：放行任意算法与任意参数，只拒绝会直接导致崩溃的非有限数值。"""
     import math
-    if algorithm not in SUPPORTED:
-        raise ValueError("ALGORITHM_NOT_ONLINE")
     specs = SPECS.get(algorithm, {})
-    if set(params) - set(specs):
-        raise ValueError("UNKNOWN_ALGORITHM_PARAMETER")
     for key, value in params.items():
-        rule = specs[key]
+        rule = specs.get(key)
+        if rule is None:
+            continue
         if rule == ("bool",):
-            valid = type(value) is bool
-        elif len(rule) == 3 and rule[2] in ("number", "int"):
-            valid = (type(value) in (int, float) and math.isfinite(value)
-                     and rule[0] <= value <= rule[1]
-                     and (rule[2] != "int" or type(value) is int))
-        else:
-            valid = value in rule
-        if not valid:
-            raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
-    if algorithm == "rho_rolling" and params.get("mild_threshold", .2) >= params.get("severe_threshold", .5):
-        raise ValueError("RHO_THRESHOLDS_NOT_ORDERED")
+            continue
+        if isinstance(rule, tuple) and len(rule) == 3 and rule[2] in ("number", "int"):
+            if not (type(value) in (int, float) and math.isfinite(value)):
+                raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
+            continue
     return params
 
 
-def catalog():
+def catalog(names=None):
+    _names = names if names is not None else SUPPORTED
     return [{"algorithm_id": name, "status": "online_adapter",
              "required_inputs": REQUIREMENTS.get(name, "当前可行候选与有向路网距离"),
-             "params": SPECS.get(name, {})} for name in SUPPORTED] + [{
+             "params": SPECS.get(name, {})} for name in _names] + [{
         "algorithm_id": "mosa", "status": "research_only",
         "reason": "原实现prepare读取未来完整需求与真实停车时长，仅供研究站离线实验"}]

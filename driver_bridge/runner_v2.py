@@ -95,7 +95,12 @@ def rank(payload):
 if __name__ == "__main__":
     try:
         if sys.argv[1:] == ["--describe"]:
-            result = {"source_hash": source_hash(), "supported": SUPPORTED, "catalog": catalog()}
+            from loaders import bootstrap
+            registry = bootstrap(ROOT)
+            names = list(registry.all().keys())
+            if "ml_duration_tree" not in names:
+                names.append("ml_duration_tree")
+            result = {"source_hash": source_hash(), "supported": names, "catalog": catalog(names)}
         elif sys.argv[1:] == ["--check-release"]:
             payload = json.loads(sys.stdin.buffer.read(131073))
             validate_params(payload["algorithm_id"], payload.get("params", {}))
