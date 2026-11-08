@@ -61,3 +61,21 @@ def test_session_invalid_is_401(client, monkeypatch):
     )
     response = client.post("/api/v2/auth/session", json={"token": "bad"})
     assert response.status_code == 401
+
+
+def test_advanced_status_requires_session(client):
+    response = client.get("/api/v2/advanced/status")
+    assert response.status_code == 401
+
+
+def test_advanced_status_returns_algorithm_and_trial(client, monkeypatch):
+    monkeypatch.setattr(
+        "parking_opt.api.auth_supabase.validate_session",
+        lambda t: {"success": True, "username": "u", "role": "admin"},
+    )
+    response = client.get("/api/v2/advanced/status", headers={"Authorization": "Bearer t"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["account"]["username"] == "u"
+    assert "trial_stats" in body
+    assert "recent_receipts" in body

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { loadAdvancedStatus, type AdvancedStatus } from "../api/advancedClient";
 import type { Account } from "../api/authClient";
 
 const tabs = [
@@ -13,6 +14,22 @@ type TabId = (typeof tabs)[number]["id"];
 
 export function AdvancedPage({ account, onLogout }: { account: Account; onLogout: () => void }) {
   const [tab, setTab] = useState<TabId>("algorithms");
+  const [status, setStatus] = useState<AdvancedStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadAdvancedStatus(account.token)
+      .then((data) => {
+        if (!cancelled) setStatus(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "加载失败");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account.token]);
 
   return (
     <div className="advanced-page">
@@ -41,11 +58,67 @@ export function AdvancedPage({ account, onLogout }: { account: Account; onLogout
         ))}
       </nav>
       <main className="advanced-body">
-        {tab === "algorithms" && <p className="placeholder">算法信息（待实现）</p>}
-        {tab === "trial" && <p className="placeholder">试用状态（待实现）</p>}
-        {tab === "compare" && <p className="placeholder">实验对比（待实现）</p>}
-        {tab === "data" && <p className="placeholder">数据与布局（待实现）</p>}
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        {!error && tab === "algorithms" && <AlgorithmsPanel status={status} />}
+        {!error && tab === "trial" && <TrialPanel status={status} />}
+        {!error && tab === "compare" && <p className="placeholder">实验对比（待实现）</p>}
+        {!error && tab === "data" && <p className="placeholder">数据与布局（待实现）</p>}
       </main>
     </div>
+  );
+}
+
+function AlgorithmsPanel({ status }: { status: AdvancedStatus | null }) {
+  if (!status) return <p className="placeholder">加载中…</p>;
+  return (
+    <section>
+      <h3>当前算法</h3>
+      {status.active ? (
+        <p>
+          激活算法：<strong>{status.active.algorithm_id}</strong>（版本 {status.active.algorithm_version}）
+        </p>
+      ) : (
+        <p>当前未启用研究算法，使用默认在线规则推荐。</p>
+      )}
+      <h3>最近执行回执</h3>
+      {status.recent_receipts.length === 0 ? (
+        <p>暂无执行回执。</p>
+      ) : (
+        <ul className="receipt-list">
+          {status.recent_receipts.map((receipt, index) => (
+            <li key={index}>
+              {receipt.requested_algorithm ?? "—"} → {receipt.executed_algorithm ?? "—"}
+              {receipt.fallback_reason ? `（${receipt.fallback_reason}）` : ""}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function TrialPanel({ status }: { status: AdvancedStatus | null }) {
+  if (!status) return <p className="placeholder">加载中…</p>;
+  const stats = status.trial_stats;
+  return (
+    <section>
+      <h3>试用状态</h3>
+      {status.trial ? (
+        <p>
+          试用中：<strong>{status.trial.algorithm_id}</strong>（比例 {status.trial.trial_ratio}，评分{" "}
+          {status.trial.research_score}）
+        </p>
+      ) : (
+        <p>当前无试用中的版本。</p>
+      )}
+      <p>
+        试用回执：{stats.trial_request_count} 次请求，{stats.trial_success_count} 成功，
+        {stats.trial_fallback_count} 降级
+      </p>
+    </section>
   );
 }

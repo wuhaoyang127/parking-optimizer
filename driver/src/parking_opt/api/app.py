@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from parking_opt.api.adapters.v1 import V1OnlineRuleAdapter
 from parking_opt.api.app_contracts import ERROR_RESPONSES
+from parking_opt.api.app_routes_advanced import register_advanced_routes
 from parking_opt.api.app_routes_auth import register_auth_routes
 from parking_opt.api.app_routes_journey import register_journey_routes
 from parking_opt.api.app_routes_read import register_read_routes
@@ -179,6 +180,7 @@ def create_app(
     register_read_routes(app)
     register_recommend_routes(app)
     register_auth_routes(app)
+    register_advanced_routes(app)
     register_trip_routes(app)
     register_journey_routes(app)
     register_replan_routes(app)
