@@ -4,7 +4,9 @@ import {
   importLayout,
   listLayouts,
   loadAdvancedStatus,
+  loadCompare,
   type AdvancedStatus,
+  type CompareResult,
   type ImportedLayout,
 } from "../api/advancedClient";
 import type { Account } from "../api/authClient";
@@ -71,7 +73,7 @@ export function AdvancedPage({ account, onLogout }: { account: Account; onLogout
         )}
         {!error && tab === "algorithms" && <AlgorithmsPanel status={status} />}
         {!error && tab === "trial" && <TrialPanel status={status} />}
-        {!error && tab === "compare" && <p className="placeholder">实验对比（待实现）</p>}
+        {!error && tab === "compare" && <ComparePanel token={account.token} />}
         {!error && tab === "data" && <DataPanel token={account.token} />}
       </main>
     </div>
@@ -191,4 +193,85 @@ function DataPanel({ token }: { token: string }) {
       )}
     </section>
   );
+}
+
+function ComparePanel({ token }: { token: string }) {
+  const [compare, setCompare] = useState<CompareResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadCompare(token)
+      .then((data) => {
+        if (!cancelled) setCompare(data);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "加载失败");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  if (error) return <p className="error" role="alert">{error}</p>;
+  if (!compare) return <p className="placeholder">加载中…</p>;
+
+  return (
+    <section>
+      <h3>实验对比</h3>
+      {compare.trial ? (
+        <p>
+          试验算法：<strong>{compare.trial.algorithm_id}</strong>（评分 {compare.trial.research_score}）
+          vs 基线 <strong>{compare.baseline_algorithm}</strong>
+        </p>
+      ) : (
+        <p>当前无试验中的算法，无法对比。</p>
+      )}
+      <table className="compare-table">
+        <thead>
+          <tr>
+            <th>指标</th>
+            <th>试验算法</th>
+            <th>基线</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>请求数</td>
+            <td>{compare.trial_metrics.requests}</td>
+            <td>{compare.baseline_metrics.requests}</td>
+          </tr>
+          <tr>
+            <td>成功率</td>
+            <td>{percent(compare.trial_metrics.success_rate)}</td>
+            <td>{percent(compare.baseline_metrics.success_rate)}</td>
+          </tr>
+          <tr>
+            <td>平均耗时</td>
+            <td>{millis(compare.trial_metrics.avg_elapsed_ms)}</td>
+            <td>{millis(compare.baseline_metrics.avg_elapsed_ms)}</td>
+          </tr>
+          <tr>
+            <td>降级原因</td>
+            <td>{reasons(compare.trial_metrics.fallback_reasons)}</td>
+            <td>{reasons(compare.baseline_metrics.fallback_reasons)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function percent(value: number | null): string {
+  return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
+}
+
+function millis(value: number | null): string {
+  return value === null ? "—" : `${value} ms`;
+}
+
+function reasons(value: Record<string, number>): string {
+  const entries = Object.entries(value);
+  if (entries.length === 0) return "—";
+  return entries.map(([reason, count]) => `${reason}×${count}`).join("、");
 }

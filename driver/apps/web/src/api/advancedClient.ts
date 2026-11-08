@@ -100,3 +100,32 @@ export async function importLayout(
   }
   return payload as { saved: boolean; parking_lot_id: string };
 }
+
+export interface ExecutionMetrics {
+  requests: number;
+  success_rate: number | null;
+  avg_elapsed_ms: number | null;
+  fallback_reasons: Record<string, number>;
+}
+
+export interface CompareResult {
+  trial: { algorithm_id: string; trial_ratio: number; research_score: number } | null;
+  baseline_algorithm: string;
+  trial_metrics: ExecutionMetrics;
+  baseline_metrics: ExecutionMetrics;
+}
+
+export async function loadCompare(token: string): Promise<CompareResult> {
+  const response = await fetch("/api/v2/advanced/compare", {
+    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const message =
+      typeof payload === "object" && payload !== null && "detail" in payload
+        ? String((payload as { detail: unknown }).detail)
+        : "加载对比失败";
+    throw new ApiError(response.status, "ADVANCED_LOAD_FAILED", message);
+  }
+  return payload as CompareResult;
+}

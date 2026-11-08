@@ -131,3 +131,17 @@ def test_import_layout_rejects_invalid(client, monkeypatch):
     bad["spaces"][0]["access_node_id"] = "missing"
     response = client.post("/api/v2/advanced/layouts", json=bad, headers=headers)
     assert response.status_code == 422
+
+
+def test_compare_returns_trial_and_baseline_metrics(client, monkeypatch):
+    monkeypatch.setattr(
+        "parking_opt.api.auth_supabase.validate_session",
+        lambda t: {"success": True, "username": "u", "role": "admin"},
+    )
+    headers = {"Authorization": "Bearer t"}
+    response = client.get("/api/v2/advanced/compare", headers=headers)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["baseline_algorithm"] == "online-rule-v2"
+    assert "trial_metrics" in body
+    assert "baseline_metrics" in body

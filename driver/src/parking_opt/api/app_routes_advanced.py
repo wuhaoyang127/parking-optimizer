@@ -67,3 +67,39 @@ def register_advanced_routes(app: FastAPI) -> None:
         return {"saved": True, "parking_lot_id": layout.parking_lot_id,
                 "layout_version": layout.layout_version, "spaces": len(layout.spaces)}
 
+    @app.get("/api/v2/advanced/compare", tags=["advanced"])
+    def compare(authorization: str | None = Header(default=None)) -> dict:
+        _account(authorization)
+        store = app.state.release_store
+        current = store.current()
+        trial = current.get("trial")
+        active = current.get("active")
+        baseline_algorithm = active["algorithm_id"] if active else "online-rule-v2"
+        receipts = [r for r in store.audit() if r.get("kind") == "execution"]
+        trial_receipts = [r for r in receipts if r.get("dispatched_to_trial")]
+        baseline_receipts = [r for r in receipts if not r.get("dispatched_to_trial")]
+        return {
+            "trial": trial,
+            "baseline_algorithm": baseline_algorithm,
+            "trial_metrics": _execution_metrics(trial_receipts),
+            "baseline_metrics": _execution_metrics(baseline_receipts),
+        }
+
+
+def _execution_metrics(receipts: list) -> dict:
+    total = len(receipts)
+    if total == 0:
+        return {"requests": 0, "success_rate": None, "avg_elapsed_ms": None, "fallback_reasons": {}}
+    success = sum(1 for r in receipts if r.get("status") == "success")
+    elapsed = [float(r.get("elapsed_ms") or 0) for r in receipts]
+    reasons: dict[str, int] = {}
+    for receipt in receipts:
+        key = receipt.get("fallback_reason") or "none"
+        reasons[key] = reasons.get(key, 0) + 1
+    return {
+        "requests": total,
+        "success_rate": round(success / total, 4),
+        "avg_elapsed_ms": round(sum(elapsed) / total, 2),
+        "fallback_reasons": reasons,
+    }
+
