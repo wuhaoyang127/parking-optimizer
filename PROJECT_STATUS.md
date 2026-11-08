@@ -1,13 +1,13 @@
 ---
 project: 智能停车场车位分配与纵深移位优化
-status_version: 91
-last_updated: 2026-11-02
+status_version: 92
+last_updated: 2026-11-08
 current_stage: D
 stage_status: in_progress
-current_milestone: stage-d-driver-push-integration
+current_milestone: stage-d-trial-lifecycle
 git_initialized: true
 current_branch: stage-d-deliver
-last_verified_commit: 0a471e0
+last_verified_commit: 4025b6a
 current_exec_plan: null
 latest_handoff: docs/handoffs/2026-09-02-权限重构与代码拆分.md
 next_prompt: null
@@ -258,6 +258,8 @@ superseded
 - 真实布局数据的接入与脱敏方式。
 
 ## 13. 最近重要变更
+
+- 2026-11-08：**算法试用生命周期四阶段收口 + driver 全量回归修复**（用户需求：driver 单文件 ≤200 行拆分 + trial 生命周期「发布→校验→启用→试用（按比例分流）→决策→回滚」完整闭环）：①driver 48 个超限 Python 文件全部按功能拆分至 ≤200 行（`strategies/_selection`、`domain/transitions`、`api/sessions`、`api/app`、`api/models`、`app/pages`、`tests/web_v2/test_api` 等，`scripts/check_file_lines.py` 全绿），拆分引入的状态机回归（sessions 异常类型/`_transition` 语义/atomic 回滚、models 跨模块 re-export、app 路由注册、pages 中文编码）已逐批修复并推送到 `stage-d-deliver`；②修复 20 个失败转绿：`schemas/v2/openapi.json` 重生成（补 8 个 `/api/admin/v1/*` 路由）、`m2-v1-readonly-baseline.sha256` 重算、research 数据层 `publish` INSERT 八列修复、`visible_driver_inputs` 缺失补齐、`validate_params` 严格校验、runner 超时 2s→15s、simulation 指纹 f-string 提速；③trial 生命周期：阶段一数据层（releases/激活/backup/trial 状态机/execution-receipts，此前已推）、阶段二 driver 逐请求 trial-ratio 分发 + trial 回执（`ResearchDispatcher._resolve_release` 确定性比例 + receipt 记 `dispatched_to_trial`/`trial_ratio`/`research_score`）、阶段三 research 站试用控制面板 UI、阶段四转正/备选/删除二次确认（`render_backup_controls` 备选区 + checkbox 二次确认）；④`tests/web_v2` 235 passed（含新增 `test_research_trial.py` 8 项：分发/回执/统计/fallback/active 共存/比例调整/决策），`tests/test_driver_bridge.py` 4 passed；状态文档 status_version 91 → 92、`current_milestone` → `stage-d-trial-lifecycle`；待端到端联调（启动两站服务实测发布→校验→启用→试用→决策→回滚）与用户网页验收；
 
 - 2026-11-02：**🚀 车主端推送对接接入主 app（替换旧 Supabase 推送）**（用户需求：把 `parking-integrated` 已实现的「上传算法到车主端」接到主 app，「新算法接入」页用新推送覆盖旧的未对接接口，上传算法文件功能保留）：①移植 `src/driver_bridge/`（client/settings/training——服务端调用、密钥不进浏览器、非本机强制 HTTPS）与顶层 `driver_bridge/`（catalog/loaders/runner/runner_v2/train_model——车主端子进程执行入口与 ML 训练入口，全部 ≤200 行）；②`src/ui/pages/algo_push.py` 重写：`OWNER_APP_CONNECTED` 改为 `configured()`（要求 `PARKING_DRIVER_API_URL` + `PARKING_PUBLISH_TOKEN` ≥32 字符），接入后「新算法接入」页显示发布暂存/校验/启用/回滚/执行回执完整面板（`driver_release_panel.py` + `driver_inputs_panel.py`：历史 CSV 训练、可见观测导入、车主会话导出），未配置时显示「🚀 打开推送控制台」跳转按钮（`PARKING_DRIVER_CONSOLE_URL`，默认 `http://127.0.0.1:8501`）；旧 Supabase 发布/实验降级为「📜 历史研究记录」只读页签；③`app.py` 侧边栏新增「🚗 打开车主端」链接；新增 `integration_console.py` 独立控制台入口（口令支持 env/secrets）；④Python 3.9 兼容修复（`datetime.UTC` → `timezone.utc`，本机 3.9 可跑）；⑤`.streamlit/secrets.toml.example` 增加 `[driver_bridge]` 段（6 个键），`docs/车主端接入契约.md` 重写为新契约（发布/校验/启用/回滚 + 旧契约历史存档）；⑥新增 `tests/test_driver_bridge.py`（4 项：配置读取优先级/远程 HTTP 拒绝/鉴权头与 JSON 构造），pytest 250 passed、行数检查（新增文件全部 ≤200 行；`scripts/backup_supabase.py` 275 行为此前 ops 提交遗留）、启动包自检通过（316 关键文件）；打备份 tag `backup-before-driver-push-integration-20261102`；本机已装 Python 3.11.9 并运行 `parking-integrated/setup.ps1` 安装车主端三件套（联调环境）；状态文档 status_version 90 → 91、`current_milestone` → `stage-d-driver-push-integration`；待用户网页验收（车主端公网 HTTPS 部署地址待定，云端完整推送需车主端部署后配置同名 secrets）；
 - 2026-09-25：**策略对比改为自由勾选（跨经典/ML 分类混合对比）**（用户需求：想选哪几个算法就对比哪几个，ML 也可与贪心等同场对比）：①`StrategyRegistry` 新增 `items_filtered(names, category)`——勾选列表优先、分类回退（旧任务兼容）、都给 None 返回全部，云端/本机 worker 共用口径；②仿真设置页策略选择重构：去掉两段式「是否加入机器学习」radio，改为**单算法下拉（跨分类，ML 算法带「（机器学习）」标记）**；下拉选「全部对比」时出现「☑️ 勾选参与对比的算法」多选框（默认全选、可任意勾选、可混合经典与 ML），勾空则运行按钮置灰；③云端 `compare_all_run` / 本地任务 payload（新增 `strategy.names`）/ `worker_compute` 全部改为按勾选列表取策略，旧任务无 names 仍按 category 回退（向后兼容）；④新增/更新测试：`items_filtered` 跨分类混合与优先级回退（2 项）、worker 按 names 过滤（1 项），pytest 246 passed、行数检查与启动包自检全绿；打备份 tag `backup-before-compare-checkboxes-20260925`；状态文档 status_version 89 → 90、`current_milestone` → `stage-d-compare-checkboxes`；待用户网页验收；

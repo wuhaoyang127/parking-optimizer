@@ -146,6 +146,8 @@ M6 离线发布。打包身份、解包运行和清理结果以 docs/audits/web-
 
 ## 8. 重要变更
 
+- 2026-11-08（拆分与回归修复 + trial 生命周期）：用户另行授权的 driver 单文件 ≤200 行拆分已完成（48 个超限文件全部按功能拆分，`scripts/check_file_lines.py` 全绿）；拆分引入的状态机/路由/编码回归已修复，`tests/web_v2` 235 passed、`tests/test_driver_bridge.py` 4 passed；trial 生命周期（发布→校验→启用→试用（按比例分流）→决策→回滚）四阶段收口（数据层 / driver 逐请求 trial-ratio 分发 + trial 回执 / research 站试用控制面板 / 转正·备选·删除二次确认），新增 `tests/web_v2/test_research_trial.py` 8 项。以上属 trial-lifecycle 开发工作，不改变 M4 `awaiting_review`、`implementation_authorized: false`、M5 未授权边界，也未合并 main、未打 tag。
+
 - 2026-10-18（展示完成）：共享静态图层memo/稳定引用、清晰路线/起终点、当前指引/演示进度和
   手机密度已完成；类型/lint/87组件与26真实功能通过。实质渲染改动后原production预算只跑一次
   通过（DT7Sgkzm构建）：推荐p95 381.98ms、入位158.32ms、离场106.13ms、长帧0；随后仅中性

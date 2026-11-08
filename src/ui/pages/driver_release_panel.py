@@ -89,7 +89,7 @@ def render_trial_controls():
                 st.rerun()
         with stop_col:
             if st.button("停止试用", key="trial_stop"):
-                call("/api/admin/v1/trials/stop", admin=True)
+                call("/api/admin/v1/trials/stop", {}, admin=True)
                 st.rerun()
     else:
         releases = call("/api/research/v1/releases")
