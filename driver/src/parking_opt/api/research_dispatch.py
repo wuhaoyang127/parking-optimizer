@@ -1,4 +1,5 @@
 """Research ranking behind existing feasibility and atomic Journey claim boundaries."""
+import hashlib
 from threading import RLock
 from time import monotonic
 from parking_opt.api.research_runtime import canonical_hash
@@ -13,10 +14,31 @@ class ResearchDispatcher:
         self._lock = RLock()
         self.observation_provider = None
 
-    def recommend(self, driver, layout, costs, data_source, **kwargs):
+    def _resolve_release(self, driver):
+        pin_key = (driver.session_id, driver.request_id)
         with self._lock:
-            release = self._pins.setdefault(
-                (driver.session_id, driver.request_id), self.store.active())
+            if pin_key in self._pins:
+                return self._pins[pin_key]
+            trial = self.store.trial()
+            if trial is not None and self._trial_selected(trial, driver.request_id):
+                release = trial
+            else:
+                release = self.store.active()
+            self._pins[pin_key] = release
+            return release
+
+    @staticmethod
+    def _trial_selected(trial, request_id):
+        ratio = trial.get("trial_ratio")
+        if ratio is None or ratio >= 1.0:
+            return True
+        if ratio <= 0.0:
+            return False
+        digest = int(hashlib.sha256(request_id.encode("utf-8")).hexdigest()[:8], 16)
+        return digest < int(ratio * 0xFFFFFFFF)
+
+    def recommend(self, driver, layout, costs, data_source, **kwargs):
+        release = self._resolve_release(driver)
         base = self.baseline.recommend(driver, layout, costs, data_source, **kwargs)
         if release is None:
             return base
@@ -29,6 +51,9 @@ class ResearchDispatcher:
                    "requested_version": release["algorithm_version"],
                    "release_id": release["release_id"], "seed": release.get("seed", 0),
                    "release_hash": release["release_hash"], "input_hash": payload["input_hash"],
+                   "dispatched_to_trial": release.get("status") == "trial",
+                   "trial_ratio": release.get("trial_ratio"),
+                   "research_score": release.get("research_score"),
                    "as_of": costs.observed_at.isoformat(), "fallback_reason": None}
         if base.solver_status != "success":
             receipt.update(executed_algorithm="online-rule-v2", status=base.solver_status,
