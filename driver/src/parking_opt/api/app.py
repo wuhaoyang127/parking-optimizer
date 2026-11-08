@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from parking_opt.api.adapters.v1 import V1OnlineRuleAdapter
 from parking_opt.api.app_contracts import ERROR_RESPONSES
+from parking_opt.api.app_routes_auth import register_auth_routes
 from parking_opt.api.app_routes_journey import register_journey_routes
 from parking_opt.api.app_routes_read import register_read_routes
 from parking_opt.api.app_routes_recommend import register_recommend_routes
@@ -177,6 +178,7 @@ def create_app(
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=payload.model_dump(mode="json"), headers={"X-Request-ID": payload.request_id})
     register_read_routes(app)
     register_recommend_routes(app)
+    register_auth_routes(app)
     register_trip_routes(app)
     register_journey_routes(app)
     register_replan_routes(app)

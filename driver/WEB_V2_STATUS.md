@@ -1,19 +1,19 @@
 ---
 project: 智能停车优化与调度系统 Web v2
-status_version: 51
-last_updated: 2026-10-18
+status_version: 52
+last_updated: 2026-11-08
 governance: AGENTS.md
 requirements: docs/product/web-v2-requirements.md
 decision_log: docs/product/web-v2-decision-log.md
 implementation_blueprint: docs/product/web-v2-implementation-blueprint.md
-current_milestone: M4
-milestone_status: awaiting_review
-current_exec_plan: docs/plans/web-v2/m4-route-presentation-integration-handoff.md
+current_milestone: M5
+milestone_status: in_progress
+current_exec_plan: docs/plans/web-v2/m5-advanced-mode.md
 latest_handoff: docs/handoffs/web-v2/m4-driver-react-handoff.md
 current_blockers: []
 downstream_prerequisites: ["M6: 提供真实 Safari/iPhone 验证设备或在进入 M6 前调整兼容性承诺", "M6: 免费公网平台可用；不满足时由用户决定更换免费方案或取消公网验收"]
-next_approval_gate: M4_R6_entry_exit_completion_review
-implementation_authorized: false
+next_approval_gate: M5_advanced_mode_login
+implementation_authorized: true
 ---
 
 > 2026-10-30 整合交付说明：下文保留原包历史阶段状态。本次用户另行授权的两站本地对接已实施；当前范围、验证和限制以仓库上一级 README-INTEGRATED.md / VALIDATION.json 为准，不代表历史里程碑或公网部署获验收。
