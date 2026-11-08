@@ -8,6 +8,7 @@ import streamlit as st
 from driver_bridge.settings import setting
 
 from ui.common import *  # 常量 + 工具 + check_login + auth 封装
+from ui.common.driver_launch import render_open_driver_button
 from ui.pages import (
     render_settings, render_system, render_layout_page, render_path_page,
     render_metrics_page, render_algo_import_page, render_status_page, render_feedback_page,
@@ -36,9 +37,7 @@ pages = [SECTION_LABELS[k] for k in allowed]
 
 # ── Sidebar ──
 with st.sidebar:
-    driver_web_url = setting("PARKING_DRIVER_WEB_URL")
-    if driver_web_url:
-        st.link_button("🚗 打开车主端", driver_web_url)
+    render_open_driver_button()
     st.markdown(f'<div style="display:flex;align-items:center;gap:8px;padding:0.3rem 0 0.8rem 0;">'
         f'<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);'
         f'display:flex;align-items:center;justify-content:center;font-size:1rem">🚗</div>'
