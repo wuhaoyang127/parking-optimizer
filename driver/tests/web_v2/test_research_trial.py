@@ -126,3 +126,29 @@ def test_trial_stats_summarizes_dispatch(connected):
     assert stats["trial_fallback_count"] == 0
     current = client.get("/api/admin/v1/algorithms/current", headers=ADMIN).json()
     assert current["trial_stats"]["trial_request_count"] == 1
+
+
+def test_trial_coexists_with_active(connected):
+    client, app = connected
+    _release(client, "nearest", "release-1")
+    _release(client, "fcfs", "release-2")
+    client.post("/api/admin/v1/driver-algorithm-activations", headers=ADMIN,
+                json={"release_id": "release-1"})
+    client.post("/api/admin/v1/trials/start", headers=ADMIN, json={
+        "release_id": "release-2", "ratio": 1.0, "research_score": 80.0})
+    running, _ = _journey(client, "trial-coexist")
+    assert running["recommendation"]["algorithm_id"] == "research-fcfs"
+    client.post("/api/admin/v1/trials/stop", headers=ADMIN)
+    stopped, _ = _journey(client, "trial-stopped-active")
+    assert stopped["recommendation"]["algorithm_id"] == "research-nearest"
+
+
+def test_set_trial_ratio_affects_new_requests(connected):
+    client, app = connected
+    _release(client)
+    client.post("/api/admin/v1/trials/start", headers=ADMIN, json={
+        "release_id": "release-1", "ratio": 0.01, "research_score": 80.0})
+    client.post("/api/admin/v1/trials/ratio", headers=ADMIN, json={"ratio": 1.0})
+    result, _ = _journey(client, "trial-ratio-adjusted")
+    assert result["recommendation"]["algorithm_id"] == "research-nearest"
+    assert app.state.release_store.trial()["trial_ratio"] == 1.0

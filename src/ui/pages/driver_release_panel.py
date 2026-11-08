@@ -61,6 +61,7 @@ def render_driver_releases():
                     "release_id": None, "expected_active_hash": active_hash}, admin=True)
                 st.rerun()
             render_trial_controls()
+            render_backup_controls()
             if st.checkbox("显示最近执行与降级回执", key="driver_receipts"):
                 st.json(call("/api/admin/v1/execution-receipts", admin=True))
         except Exception as exc:
@@ -120,9 +121,37 @@ def render_trial_controls():
                          {"release_id": r["release_id"], "decision": "promote"}, admin=True)
                     st.rerun()
             with discard_col:
-                if st.button(f"丢弃 {r['release_id']}", key=f"discard_{r['release_id']}"):
+                confirm = st.checkbox("确认丢弃", key=f"confirm_discard_{r['release_id']}")
+                if st.button(f"丢弃 {r['release_id']}", disabled=not confirm,
+                             key=f"discard_{r['release_id']}"):
                     call("/api/admin/v1/trials/decide",
                          {"release_id": r["release_id"], "decision": "discard"}, admin=True)
+                    st.rerun()
+
+
+def render_backup_controls():
+    """备选区：恢复或删除晋升时自动备份的旧正式版本。"""
+    st.subheader("备选区（回滚）")
+    st.caption("晋升时自动备份旧正式版本；可恢复或删除。")
+    backups = call("/api/admin/v1/backups", admin=True)
+    if not backups:
+        st.info("暂无备选")
+        return
+    for backup in backups:
+        with st.container(border=True):
+            st.write(f"备份：{backup['release_id']}｜过期：{backup.get('expires_at')}")
+            restore_col, delete_col = st.columns(2)
+            with restore_col:
+                if st.button(f"恢复 {backup['release_id']}", key=f"restore_{backup['release_id']}"):
+                    call("/api/admin/v1/backups/restore",
+                         {"release_id": backup["release_id"], "decision": "promote"}, admin=True)
+                    st.rerun()
+            with delete_col:
+                confirm = st.checkbox("确认删除", key=f"confirm_delete_{backup['release_id']}")
+                if st.button("删除备份", disabled=not confirm,
+                             key=f"delete_{backup['release_id']}"):
+                    call("/api/admin/v1/backups/delete",
+                         {"release_id": backup["release_id"], "decision": "discard"}, admin=True)
                     st.rerun()
 
 
