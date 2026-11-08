@@ -79,3 +79,55 @@ def test_advanced_status_returns_algorithm_and_trial(client, monkeypatch):
     assert body["account"]["username"] == "u"
     assert "trial_stats" in body
     assert "recent_receipts" in body
+
+
+def _minimal_layout() -> dict:
+    return {
+        "schema_version": "2.0.0",
+        "parking_lot_id": "lot-adv",
+        "layout_version": "v1",
+        "coordinate_origin_note": "origin",
+        "entrance_node_ids": ["entry"],
+        "exit_node_ids": ["exit"],
+        "nodes": [
+            {"node_id": "entry", "kind": "entrance", "coordinate": {"x_m": 0.0, "y_m": 0.0}, "label": "入口"},
+            {"node_id": "exit", "kind": "exit", "coordinate": {"x_m": 10.0, "y_m": 0.0}, "label": "出口"},
+            {"node_id": "access", "kind": "space_access", "coordinate": {"x_m": 5.0, "y_m": 0.0}, "label": "车位入口"},
+        ],
+        "edges": [
+            {"edge_id": "e1", "from_node_id": "entry", "to_node_id": "access", "distance_m": 5.0, "base_travel_time_s": 5.0, "channel_zone_ids": []},
+            {"edge_id": "e2", "from_node_id": "access", "to_node_id": "exit", "distance_m": 5.0, "base_travel_time_s": 5.0, "channel_zone_ids": []},
+        ],
+        "channel_zones": [],
+        "spaces": [
+            {"space_id": "A", "parking_lot_id": "lot-adv", "access_node_id": "access",
+             "coordinate": {"x_m": 5.0, "y_m": 1.0}, "status": "available",
+             "stack_group_id": "g1", "depth": 1, "assignable": True},
+        ],
+    }
+
+
+def test_import_layout_validates_and_lists(client, monkeypatch):
+    monkeypatch.setattr(
+        "parking_opt.api.auth_supabase.validate_session",
+        lambda t: {"success": True, "username": "u", "role": "admin"},
+    )
+    headers = {"Authorization": "Bearer t"}
+    assert client.get("/api/v2/advanced/layouts", headers=headers).status_code == 200
+    response = client.post("/api/v2/advanced/layouts", json=_minimal_layout(), headers=headers)
+    assert response.status_code == 200
+    assert response.json()["parking_lot_id"] == "lot-adv"
+    listed = client.get("/api/v2/advanced/layouts", headers=headers).json()
+    assert any(item["parking_lot_id"] == "lot-adv" for item in listed)
+
+
+def test_import_layout_rejects_invalid(client, monkeypatch):
+    monkeypatch.setattr(
+        "parking_opt.api.auth_supabase.validate_session",
+        lambda t: {"success": True, "username": "u", "role": "admin"},
+    )
+    headers = {"Authorization": "Bearer t"}
+    bad = _minimal_layout()
+    bad["spaces"][0]["access_node_id"] = "missing"
+    response = client.post("/api/v2/advanced/layouts", json=bad, headers=headers)
+    assert response.status_code == 422

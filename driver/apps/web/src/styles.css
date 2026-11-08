@@ -786,3 +786,32 @@ main:has(> .trip-shell) { width: min(1320px, calc(100% - 32px)); padding-top: 24
 .advanced-nav button.active { background: #eef3fb; color: #0a66c2; font-weight: 600; }
 .advanced-body { flex: 1; padding: 20px; }
 .advanced-body .placeholder { color: #999; font-size: 14px; margin: 0; }
+.advanced-body h3 { font-size: 15px; margin: 18px 0 8px; }
+.advanced-body .error { color: #b00020; font-size: 13px; }
+.advanced-body .success { color: #0a7d32; font-size: 13px; }
+.layout-json-input {
+  width: 100%;
+  max-width: 640px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+.advanced-actions { margin-top: 10px; }
+.advanced-actions button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 1px solid #0a66c2;
+  background: #0a66c2;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.advanced-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.layout-list { padding-left: 18px; }
+.layout-list li { margin-bottom: 4px; font-size: 13px; }
+.receipt-list { padding-left: 18px; }
+.receipt-list li { margin-bottom: 4px; font-size: 13px; color: #444; }

@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 
-import { loadAdvancedStatus, type AdvancedStatus } from "../api/advancedClient";
+import {
+  importLayout,
+  listLayouts,
+  loadAdvancedStatus,
+  type AdvancedStatus,
+  type ImportedLayout,
+} from "../api/advancedClient";
 import type { Account } from "../api/authClient";
 
 const tabs = [
@@ -66,7 +72,7 @@ export function AdvancedPage({ account, onLogout }: { account: Account; onLogout
         {!error && tab === "algorithms" && <AlgorithmsPanel status={status} />}
         {!error && tab === "trial" && <TrialPanel status={status} />}
         {!error && tab === "compare" && <p className="placeholder">实验对比（待实现）</p>}
-        {!error && tab === "data" && <p className="placeholder">数据与布局（待实现）</p>}
+        {!error && tab === "data" && <DataPanel token={account.token} />}
       </main>
     </div>
   );
@@ -119,6 +125,70 @@ function TrialPanel({ status }: { status: AdvancedStatus | null }) {
         试用回执：{stats.trial_request_count} 次请求，{stats.trial_success_count} 成功，
         {stats.trial_fallback_count} 降级
       </p>
+    </section>
+  );
+}
+
+function DataPanel({ token }: { token: string }) {
+  const [json, setJson] = useState("");
+  const [layouts, setLayouts] = useState<ImportedLayout[]>([]);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    try {
+      setLayouts(await listLayouts(token));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, [token]);
+
+  const handleImport = async () => {
+    setError(null);
+    setMessage(null);
+    try {
+      const result = await importLayout(token, json);
+      setMessage(`已导入布局 ${result.parking_lot_id}`);
+      setJson("");
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "导入失败");
+    }
+  };
+
+  return (
+    <section>
+      <h3>布局导入（JSON）</h3>
+      <textarea
+        className="layout-json-input"
+        value={json}
+        onChange={(event) => setJson(event.target.value)}
+        placeholder="粘贴 Layout 2.0.0 JSON"
+        rows={8}
+      />
+      <div className="advanced-actions">
+        <button type="button" onClick={handleImport} disabled={!json.trim()}>
+          导入布局
+        </button>
+      </div>
+      {message && <p className="success">{message}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      <h3>已导入布局</h3>
+      {layouts.length === 0 ? (
+        <p>暂无已导入布局。</p>
+      ) : (
+        <ul className="layout-list">
+          {layouts.map((layout) => (
+            <li key={layout.parking_lot_id}>
+              {layout.parking_lot_id}（版本 {layout.layout_version}，{layout.spaces} 车位）
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
