@@ -1,9 +1,6 @@
 """Claim-creation commands for the session store."""
-
 from __future__ import annotations
-
 from datetime import timedelta
-
 from parking_opt.api.sessions_types import (
     ACTIVE_STATES,
     ActiveJourneyConflictError,
@@ -13,8 +10,6 @@ from parking_opt.api.sessions_types import (
     ResourceClaimConflictError,
     SessionNamespace,
 )
-
-
 class ClaimCommandMixin:
     def soft_hold(
         self,
@@ -28,15 +23,7 @@ class ClaimCommandMixin:
         space_id: str,
         idempotency_key: str,
     ) -> JourneyRecord:
-        payload = {
-            "session_id": session_id,
-            "namespace": namespace,
-            "scenario_id": scenario_id,
-            "parking_lot_id": parking_lot_id,
-            "journey_id": journey_id,
-            "attempt_id": attempt_id,
-            "space_id": space_id,
-        }
+        payload = {"session_id": session_id, "namespace": namespace, "scenario_id": scenario_id, "parking_lot_id": parking_lot_id, "journey_id": journey_id, "attempt_id": attempt_id, "space_id": space_id}
         with self._lock:
             replay = self._replay(session_id, "soft_hold", idempotency_key, payload)
             if replay is not None:
@@ -56,35 +43,12 @@ class ClaimCommandMixin:
             now_mono = self._monotonic()
             now_utc = self._aware_utc_now()
             expires_mono = now_mono + self._timing.soft_hold_ttl_s
-            journey = JourneyRecord(
-                journey_id=journey_id,
-                attempt_id=attempt_id,
-                session_id=session_id,
-                namespace=namespace,
-                scenario_id=scenario_id,
-                parking_lot_id=parking_lot_id,
-                state=JourneyState.SOFT_HELD,
-                version=1,
-                space_id=space_id,
-                created_at=now_utc,
-                updated_at=now_utc,
-                expires_at=now_utc + timedelta(seconds=self._timing.soft_hold_ttl_s),
-                expires_mono_s=expires_mono,
-                last_activity_mono_s=now_mono,
-            )
+            journey = JourneyRecord(journey_id=journey_id, attempt_id=attempt_id, session_id=session_id, namespace=namespace, scenario_id=scenario_id, parking_lot_id=parking_lot_id, state=JourneyState.SOFT_HELD, version=1, space_id=space_id, created_at=now_utc, updated_at=now_utc, expires_at=now_utc + timedelta(seconds=self._timing.soft_hold_ttl_s), expires_mono_s=expires_mono, last_activity_mono_s=now_mono)
             self._journeys[journey_id] = journey
-            self._claims[claim_key] = ResourceClaim(
-                session_id=session_id,
-                namespace=namespace,
-                scenario_id=scenario_id,
-                parking_lot_id=parking_lot_id,
-                space_id=space_id,
-                journey_id=journey_id,
-            )
+            self._claims[claim_key] = ResourceClaim(session_id=session_id, namespace=namespace, scenario_id=scenario_id, parking_lot_id=parking_lot_id, space_id=space_id, journey_id=journey_id)
             self._append_event(None, journey, "SOFT_HELD", None)
             self._remember(session_id, "soft_hold", idempotency_key, payload, journey)
             return journey
-
     def start_waiting(
         self,
         *,
@@ -96,14 +60,7 @@ class ClaimCommandMixin:
         attempt_id: str,
         idempotency_key: str,
     ) -> JourneyRecord:
-        payload = {
-            "session_id": session_id,
-            "namespace": namespace,
-            "scenario_id": scenario_id,
-            "parking_lot_id": parking_lot_id,
-            "journey_id": journey_id,
-            "attempt_id": attempt_id,
-        }
+        payload = {"session_id": session_id, "namespace": namespace, "scenario_id": scenario_id, "parking_lot_id": parking_lot_id, "journey_id": journey_id, "attempt_id": attempt_id}
         with self._lock:
             replay = self._replay(session_id, "start_waiting", idempotency_key, payload)
             if replay is not None:
@@ -117,27 +74,11 @@ class ClaimCommandMixin:
                 raise ActiveJourneyConflictError("driver session already has an active journey")
             now_mono = self._monotonic()
             now_utc = self._aware_utc_now()
-            journey = JourneyRecord(
-                journey_id=journey_id,
-                attempt_id=attempt_id,
-                session_id=session_id,
-                namespace=namespace,
-                scenario_id=scenario_id,
-                parking_lot_id=parking_lot_id,
-                state=JourneyState.WAITING,
-                version=1,
-                space_id=None,
-                created_at=now_utc,
-                updated_at=now_utc,
-                expires_at=None,
-                expires_mono_s=None,
-                last_activity_mono_s=now_mono,
-            )
+            journey = JourneyRecord(journey_id=journey_id, attempt_id=attempt_id, session_id=session_id, namespace=namespace, scenario_id=scenario_id, parking_lot_id=parking_lot_id, state=JourneyState.WAITING, version=1, space_id=None, created_at=now_utc, updated_at=now_utc, expires_at=None, expires_mono_s=None, last_activity_mono_s=now_mono)
             self._journeys[journey_id] = journey
             self._append_event(None, journey, "WAITING", None)
             self._remember(session_id, "start_waiting", idempotency_key, payload, journey)
             return journey
-
     def retry_waiting(
         self,
         *,
@@ -180,7 +121,6 @@ class ClaimCommandMixin:
                 )
             self._remember(journey.session_id, "retry_waiting", idempotency_key, payload, result)
             return result
-
     def switch_soft_hold(
         self,
         *,
@@ -208,14 +148,7 @@ class ClaimCommandMixin:
                 raise ResourceClaimConflictError(f"space is unavailable: {space_id}")
             if new_key in self._claims:
                 raise ResourceClaimConflictError(f"space already claimed: {space_id}")
-            self._claims[new_key] = ResourceClaim(
-                session_id=journey.session_id,
-                namespace=journey.namespace,
-                scenario_id=journey.scenario_id,
-                parking_lot_id=journey.parking_lot_id,
-                space_id=space_id,
-                journey_id=journey.journey_id,
-            )
+            self._claims[new_key] = ResourceClaim(session_id=journey.session_id, namespace=journey.namespace, scenario_id=journey.scenario_id, parking_lot_id=journey.parking_lot_id, space_id=space_id, journey_id=journey.journey_id)
             self._release_claim(journey)
             result = self._transition(
                 journey,

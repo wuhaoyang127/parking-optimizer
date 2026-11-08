@@ -23,6 +23,7 @@ from parking_opt.api.services.journey_types import (
     _JourneyContext,
     _RecommendationReplay,
 )
+from parking_opt.api.services.journey_visibility import JourneyVisibilityMixin
 from parking_opt.api.services.online_rule import OnlineRuleServiceV2
 from parking_opt.api.sessions import (
     InMemorySessionStore,
@@ -34,6 +35,7 @@ class JourneyRecommendationService(
     JourneyRecommendMixin,
     JourneyCommandsMixin,
     JourneyOccupancyMixin,
+    JourneyVisibilityMixin,
 ):
     """Evaluate visible state and create the resulting claim in one critical section."""
     def __init__(
@@ -95,19 +97,6 @@ class JourneyRecommendationService(
             return self._contexts[journey_id]
         except KeyError as exc:
             raise ValueError(f"journey recommendation context is unavailable: {journey_id}") from exc
-
-    def visible_driver_inputs(
-        self, session_id: str
-    ) -> list[tuple[DriverRequest, JourneyRecord]]:
-        """Return the session's recoverable (driver request, journey record) pairs."""
-        pairs: list[tuple[DriverRequest, JourneyRecord]] = []
-        for record in self._store.session_journeys(session_id, SessionNamespace.DRIVER):
-            try:
-                context = self._require_context(record.journey_id)
-            except ValueError:
-                continue
-            pairs.append((context.driver, record))
-        return pairs
     def _remember_command(
         self,
         *,
