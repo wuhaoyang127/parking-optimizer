@@ -22,19 +22,27 @@ REQUIREMENTS = {"duration_greedy": "用户预计停留；相关占用车辆的�
 
 
 def validate_params(algorithm, params):
-    """宽容校验：放行任意算法与任意参数，只拒绝会直接导致崩溃的非有限数值。"""
+    """严格校验：拒绝未知参数、类型不符、范围越界和非有限数值。"""
     import math
     specs = SPECS.get(algorithm, {})
     for key, value in params.items():
         rule = specs.get(key)
         if rule is None:
-            continue
+            raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
         if rule == ("bool",):
-            continue
-        if isinstance(rule, tuple) and len(rule) == 3 and rule[2] in ("number", "int"):
-            if not (type(value) in (int, float) and math.isfinite(value)):
+            if type(value) is not bool:
                 raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
             continue
+        if isinstance(rule, tuple) and len(rule) == 3 and rule[2] in ("number", "int"):
+            if type(value) not in (int, float) or not math.isfinite(value):
+                raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
+            if rule[2] == "int" and type(value) is not int:
+                raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
+            if not (rule[0] <= value <= rule[1]):
+                raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
+            continue
+        if value not in rule:
+            raise ValueError("INVALID_ALGORITHM_PARAMETER:" + key)
     return params
 
 
