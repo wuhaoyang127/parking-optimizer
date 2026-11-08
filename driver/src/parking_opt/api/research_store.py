@@ -60,8 +60,8 @@ class ReleaseStore(TrialLifecycleMixin):
                 if old["release_hash"] != h:
                     raise ValueError("release_id already exists with different content")
                 return old
-            self.db.execute("INSERT INTO releases VALUES (?,?,?,NULL)",
-                            (release.release_id, h, json.dumps(data)))
+            self.db.execute("INSERT INTO releases (id, hash, data, validation) VALUES (?,?,?,?)",
+                            (release.release_id, h, json.dumps(data), None))
             self.db.commit()
             return self.get(release.release_id)
 

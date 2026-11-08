@@ -696,7 +696,6 @@
       },
       "DriverDemoProfile": {
         "additionalProperties": false,
-        "description": "Human-readable identity for one deterministic synthetic driver state.",
         "properties": {
           "description": {
             "maxLength": 200,
@@ -812,7 +811,6 @@
       },
       "DriverDemoReplanRequest": {
         "additionalProperties": false,
-        "description": "Safe driver-demo action whose dynamic inputs are derived by the server.",
         "properties": {
           "action": {
             "enum": [
@@ -875,7 +873,6 @@
       },
       "DriverJourneySnapshot": {
         "additionalProperties": false,
-        "description": "Authoritative recoverable driver state observed without renewing its deadline.",
         "properties": {
           "driver": {
             "anyOf": [
@@ -939,7 +936,6 @@
       },
       "DriverRecommendationContext": {
         "additionalProperties": false,
-        "description": "Server-derived inputs needed to start a driver recommendation.",
         "properties": {
           "data_source": {
             "$ref": "#/components/schemas/DataSourceStatus"
@@ -1889,7 +1885,6 @@
       },
       "DriverTripSnapshot": {
         "additionalProperties": false,
-        "description": "Recoverable current-trip projection driven by one authoritative route.",
         "properties": {
           "current_node_id": {
             "anyOf": [
@@ -5561,6 +5556,79 @@
         "title": "TandemGroup",
         "type": "object"
       },
+      "TrialDecision": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "promote",
+              "discard"
+            ],
+            "title": "Decision",
+            "type": "string"
+          },
+          "release_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Release Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_id",
+          "decision"
+        ],
+        "title": "TrialDecision",
+        "type": "object"
+      },
+      "TrialRatioUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "ratio": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Ratio",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ratio"
+        ],
+        "title": "TrialRatioUpdate",
+        "type": "object"
+      },
+      "TrialStartRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "ratio": {
+            "default": 0.3333333333333333,
+            "exclusiveMinimum": 0.0,
+            "maximum": 1.0,
+            "title": "Ratio",
+            "type": "number"
+          },
+          "release_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "Release Id",
+            "type": "string"
+          },
+          "research_score": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Research Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "release_id",
+          "research_score"
+        ],
+        "title": "TrialStartRequest",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -5680,6 +5748,214 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/admin/v1/algorithms/current": {
+      "get": {
+        "operationId": "current_api_admin_v1_algorithms_current_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Current",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/backups": {
+      "get": {
+        "operationId": "backups_api_admin_v1_backups_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Backups",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/backups/delete": {
+      "post": {
+        "operationId": "delete_backup_api_admin_v1_backups_delete_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Backup",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/backups/restore": {
+      "post": {
+        "operationId": "restore_backup_api_admin_v1_backups_restore_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore Backup",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
     "/api/admin/v1/completed-history.csv": {
       "get": {
         "operationId": "history_api_admin_v1_completed_history_csv_get",
@@ -6003,6 +6279,224 @@
           }
         },
         "summary": "Receipts",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/trials/decide": {
+      "post": {
+        "operationId": "decide_api_admin_v1_trials_decide_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialDecision"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/trials/ratio": {
+      "post": {
+        "operationId": "trial_ratio_api_admin_v1_trials_ratio_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialRatioUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trial Ratio",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/trials/start": {
+      "post": {
+        "operationId": "start_trial_api_admin_v1_trials_start_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrialStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Start Trial",
+        "tags": [
+          "research integration"
+        ]
+      }
+    },
+    "/api/admin/v1/trials/stop": {
+      "post": {
+        "operationId": "stop_trial_api_admin_v1_trials_stop_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stop Trial",
         "tags": [
           "research integration"
         ]
@@ -6416,10 +6910,12 @@
         "operationId": "current_driver_journey_api_v2_driver_session_current_journey_get",
         "parameters": [
           {
+            "description": "Required synthetic driver-session context. It is not an authentication credential.",
             "in": "header",
             "name": "X-Session-ID",
             "required": true,
             "schema": {
+              "description": "Required synthetic driver-session context. It is not an authentication credential.",
               "maxLength": 128,
               "minLength": 1,
               "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
@@ -6461,10 +6957,12 @@
         "operationId": "current_driver_trip_api_v2_driver_session_current_trip_get",
         "parameters": [
           {
+            "description": "Required synthetic driver-session context. It is not an authentication credential.",
             "in": "header",
             "name": "X-Session-ID",
             "required": true,
             "schema": {
+              "description": "Required synthetic driver-session context. It is not an authentication credential.",
               "maxLength": 128,
               "minLength": 1,
               "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",

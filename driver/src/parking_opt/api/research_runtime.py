@@ -23,7 +23,7 @@ class ResearchRuntime:
         result = subprocess.run(
             [self.python, "-I", str(self.runner), *args],
             input=None if payload is None else json.dumps(payload, allow_nan=False).encode(),
-            capture_output=True, timeout=2.0, cwd=self.root,
+            capture_output=True, timeout=15.0, cwd=self.root,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
         if result.returncode:

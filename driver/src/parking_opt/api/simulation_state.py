@@ -98,25 +98,17 @@ class SimulationStateMixin:
                 raise ReplayMismatchError(f"unknown state change operation: {operation}")
 
     def _state_sha256(self) -> str:
-        state = {
-            "parking_lot_id": self._layout.parking_lot_id,
-            "layout_version": self._layout.layout_version,
-            "seed": self._seed,
-            "wall_time_origin": self._origin.isoformat(),
-            "component_fingerprint": f"{self._fingerprint:064x}",
-            "relocation_count": self._relocation_count,
-            "failure_count": self._failure_count,
-        }
-        return hashlib.sha256(
-            json.dumps(state, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
+        raw = (
+            f"{self._layout.parking_lot_id}|{self._layout.layout_version}|{self._seed}|"
+            f"{self._origin.isoformat()}|{self._fingerprint:064x}|"
+            f"{self._relocation_count}|{self._failure_count}"
+        )
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
     @staticmethod
     def _component_hash(kind: str, key: str, value: object) -> int:
-        payload = json.dumps(
-            [kind, key, value], sort_keys=True, separators=(",", ":")
-        ).encode("utf-8")
-        return int.from_bytes(hashlib.sha256(payload).digest(), "big")
+        raw = f"{kind}|{key}|{value!r}"
+        return int.from_bytes(hashlib.sha256(raw.encode("utf-8")).digest(), "big")
 
     def _summary(self) -> SimulationSummary:
         return SimulationSummary(

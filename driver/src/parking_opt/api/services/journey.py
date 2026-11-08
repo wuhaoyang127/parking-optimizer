@@ -95,6 +95,19 @@ class JourneyRecommendationService(
             return self._contexts[journey_id]
         except KeyError as exc:
             raise ValueError(f"journey recommendation context is unavailable: {journey_id}") from exc
+
+    def visible_driver_inputs(
+        self, session_id: str
+    ) -> list[tuple[DriverRequest, JourneyRecord]]:
+        """Return the session's recoverable (driver request, journey record) pairs."""
+        pairs: list[tuple[DriverRequest, JourneyRecord]] = []
+        for record in self._store.session_journeys(session_id, SessionNamespace.DRIVER):
+            try:
+                context = self._require_context(record.journey_id)
+            except ValueError:
+                continue
+            pairs.append((context.driver, record))
+        return pairs
     def _remember_command(
         self,
         *,
