@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import UTC
+from datetime import UTC, datetime, timedelta
 
 from parking_opt.api.sessions_types import (
     IdempotencyConflictError,
+    IllegalTransitionError,
     JourneyNotFoundError,
     JourneyRecord,
     JourneyState,
     SessionEvent,
+    VersionConflictError,
     _IdempotencyResult,
     _journey_sha256,
     _sha256,
@@ -37,10 +39,11 @@ class TransitionPersistenceMixin:
                 return replay
             self._require_version(journey, expected_version)
             self._require_state(journey, from_state)
-            if self._is_expired(journey) and from_state is not JourneyState.SOFT_HELD:
-                result = self._expire(journey, f"{from_state.value.upper()}_EXPIRED")
-            else:
-                result = self._transition(journey, to_state, preserve_expiry=preserve_expiry, event_type=to_state.value.upper(), event_reason=None)
+            if from_state in {JourneyState.SESSION_RESERVED, JourneyState.NAVIGATING} and self._is_expired(journey):
+                result = self._expire(journey, f"{from_state.upper()}_EXPIRED")
+                self._remember(journey.session_id, command, idempotency_key, payload, result)
+                return result
+            result = self._transition(journey, to_state, preserve_expiry=preserve_expiry, event_type=to_state.upper())
             self._remember(journey.session_id, command, idempotency_key, payload, result)
             return result
 
@@ -51,11 +54,11 @@ class TransitionPersistenceMixin:
         journey_id: str,
         expected_version: int,
         idempotency_key: str,
-        allowed_states: set[JourneyState],
+        allowed_states: frozenset[JourneyState] | set[JourneyState],
         state: JourneyState,
         reason: str,
     ) -> JourneyRecord:
-        payload = {"journey_id": journey_id, "expected_version": expected_version}
+        payload = {"journey_id": journey_id, "expected_version": expected_version, "reason": reason}
         with self._lock:
             journey = self._require(journey_id)
             replay = self._replay(journey.session_id, command, idempotency_key, payload)
@@ -63,7 +66,7 @@ class TransitionPersistenceMixin:
                 return replay
             self._require_version(journey, expected_version)
             if journey.state not in allowed_states:
-                raise IdempotencyConflictError(f"{command} is not legal from {journey.state}")
+                raise IllegalTransitionError(f"journey state {journey.state} does not allow {command}")
             result = self._terminal(journey, state, reason)
             self._remember(journey.session_id, command, idempotency_key, payload, result)
             return result
@@ -73,51 +76,47 @@ class TransitionPersistenceMixin:
         journey: JourneyRecord,
         state: JourneyState,
         *,
-        preserve_expiry: bool,
         event_type: str,
-        event_reason: str | None,
+        expires_in_s: int | None = None,
+        preserve_expiry: bool = False,
+        reason: str | None = None,
+        event_reason: str | None = None,
+        replace_space: bool = False,
+        space_id: str | None = None,
     ) -> JourneyRecord:
-        updated = replace(
+        now_mono = self._monotonic()
+        now_utc = self._aware_utc_now()
+        expires_mono: float | None = None
+        expires_at: datetime | None = None
+        if preserve_expiry:
+            expires_mono = journey.expires_mono_s
+            expires_at = journey.expires_at
+        elif expires_in_s is not None:
+            expires_mono = now_mono + expires_in_s
+            expires_at = now_utc + timedelta(seconds=expires_in_s)
+        result = replace(
             journey,
             state=state,
             version=journey.version + 1,
-            updated_at=self._aware_utc_now(),
-            expires_at=journey.expires_at if preserve_expiry else None,
-            expires_mono_s=journey.expires_mono_s if preserve_expiry else None,
+            updated_at=now_utc,
+            expires_at=expires_at,
+            expires_mono_s=expires_mono,
+            last_activity_mono_s=now_mono,
+            terminal_reason=reason,
+            space_id=space_id if replace_space else journey.space_id,
         )
-        self._journeys[journey.journey_id] = updated
-        self._append_event(journey, updated, event_type, event_reason)
-        return updated
+        self._journeys[journey.journey_id] = result
+        self._append_event(journey, result, event_type, reason if event_reason is None else event_reason)
+        return result
 
     def _terminal(self, journey: JourneyRecord, state: JourneyState, reason: str) -> JourneyRecord:
-        updated = replace(
-            journey,
-            state=state,
-            version=journey.version + 1,
-            updated_at=self._aware_utc_now(),
-            expires_at=None,
-            expires_mono_s=None,
-            terminal_reason=reason,
-        )
-        self._journeys[journey.journey_id] = updated
+        result = self._transition(journey, state, event_type=state.upper(), reason=reason)
         self._release_claim(journey)
-        self._append_event(journey, updated, state.value.upper(), reason)
-        return updated
+        self._tandem_coordination_records.pop(journey.journey_id, None)
+        return result
 
     def _expire(self, journey: JourneyRecord, reason: str) -> JourneyRecord:
-        updated = replace(
-            journey,
-            state=JourneyState.EXPIRED,
-            version=journey.version + 1,
-            updated_at=self._aware_utc_now(),
-            expires_at=None,
-            expires_mono_s=None,
-            terminal_reason=reason,
-        )
-        self._journeys[journey.journey_id] = updated
-        self._release_claim(journey)
-        self._append_event(journey, updated, "EXPIRED", reason)
-        return updated
+        return self._terminal(journey, JourneyState.EXPIRED, reason)
 
     def _release_claim(self, journey: JourneyRecord) -> None:
         if journey.space_id is None:
@@ -130,15 +129,15 @@ class TransitionPersistenceMixin:
         before: JourneyRecord | None,
         after: JourneyRecord,
         event_type: str,
-        reason_code: str | None,
+        reason: str | None,
     ) -> None:
         self._events.append(
             SessionEvent(
                 sequence_no=len(self._events) + 1,
                 journey_id=after.journey_id,
                 event_type=event_type,
-                reason_code=reason_code,
-                wall_time=self._aware_utc_now(),
+                reason_code=reason,
+                wall_time=after.updated_at,
                 before_sha256=_journey_sha256(before),
                 after_sha256=_journey_sha256(after),
             )
@@ -148,49 +147,47 @@ class TransitionPersistenceMixin:
         self,
         session_id: str,
         command: str,
-        idempotency_key: str,
+        key: str,
         payload: object,
     ) -> JourneyRecord | None:
-        key = (session_id, command, idempotency_key)
-        replay = self._idempotency.get(key)
-        if replay is None:
+        previous = self._idempotency.get((session_id, command, key))
+        if previous is None:
             return None
-        if replay.payload_sha256 != _sha256(payload):
-            raise IdempotencyConflictError("idempotency key was reused with different input")
-        return replay.result
+        payload_hash = _sha256(payload)
+        if previous.payload_sha256 != payload_hash:
+            raise IdempotencyConflictError(f"idempotency key {key} was reused with a different payload")
+        return previous.result
 
     def _remember(
         self,
         session_id: str,
         command: str,
-        idempotency_key: str,
+        key: str,
         payload: object,
         result: JourneyRecord,
     ) -> None:
-        key = (session_id, command, idempotency_key)
-        if key in self._idempotency:
-            raise IdempotencyConflictError("idempotency key is already recorded")
-        self._idempotency[key] = _IdempotencyResult(payload_sha256=_sha256(payload), result=result)
+        self._idempotency[(session_id, command, key)] = _IdempotencyResult(payload_sha256=_sha256(payload), result=result)
 
     def _require(self, journey_id: str) -> JourneyRecord:
-        journey = self._journeys.get(journey_id)
-        if journey is None:
-            raise JourneyNotFoundError(f"journey not found: {journey_id}")
-        return journey
+        try:
+            return self._journeys[journey_id]
+        except KeyError as exc:
+            raise JourneyNotFoundError(f"unknown journey: {journey_id}") from exc
 
-    def _require_version(self, journey: JourneyRecord, expected: int) -> None:
+    @staticmethod
+    def _require_version(journey: JourneyRecord, expected: int) -> None:
         if journey.version != expected:
-            raise IdempotencyConflictError(f"journey version is {journey.version}, expected {expected}")
+            raise VersionConflictError(f"journey version is {journey.version}, expected {expected}")
 
     @staticmethod
     def _require_state(journey: JourneyRecord, expected: JourneyState) -> None:
         if journey.state is not expected:
-            raise IdempotencyConflictError(f"journey state is {journey.state}, expected {expected}")
+            raise IllegalTransitionError(f"journey state is {journey.state}, expected {expected}")
 
     def _is_expired(self, journey: JourneyRecord) -> bool:
         return journey.expires_mono_s is not None and self._monotonic() >= journey.expires_mono_s
 
-    def _aware_utc_now(self):
+    def _aware_utc_now(self) -> datetime:
         value = self._utc()
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("utc clock must return an aware datetime")

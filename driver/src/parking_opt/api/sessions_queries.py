@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
-from contextlib import contextmanager
-
 from parking_opt.api.sessions_types import (
-    CLAIM_STATES,
-    ActiveJourneyConflictError,
     AvailabilityScopeSnapshot,
     JourneyRecord,
-    JourneyState,
     ResourceClaim,
     SessionAvailabilitySnapshot,
     SessionEvent,
@@ -19,11 +13,6 @@ from parking_opt.api.sessions_types import (
 
 
 class QuerySnapshotMixin:
-    @contextmanager
-    def atomic(self) -> Iterator[None]:
-        with self._lock:
-            yield
-
     def claimed_space_ids(
         self,
         *,
@@ -34,17 +23,22 @@ class QuerySnapshotMixin:
     ) -> frozenset[str]:
         with self._lock:
             return frozenset(
-                claim.space_id
-                for claim in self._claims.values()
-                if claim.session_id == session_id
-                and claim.namespace is namespace
-                and claim.scenario_id == scenario_id
-                and claim.parking_lot_id == parking_lot_id
+                item.space_id
+                for item in self._claims.values()
+                if item.session_id == session_id
+                and item.namespace is namespace
+                and item.scenario_id == scenario_id
+                and item.parking_lot_id == parking_lot_id
             )
 
     def active_claims(self) -> tuple[ResourceClaim, ...]:
         with self._lock:
-            return tuple(sorted(self._claims.values(), key=lambda item: (item.session_id, item.space_id, item.journey_id)))
+            return tuple(
+                sorted(
+                    self._claims.values(),
+                    key=lambda item: (item.session_id, item.namespace, item.scenario_id, item.parking_lot_id, item.space_id),
+                )
+            )
 
     def unavailable_space_reasons(
         self,
@@ -56,9 +50,9 @@ class QuerySnapshotMixin:
     ) -> dict[str, str]:
         with self._lock:
             return {
-                key[4]: reason
-                for key, reason in self._unavailable_spaces.items()
-                if key[:4] == (session_id, namespace, scenario_id, parking_lot_id)
+                space_id: reason
+                for (stored_session, stored_namespace, stored_scenario, stored_lot, space_id), reason in self._unavailable_spaces.items()
+                if stored_session == session_id and stored_namespace is namespace and stored_scenario == scenario_id and stored_lot == parking_lot_id
             }
 
     def availability_snapshot(
@@ -68,40 +62,34 @@ class QuerySnapshotMixin:
         namespace: SessionNamespace,
         scopes: tuple[tuple[str, str], ...],
     ) -> SessionAvailabilitySnapshot:
+        if not session_id:
+            raise ValueError("session_id is required")
+        if len(set(scopes)) != len(scopes):
+            raise ValueError("availability scopes must be unique")
         with self._lock:
-            now = self._aware_utc_now()
-            snapshots = []
-            for scenario_id, parking_lot_id in scopes:
-                claimed = self.claimed_space_ids(
-                    session_id=session_id,
-                    namespace=namespace,
+            self._expire_due_scope(session_id=session_id, namespace=namespace)
+            self._collect_idle_scope(session_id=session_id, namespace=namespace)
+            self._collect_idle_unavailable_scope(session_id=session_id, namespace=namespace)
+            items = tuple(
+                AvailabilityScopeSnapshot(
                     scenario_id=scenario_id,
                     parking_lot_id=parking_lot_id,
+                    claimed_space_ids=frozenset(
+                        claim.space_id
+                        for claim in self._claims.values()
+                        if claim.session_id == session_id and claim.namespace is namespace and claim.scenario_id == scenario_id and claim.parking_lot_id == parking_lot_id
+                    ),
+                    unavailable_space_reasons=tuple(
+                        sorted(
+                            (space_id, reason)
+                            for (stored_session, stored_namespace, stored_scenario, stored_lot, space_id), reason in self._unavailable_spaces.items()
+                            if stored_session == session_id and stored_namespace is namespace and stored_scenario == scenario_id and stored_lot == parking_lot_id
+                        )
+                    ),
                 )
-                reasons = tuple(
-                    sorted(
-                        self.unavailable_space_reasons(
-                            session_id=session_id,
-                            namespace=namespace,
-                            scenario_id=scenario_id,
-                            parking_lot_id=parking_lot_id,
-                        ).items()
-                    )
-                )
-                snapshots.append(
-                    AvailabilityScopeSnapshot(
-                        scenario_id=scenario_id,
-                        parking_lot_id=parking_lot_id,
-                        claimed_space_ids=claimed,
-                        unavailable_space_reasons=reasons,
-                    )
-                )
-            return SessionAvailabilitySnapshot(
-                session_id=session_id,
-                namespace=namespace,
-                observed_at=now,
-                scopes=tuple(snapshots),
+                for scenario_id, parking_lot_id in scopes
             )
+            return SessionAvailabilitySnapshot(session_id=session_id, namespace=namespace, observed_at=self._aware_utc_now(), scopes=items)
 
     def events(self) -> tuple[SessionEvent, ...]:
         with self._lock:

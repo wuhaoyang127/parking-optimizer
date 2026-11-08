@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from datetime import UTC, datetime
 from threading import RLock
 from time import monotonic
 
@@ -62,7 +64,7 @@ class InMemorySessionStore(
     ) -> None:
         self._timing = timing
         self._monotonic = monotonic_clock
-        self._utc = utc_clock if utc_clock is not None else lambda: __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+        self._utc = utc_clock if utc_clock is not None else (lambda: datetime.now(UTC))
         self._lock = RLock()
         self._journeys: dict[str, JourneyRecord] = {}
         self._claims: dict[tuple, ResourceClaim] = {}
@@ -71,15 +73,57 @@ class InMemorySessionStore(
         self._idempotency: dict[tuple, _IdempotencyResult] = {}
         self._driver_demo_profile_idempotency: dict[tuple, _DemoProfileIdempotencyResult] = {}
         self._driver_demo_profile_indexes: dict[tuple, int] = {}
+        self._driver_demo_processed_terminal_journeys: set[str] = set()
         self._tandem_arrival_replays: dict[str, object] = {}
+        self._tandem_arrival_idempotency: dict[tuple, _TandemReplayIdempotencyResult] = {}
+        self._tandem_coordination_records: dict[str, TandemCoordinationRecord] = {}
         self._tandem_departure_replays: dict[str, object] = {}
-        self._tandem_coordination: dict[str, TandemCoordinationRecord] = {}
         self._tandem_replay_idempotency: dict[tuple, _TandemReplayIdempotencyResult] = {}
         self.ACTIVE_STATES = ACTIVE_STATES
 
     def get_journey(self, journey_id: str) -> JourneyRecord | None:
         with self._lock:
             return self._journeys.get(journey_id)
+
+    @contextmanager
+    def atomic(self) -> Iterator[InMemorySessionStore]:
+        """Hold the lock and roll back all store mutations when a compound command fails."""
+
+        with self._lock:
+            snapshot = (
+                self._journeys.copy(),
+                self._claims.copy(),
+                self._unavailable_spaces.copy(),
+                self._idempotency.copy(),
+                self._driver_demo_profile_indexes.copy(),
+                self._driver_demo_profile_idempotency.copy(),
+                self._driver_demo_processed_terminal_journeys.copy(),
+                self._tandem_arrival_replays.copy(),
+                self._tandem_arrival_idempotency.copy(),
+                self._tandem_coordination_records.copy(),
+                self._tandem_departure_replays.copy(),
+                self._tandem_replay_idempotency.copy(),
+                self._events.copy(),
+            )
+            try:
+                yield self
+            except BaseException:
+                (
+                    self._journeys,
+                    self._claims,
+                    self._unavailable_spaces,
+                    self._idempotency,
+                    self._driver_demo_profile_indexes,
+                    self._driver_demo_profile_idempotency,
+                    self._driver_demo_processed_terminal_journeys,
+                    self._tandem_arrival_replays,
+                    self._tandem_arrival_idempotency,
+                    self._tandem_coordination_records,
+                    self._tandem_departure_replays,
+                    self._tandem_replay_idempotency,
+                    self._events,
+                ) = snapshot
+                raise
 
     def refresh_journey(self, journey_id: str) -> JourneyRecord | None:
         """Return one journey after applying its authoritative deadlines without renewal."""

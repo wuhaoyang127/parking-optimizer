@@ -121,6 +121,7 @@ from parking_opt.api.models_facility import (  # noqa: E402
     FacilityTandemGroup,
     FacilityZone,
 )
+from parking_opt.api.models_facility_layout import ParkingFacilityLayout  # noqa: E402
 from parking_opt.api.models_state import (  # noqa: E402
     ChannelLoadSnapshot,
     CostSnapshot,
@@ -148,6 +149,9 @@ from parking_opt.api.models_recommend import (  # noqa: E402
     Recommendation,
 )
 from parking_opt.api.models_journey import (  # noqa: E402
+    DriverDemoProfileAdvanceRequest,
+    DriverDemoProfileAdvanceResponse,
+    DriverDemoReplanRequest,
     DriverTripEvent,
     DriverTripRecord,
     JourneyAlternativeRequest,
