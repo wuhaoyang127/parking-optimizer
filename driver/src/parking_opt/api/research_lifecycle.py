@@ -14,7 +14,23 @@ class TrialLifecycleMixin:
                 for rid, b, e in rows]
 
     def current(self):
-        return {"active": self.active(), "trial": self.trial()}
+        return {"active": self.active(), "trial": self.trial(), "trial_stats": self.trial_stats()}
+
+    def trial_stats(self):
+        """Summarize trial-period dispatch receipts to inform promote/discard."""
+        trial = self.trial()
+        receipts = [r for r in self.audit() if r.get("kind") == "execution"]
+        trial_receipts = [r for r in receipts if r.get("dispatched_to_trial")]
+        succeeded = sum(
+            1 for r in trial_receipts
+            if str(r.get("executed_algorithm", "")).startswith("research-")
+        )
+        return {
+            "trial": trial,
+            "trial_request_count": len(trial_receipts),
+            "trial_success_count": succeeded,
+            "trial_fallback_count": len(trial_receipts) - succeeded,
+        }
 
     def start_trial(self, release_id, ratio, research_score):
         with self.lock, self.db:

@@ -93,3 +93,36 @@ def test_trial_selected_is_deterministic_and_bounded():
     assert ResearchDispatcher._trial_selected({"trial_ratio": 1.0}, "any") is True
     assert ResearchDispatcher._trial_selected({"trial_ratio": 0.0}, "any") is False
     assert ResearchDispatcher._trial_selected({}, "any") is True
+
+
+def test_trial_failure_falls_back_with_receipt(connected, monkeypatch):
+    client, app = connected
+    _release(client)
+    client.post("/api/admin/v1/trials/start", headers=ADMIN, json={
+        "release_id": "release-1", "ratio": 1.0, "research_score": 80.0})
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(app.state.research_runtime, "rank", fail)
+    result, _ = _journey(client, "trial-fallback")
+    assert result["recommendation"]["algorithm_id"] == "online-rule-v2"
+    assert result["recommendation"]["degraded"]
+    receipt = next(r for r in app.state.release_store.audit() if r["kind"] == "execution")
+    assert receipt["dispatched_to_trial"] is True
+    assert receipt["executed_algorithm"] == "online-rule-v2"
+    assert "boom" in receipt["fallback_reason"]
+
+
+def test_trial_stats_summarizes_dispatch(connected):
+    client, app = connected
+    _release(client)
+    client.post("/api/admin/v1/trials/start", headers=ADMIN, json={
+        "release_id": "release-1", "ratio": 1.0, "research_score": 80.0})
+    _journey(client, "trial-stats")
+    stats = app.state.release_store.trial_stats()
+    assert stats["trial_request_count"] == 1
+    assert stats["trial_success_count"] == 1
+    assert stats["trial_fallback_count"] == 0
+    current = client.get("/api/admin/v1/algorithms/current", headers=ADMIN).json()
+    assert current["trial_stats"]["trial_request_count"] == 1
