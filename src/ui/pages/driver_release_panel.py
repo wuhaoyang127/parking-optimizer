@@ -60,10 +60,70 @@ def render_driver_releases():
                 call("/api/admin/v1/driver-algorithm-activations", {
                     "release_id": None, "expected_active_hash": active_hash}, admin=True)
                 st.rerun()
+            render_trial_controls()
             if st.checkbox("显示最近执行与降级回执", key="driver_receipts"):
                 st.json(call("/api/admin/v1/execution-receipts", admin=True))
         except Exception as exc:
             st.error(str(exc))
+
+
+def render_trial_controls():
+    """试用（按比例分流）与晋升/丢弃决策控制。"""
+    st.subheader("试用（按比例分流）")
+    st.caption("把已验证版本设为试用并分流到车主请求，观察回执后决定晋升或丢弃。")
+    current = call("/api/admin/v1/algorithms/current", admin=True)
+    trial = current.get("trial")
+    stats = current.get("trial_stats", {})
+    if trial:
+        st.write("试用中：", trial["algorithm_id"], "｜比例", trial.get("trial_ratio"))
+        st.write(f"试用回执：{stats.get('trial_request_count', 0)} 次请求，"
+                 f"{stats.get('trial_success_count', 0)} 成功，"
+                 f"{stats.get('trial_fallback_count', 0)} 降级")
+        ratio_col, stop_col = st.columns(2)
+        with ratio_col:
+            new_ratio = st.number_input("试用比例", min_value=0.01, max_value=1.0,
+                value=float(trial.get("trial_ratio") or 0.33), step=0.01, key="trial_ratio_input")
+            if st.button("调整比例", key="trial_set_ratio"):
+                call("/api/admin/v1/trials/ratio", {"ratio": new_ratio}, admin=True)
+                st.rerun()
+        with stop_col:
+            if st.button("停止试用", key="trial_stop"):
+                call("/api/admin/v1/trials/stop", admin=True)
+                st.rerun()
+    else:
+        releases = call("/api/research/v1/releases")
+        validated = [r for r in releases if r.get("validation")
+                     and r["validation"]["passed"] and r.get("status") == "staged"]
+        if validated:
+            trial_id = st.selectbox("选择要试用的版本",
+                [r["release_id"] for r in validated], key="trial_release_select")
+            trial_ratio = st.number_input("试用比例", min_value=0.01, max_value=1.0,
+                value=0.33, step=0.01, key="trial_ratio_start")
+            research_score = st.number_input("研究评分", min_value=0.0, max_value=100.0,
+                value=80.0, step=1.0, key="trial_score")
+            if st.button("开始试用", key="trial_start"):
+                call("/api/admin/v1/trials/start", {
+                    "release_id": trial_id, "ratio": trial_ratio,
+                    "research_score": research_score}, admin=True)
+                st.rerun()
+        else:
+            st.info("暂无可试用的已验证版本")
+    decisions = call("/api/research/v1/releases")
+    awaiting = [r for r in decisions if r.get("status") == "awaiting_decision"]
+    if awaiting:
+        st.subheader("试用决策")
+        for r in awaiting:
+            promote_col, discard_col = st.columns(2)
+            with promote_col:
+                if st.button(f"晋升 {r['release_id']}", key=f"promote_{r['release_id']}"):
+                    call("/api/admin/v1/trials/decide",
+                         {"release_id": r["release_id"], "decision": "promote"}, admin=True)
+                    st.rerun()
+            with discard_col:
+                if st.button(f"丢弃 {r['release_id']}", key=f"discard_{r['release_id']}"):
+                    call("/api/admin/v1/trials/decide",
+                         {"release_id": r["release_id"], "decision": "discard"}, admin=True)
+                    st.rerun()
 
 
 def eligible_test_runs(runs, supported):
