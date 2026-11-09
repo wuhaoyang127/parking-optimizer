@@ -38,11 +38,20 @@ def render_download_package_button():
     st.link_button("📦 下载本地部署包（其他电脑用）", url, type="primary")
 
 
+def render_download_public_script_button():
+    """渲染「下载公网启动脚本」按钮（指向配置的 start-public.ps1 URL）。"""
+    url = setting("PARKING_PUBLIC_SCRIPT_URL")
+    if not url:
+        return
+    st.link_button("🌐 下载公网启动脚本（start-public.ps1）", url, type="primary")
+
+
 def render_driver_connect_panel():
     """侧边栏「车主端连接」折叠面板：按钮 + 使用说明，收纳顶部控件保持简洁。"""
     with st.expander("🚗 车主端连接", expanded=False):
         render_open_driver_button()
         render_download_package_button()
+        render_download_public_script_button()
         st.markdown(
             '<div style="color:#ffffff !important;line-height:1.9;">'
             '<strong style="color:#ffffff !important;">使用说明</strong><br>'
