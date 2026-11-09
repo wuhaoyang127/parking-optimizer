@@ -46,10 +46,17 @@ def render_download_public_script_button():
     st.link_button("🌐 下载公网启动脚本（start-public.ps1）", url, type="primary")
 
 
+def render_open_console_button():
+    """渲染「打开推送控制台」按钮（指向独立控制台，默认本机 8501）。"""
+    url = setting("PARKING_DRIVER_CONSOLE_URL", "http://127.0.0.1:8501")
+    st.link_button("🖥️ 打开推送控制台", url, type="primary")
+
+
 def render_driver_connect_panel():
     """侧边栏「车主端连接」折叠面板：按钮 + 使用说明，收纳顶部控件保持简洁。"""
     with st.expander("🚗 车主端连接", expanded=False):
         render_open_driver_button()
+        render_open_console_button()
         render_download_package_button()
         render_download_public_script_button()
         st.markdown(
