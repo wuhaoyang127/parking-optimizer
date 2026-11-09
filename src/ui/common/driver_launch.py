@@ -1,13 +1,25 @@
-"""研究端「打开车主端」一键启动服务并跳转。"""
+"""研究端「打开车主端」一键启动服务并跳转（本机）或纯跳转（云端）。"""
 import streamlit as st
 import streamlit.components.v1 as components
 
-from driver_bridge.launch import ensure_driver_running
+from driver_bridge.launch import _integration_root, ensure_driver_running
 from driver_bridge.settings import setting
 
 
 def render_open_driver_button():
-    """渲染「打开车主端」按钮：点击后确保车主端服务运行并跳转。"""
+    """渲染「打开车主端」按钮。
+
+    本机（能找到 parking-integrated）：启动服务 + 跳转；
+    云端（Streamlit Cloud，找不到 parking-integrated）：只跳转。
+    """
+    web_url = setting("PARKING_DRIVER_WEB_URL")
+    if not web_url:
+        return
+    try:
+        _integration_root()
+    except RuntimeError:
+        st.link_button("🚗 打开车主端", web_url)
+        return
     if st.button("🚗 打开车主端（启动并跳转）", type="primary"):
         try:
             st.session_state.driver_redirect = ensure_driver_running()
