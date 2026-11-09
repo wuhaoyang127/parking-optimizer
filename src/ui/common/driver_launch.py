@@ -44,8 +44,12 @@ def render_driver_connect_panel():
         render_open_driver_button()
         render_download_package_button()
         st.markdown(
-            "**使用说明**\n\n"
-            "- **打开车主端**：本机自动启动车主端并跳转；云端环境则直接跳转到车主端地址。\n"
-            "- **下载本地部署包**：下载 `parking-package.zip`，其他电脑解压后双击 "
-            "`START-HERE.cmd`，自动安装依赖并启动全套系统（需本机已装 Python 3.11 与 Node.js）。"
+            '<div style="color:#e6e6e6;line-height:1.8;">'
+            "<strong>使用说明</strong><br>"
+            "· <strong>打开车主端</strong>：本机自动启动车主端并跳转；云端环境则直接跳转。<br>"
+            "· <strong>下载本地部署包</strong>：下载 zip，其他电脑解压后双击 "
+            "<code>START-HERE.cmd</code>，自动安装依赖并启动全套系统"
+            "（已内置 Python 与 Node.js，无需额外安装）。"
+            "</div>",
+            unsafe_allow_html=True,
         )
