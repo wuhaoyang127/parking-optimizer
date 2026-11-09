@@ -31,10 +31,11 @@ async function postAuth(path: string, body: unknown): Promise<unknown> {
     throw new ApiError(response.status, "INVALID_JSON_RESPONSE", "停车场服务返回了无法解析的数据");
   }
   if (!response.ok) {
-    const message =
-      typeof payload === "object" && payload !== null && "detail" in payload
-        ? String((payload as { detail: unknown }).detail)
-        : "请求失败";
+    const detail =
+      typeof payload === "object" && payload !== null
+        ? (payload as Record<string, unknown>).message ?? (payload as Record<string, unknown>).detail
+        : undefined;
+    const message = typeof detail === "string" ? detail : "请求失败";
     throw new ApiError(response.status, "AUTH_FAILED", message);
   }
   return payload;
