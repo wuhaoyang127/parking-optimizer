@@ -44,12 +44,15 @@ def render_driver_connect_panel():
         render_open_driver_button()
         render_download_package_button()
         st.markdown(
-            '<div style="color:#e6e6e6;line-height:1.8;">'
-            "<strong>使用说明</strong><br>"
-            "· <strong>打开车主端</strong>：本机自动启动车主端并跳转；云端环境则直接跳转。<br>"
-            "· <strong>下载本地部署包</strong>：下载 zip，其他电脑解压后双击 "
-            "<code>START-HERE.cmd</code>，自动安装依赖并启动全套系统"
-            "（已内置 Python 与 Node.js，无需额外安装）。"
+            '<div style="color:#ffffff !important;line-height:1.9;">'
+            '<strong style="color:#ffffff !important;">使用说明</strong><br>'
+            '· <strong style="color:#ffffff !important;">打开车主端</strong>：'
+            '本机自动启动车主端并跳转；云端环境则直接跳转。<br>'
+            '· <strong style="color:#ffffff !important;">下载本地部署包</strong>：'
+            '下载 zip，其他电脑解压后双击 '
+            '<code style="color:#22d3ee !important;background:rgba(34,211,238,.18);'
+            'padding:2px 7px;border-radius:4px;">START-HERE.cmd</code>，'
+            '自动安装依赖并启动全套系统（已内置 Python 与 Node.js，无需额外安装）。'
             "</div>",
             unsafe_allow_html=True,
         )

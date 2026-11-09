@@ -123,6 +123,9 @@ h2 { font-size: 1.15rem!important; font-weight: 600!important; color: var(--prim
 section[data-testid="stSidebar"] { background: linear-gradient(180deg, #0f172a, #1e3a5f); }
 /* 全侧边栏文字亮色 + 放大 */
 section[data-testid="stSidebar"] * { color: #f1f5f9!important; font-size: 1.05rem!important; }
+/* 侧边栏折叠面板标题高亮 */
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary { color: #22d3ee!important; font-weight: 700!important; }
+section[data-testid="stSidebar"] [data-testid="stExpander"] summary * { color: #22d3ee!important; }
 section[data-testid="stSidebar"] .stRadio label {
     font-size: 1.7rem!important; padding: .9rem 1.1rem!important; border-radius: 10px!important;
     margin-bottom: 6px!important; transition: all 0.15s!important; }
