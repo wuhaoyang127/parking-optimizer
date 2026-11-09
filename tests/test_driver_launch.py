@@ -12,6 +12,11 @@ def test_integration_root_honors_env(monkeypatch):
     assert (root / "driver" / ".venv" / "Scripts" / "python.exe").is_file()
 
 
+def test_integration_root_discovers_sibling(monkeypatch):
+    monkeypatch.delenv("PARKING_INTEGRATION_ROOT", raising=False)
+    assert _integration_root().name == "parking-integrated"
+
+
 def test_healthy_detects_unreachable_port():
     assert _healthy("http://127.0.0.1:1") is False
 
