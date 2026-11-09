@@ -18,7 +18,7 @@ def render_open_driver_button():
     try:
         _integration_root()
     except RuntimeError:
-        st.link_button("🚗 打开车主端", web_url)
+        st.link_button("🚗 打开车主端", web_url, type="primary")
         return
     if st.button("🚗 打开车主端（启动并跳转）", type="primary"):
         try:
@@ -35,7 +35,7 @@ def render_download_package_button():
     url = setting("PARKING_PACKAGE_URL")
     if not url:
         return
-    st.link_button("📦 下载本地部署包（其他电脑用）", url)
+    st.link_button("📦 下载本地部署包（其他电脑用）", url, type="primary")
 
 
 def render_driver_connect_panel():
