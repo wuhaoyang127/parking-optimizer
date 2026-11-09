@@ -8,7 +8,7 @@ import streamlit as st
 from driver_bridge.settings import setting
 
 from ui.common import *  # 常量 + 工具 + check_login + auth 封装
-from ui.common.driver_launch import render_open_driver_button, render_download_package_button
+from ui.common.driver_launch import render_driver_connect_panel
 from ui.pages import (
     render_settings, render_system, render_layout_page, render_path_page,
     render_metrics_page, render_algo_import_page, render_status_page, render_feedback_page,
@@ -37,14 +37,13 @@ pages = [SECTION_LABELS[k] for k in allowed]
 
 # ── Sidebar ──
 with st.sidebar:
-    render_open_driver_button()
-    render_download_package_button()
     st.markdown(f'<div style="display:flex;align-items:center;gap:8px;padding:0.3rem 0 0.8rem 0;">'
         f'<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);'
         f'display:flex;align-items:center;justify-content:center;font-size:1rem">🚗</div>'
         f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{st.session_state.username}</div>'
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>',
         unsafe_allow_html=True)
+    render_driver_connect_panel()
 
     if st.button("🚪 退出", use_container_width=True):
         auth_logout(st.session_state.token)

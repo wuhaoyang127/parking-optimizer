@@ -36,3 +36,16 @@ def render_download_package_button():
     if not url:
         return
     st.link_button("📦 下载本地部署包（其他电脑用）", url)
+
+
+def render_driver_connect_panel():
+    """侧边栏「车主端连接」折叠面板：按钮 + 使用说明，收纳顶部控件保持简洁。"""
+    with st.expander("🚗 车主端连接", expanded=False):
+        render_open_driver_button()
+        render_download_package_button()
+        st.markdown(
+            "**使用说明**\n\n"
+            "- **打开车主端**：本机自动启动车主端并跳转；云端环境则直接跳转到车主端地址。\n"
+            "- **下载本地部署包**：下载 `parking-package.zip`，其他电脑解压后双击 "
+            "`START-HERE.cmd`，自动安装依赖并启动全套系统（需本机已装 Python 3.11 与 Node.js）。"
+        )
