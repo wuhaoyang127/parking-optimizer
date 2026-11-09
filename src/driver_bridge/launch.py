@@ -1,9 +1,12 @@
-"""车主端服务自动启动与健康等待（研究端「打开车主端」一键启动）。"""
+"""车主端服务自动启动：前端构建、Supabase 配置传递与健康等待。"""
 import os
 import subprocess
 import time
+import tomllib
 import urllib.request
 from pathlib import Path
+
+_SUPABASE_KEYS = ("SUPABASE_URL", "SUPABASE_ANON_KEY")
 
 
 def _integration_root() -> Path:
@@ -31,8 +34,41 @@ def _healthy(url: str) -> bool:
         return False
 
 
-def ensure_driver_running(port: int = 8000, timeout_s: float = 20.0) -> str:
-    """确保车主端（serve 同源）运行，返回车主端 URL。"""
+def _read_supabase_env(root: Path) -> dict[str, str]:
+    """读取研究端 Supabase 配置：环境变量优先，回退 .streamlit/secrets.toml。"""
+    env: dict[str, str] = {}
+    secrets = _load_secrets_toml(root / "research" / ".streamlit" / "secrets.toml")
+    for key in _SUPABASE_KEYS:
+        value = os.environ.get(key) or secrets.get(key)
+        if value:
+            env[key] = value
+    return env
+
+
+def _load_secrets_toml(path: Path) -> dict[str, str]:
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
+        return {}
+    supabase = data.get("supabase", {})
+    return {str(k): str(v) for k, v in supabase.items() if isinstance(v, str)}
+
+
+def _ensure_frontend_built(root: Path) -> None:
+    """确保前端 dist 已构建；缺失时自动 npm install + build。"""
+    web = root / "driver" / "apps" / "web"
+    if (web / "dist" / "index.html").is_file():
+        return
+    if not (web / "node_modules").is_dir():
+        subprocess.run(["npm", "ci", "--no-audit", "--no-fund"], cwd=str(web), check=True)
+    subprocess.run(["npm", "run", "build"], cwd=str(web), check=True)
+
+
+def ensure_driver_running(port: int = 8000, timeout_s: float = 60.0) -> str:
+    """确保车主端（serve 同源）运行，返回车主端 URL。
+
+    自动完成：前端构建（如缺失）、Supabase 配置传递、后台启动、健康等待。
+    """
     url = f"http://127.0.0.1:{port}"
     if _healthy(url):
         return url
@@ -40,11 +76,15 @@ def ensure_driver_running(port: int = 8000, timeout_s: float = 20.0) -> str:
     python = root / "driver" / ".venv" / "Scripts" / "python.exe"
     if not python.is_file():
         raise RuntimeError(f"未找到车主端 Python：{python}")
+    _ensure_frontend_built(root)
+    env = os.environ.copy()
+    env.update(_read_supabase_env(root))
     creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     subprocess.Popen(
         [str(python), "-m", "uvicorn", "serve:app", "--app-dir", "driver",
          "--host", "127.0.0.1", "--port", str(port), "--http", "h11"],
         cwd=str(root),
+        env=env,
         creationflags=creationflags,
     )
     deadline = time.monotonic() + timeout_s

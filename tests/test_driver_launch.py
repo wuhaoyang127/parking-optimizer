@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from driver_bridge.launch import _healthy, _integration_root
+from driver_bridge.launch import _healthy, _integration_root, _load_secrets_toml
 
 
 def test_integration_root_honors_env(monkeypatch):
@@ -14,3 +14,17 @@ def test_integration_root_honors_env(monkeypatch):
 
 def test_healthy_detects_unreachable_port():
     assert _healthy("http://127.0.0.1:1") is False
+
+
+def test_load_secrets_toml_reads_supabase(tmp_path):
+    secrets = tmp_path / "secrets.toml"
+    secrets.write_text(
+        '[supabase]\nSUPABASE_URL = "https://example.supabase.co"\nSUPABASE_ANON_KEY = "anon"\n',
+        encoding="utf-8",
+    )
+    loaded = _load_secrets_toml(secrets)
+    assert loaded == {"SUPABASE_URL": "https://example.supabase.co", "SUPABASE_ANON_KEY": "anon"}
+
+
+def test_load_secrets_toml_missing_returns_empty(tmp_path):
+    assert _load_secrets_toml(tmp_path / "missing.toml") == {}
