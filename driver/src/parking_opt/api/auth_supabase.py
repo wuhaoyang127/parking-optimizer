@@ -1,21 +1,44 @@
 """Supabase 认证客户端：标准库直调 REST RPC，不新增第三方依赖。
 
-复用研究端账号体系（login_user / validate_session RPC），密钥仅从环境变量读取。
+复用研究端账号体系（login_user / validate_session RPC）。配置来源：
+1. 环境变量 SUPABASE_URL / SUPABASE_ANON_KEY；
+2. 回退到 research/.streamlit/secrets.toml（与研究端同目录结构）。
 """
 
 from __future__ import annotations
 
 import json
 import os
+import tomllib
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+
+def _read_secrets_toml() -> tuple[str, str]:
+    """从 research/.streamlit/secrets.toml 读取 Supabase 配置。"""
+    try:
+        driver_root = Path(__file__).resolve().parents[3]
+        secrets = driver_root.parent / "research" / ".streamlit" / "secrets.toml"
+        if secrets.is_file():
+            data = tomllib.loads(secrets.read_text(encoding="utf-8"))
+            supabase = data.get("supabase", data)  # 兼容 [supabase] 段或顶层键
+            url = str(supabase.get("SUPABASE_URL", "")).rstrip("/")
+            key = str(supabase.get("SUPABASE_ANON_KEY", ""))
+            return url, key
+    except Exception:
+        pass
+    return "", ""
 
 
 def _settings() -> tuple[str, str]:
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_ANON_KEY", "")
     if not url or not key:
-        raise RuntimeError("Supabase 未配置：请设置 SUPABASE_URL 与 SUPABASE_ANON_KEY")
+        url, key = _read_secrets_toml()
+    if not url or not key:
+        raise RuntimeError("Supabase 未配置：请设置 SUPABASE_URL 与 SUPABASE_ANON_KEY，"
+                           "或在 research/.streamlit/secrets.toml 中配置 [supabase]")
     return url, key
 
 
