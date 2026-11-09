@@ -6,7 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 import streamlit as st
 from driver_bridge.client import call, publish
 from driver_bridge.settings import setting
-from ui.common.driver_launch import render_open_driver_button
+from ui.common.driver_launch import render_open_driver_button, render_download_package_button
 from ui.pages.driver_release_panel import render_driver_releases
 
 st.set_page_config(page_title="停车研究站 · 车主端连接", page_icon="🅿️", layout="wide")
@@ -18,6 +18,7 @@ if len(password) < 16 or not secrets.compare_digest(entered.encode(), password.e
     st.info("输入控制台口令（配置在环境变量或 Streamlit secrets 的 PARKING_CONSOLE_PASSWORD）。")
     st.stop()
 render_open_driver_button()
+render_download_package_button()
 try:
     supported = call("/api/research/v1/capabilities")["supported"]
     algorithm = st.selectbox("研究算法", supported)

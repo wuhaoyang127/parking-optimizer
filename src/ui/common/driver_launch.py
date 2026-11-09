@@ -28,3 +28,11 @@ def render_open_driver_button():
     if st.session_state.get("driver_redirect"):
         url = st.session_state.pop("driver_redirect")
         components.html(f"<script>window.location.href='{url}';</script>", height=0)
+
+
+def render_download_package_button():
+    """渲染「下载本地部署包」按钮（指向配置的 zip URL，供其他电脑一键部署）。"""
+    url = setting("PARKING_PACKAGE_URL")
+    if not url:
+        return
+    st.link_button("📦 下载本地部署包（其他电脑用）", url)
