@@ -3,7 +3,7 @@ from ui.common import *
 from ui.pages.driver_release_panel import publish_from_existing_button as auth_publish_algorithm
 from ui.pages.driver_release_panel import render_driver_releases
 from ui.pages.driver_release_panel import eligible_test_runs
-from driver_bridge.settings import configured, setting, _owner_app_connected  # noqa: F401
+from driver_bridge.settings import configured, _owner_app_connected  # noqa: F401
 
 
 # Supports both environment variables and Streamlit Cloud's [driver_bridge] Secrets.
@@ -73,9 +73,7 @@ def render_algo_push_section(role):
     st.caption("发布算法到车主端暂存区，再校验和启用；不会自动替换当前算法。")
     if not OWNER_APP_CONNECTED:
         st.info("📡 车主端未接入：配置 `PARKING_DRIVER_API_URL` 与 `PARKING_PUBLISH_TOKEN` 后"
-                "自动显示发布/校验/启用面板；也可打开独立推送控制台。")
-        st.link_button("🚀 打开推送控制台（发布/校验/启用）",
-                       setting("PARKING_DRIVER_CONSOLE_URL", "http://127.0.0.1:8501"))
+                "自动显示发布/校验/启用面板。")
 
     if OWNER_APP_CONNECTED:
         render_driver_releases()
