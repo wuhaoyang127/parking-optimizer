@@ -55,6 +55,16 @@ def validate_decision_request(request: DecisionRequest, catalog: SchemaCatalog) 
     validate_decision_request_semantics(mapping)
 
 
+def validate_decision_request_semantics_only(request: DecisionRequest) -> None:
+    """轻量校验：只跑语义检查，跳过对 4.5 万条 path_costs 的 JSON Schema 结构校验。
+
+    结构形状由 v1 适配器构造时保证（契约模型 + assert_state_invariants），
+    语义检查仍保留路径唯一性、边序列、距离一致性与信息边界等关键不变量。
+    """
+
+    validate_decision_request_semantics(decision_request_to_mapping(request))
+
+
 def validate_decision_result(result: DecisionResult, catalog: SchemaCatalog) -> None:
     """Validate the frozen result envelope before it leaves the policy."""
 

@@ -17,6 +17,24 @@ def _json_pointer(parts: list[object]) -> str:
     return "/" + "/".join(escaped)
 
 
+class _MemoRegistry:
+    """按 URI 记忆化 Registry.lookup，避免大布局的 path_costs 反复解析同一个 $ref。"""
+
+    def __init__(self, registry: Registry) -> None:
+        self._registry = registry
+        self._cache: dict[str, Any] = {}
+
+    def lookup(self, uri: str) -> Any:
+        cached = self._cache.get(uri)
+        if cached is None:
+            cached = self._registry.lookup(uri)
+            self._cache[uri] = cached
+        return cached
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._registry, name)
+
+
 class SchemaCatalog:
     """Load and validate the single approved `schemas/v1` directory."""
 
@@ -42,7 +60,7 @@ class SchemaCatalog:
         if len(schemas) != 8:
             raise ValueError(f"expected 8 v1 schemas, found {len(schemas)}")
         self._schemas = schemas
-        self._registry = Registry().with_resources(resources)
+        self._registry = _MemoRegistry(Registry().with_resources(resources))
 
     @property
     def names(self) -> tuple[str, ...]:

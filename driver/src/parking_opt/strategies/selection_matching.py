@@ -20,6 +20,19 @@ from parking_opt.strategies.selection_context import (
 )
 
 
+def _build_path_lookup(layout: Mapping[str, Any]) -> dict[tuple[str, str], Mapping[str, Any]]:
+    """把 path_costs 一次性压成 {(from, to): item} 字典，供 _path 快速查找。"""
+    lookup: dict[tuple[str, str], Mapping[str, Any]] = {}
+    for item in layout["path_costs"]:
+        key = (item["from_node_id"], item["to_node_id"])
+        prev = lookup.get(key)
+        if prev is None or (
+            float(item["distance_m"]), int(item["travel_time_s"]), item["path_cost_id"]
+        ) < (float(prev["distance_m"]), int(prev["travel_time_s"]), prev["path_cost_id"]):
+            lookup[key] = item
+    return lookup
+
+
 def _feasible_matching(
     request: DecisionRequest,
     blockers: tuple[tuple[str, Mapping[str, Any]], ...],
@@ -28,6 +41,7 @@ def _feasible_matching(
     first_fit: bool,
     deadline: float,
     clock: Callable[[], float],
+    path_lookup: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
 ) -> tuple[tuple[BufferAssignment, ...], float, float] | None:
     layout = request.layout
     buffers = {item["position_id"]: item for item in layout["buffer_slots"]}
@@ -50,8 +64,8 @@ def _feasible_matching(
         maximum_leg = 0.0
         feasible = True
         for (vehicle_id, origin), buffer in zip(blockers, selected, strict=True):
-            outbound = _path(layout, origin["access_node_id"], buffer["access_node_id"])
-            restore = _path(layout, buffer["access_node_id"], origin["access_node_id"])
+            outbound = _path(layout, origin["access_node_id"], buffer["access_node_id"], lookup=path_lookup)
+            restore = _path(layout, buffer["access_node_id"], origin["access_node_id"], lookup=path_lookup)
             if outbound is None or restore is None:
                 feasible = False
                 break
@@ -87,6 +101,7 @@ def _exposure_count(
     *,
     deadline: float,
     clock: Callable[[], float],
+    path_lookup: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
 ) -> int:
     slots = tuple(item for item in request.layout["slots"] if item["stack_group_id"] == group_id)
     occupant_by_position = {
@@ -118,6 +133,7 @@ def _exposure_count(
                 first_fit=True,
                 deadline=deadline,
                 clock=clock,
+                path_lookup=path_lookup,
             )
             is None
         ):
@@ -175,4 +191,5 @@ def _arrival_candidate_context(request: DecisionRequest) -> _ArrivalCandidateCon
             request, slots=slots, positions=positions, claims=claims, locked=locked
         ),
         soft_departure_times=_legal_soft_departure_times(request),
+        path_lookup=_build_path_lookup(request.layout),
     )

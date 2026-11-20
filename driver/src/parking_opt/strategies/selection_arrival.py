@@ -38,7 +38,7 @@ def _assess_arrival_slot(
         reasons.append("STACK_GROUP_BUSY")
     if not _entry_clear(slot, slots=context.slots, claims=context.claims, locked=context.locked):
         reasons.append("ENTRY_NOT_CLEAR")
-    path = _path(request.layout, target.entrance_node_id or "", str(slot["access_node_id"]))
+    path = _path(request.layout, target.entrance_node_id or "", str(slot["access_node_id"]), lookup=context.path_lookup)
     if path is None:
         reasons.append("ENTRY_PATH_UNREACHABLE")
     if reasons:
@@ -58,8 +58,8 @@ def _assess_arrival_slot(
             path=path,
         )
     assert path is not None
-    before = _exposure_count(request, str(slot["stack_group_id"]), None, None, deadline=deadline, clock=clock)
-    after = _exposure_count(request, str(slot["stack_group_id"]), position_id, target.anonymous_vehicle_id, deadline=deadline, clock=clock)
+    before = _exposure_count(request, str(slot["stack_group_id"]), None, None, deadline=deadline, clock=clock, path_lookup=context.path_lookup)
+    after = _exposure_count(request, str(slot["stack_group_id"]), position_id, target.anonymous_vehicle_id, deadline=deadline, clock=clock, path_lookup=context.path_lookup)
     incremental_exposure = max(0, after - before)
     if str(request.approved_config["recoverability_policy"]) == "strict_recoverable" and incremental_exposure:
         return ArrivalCandidateAssessment(

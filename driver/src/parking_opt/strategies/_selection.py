@@ -64,6 +64,7 @@ class _ArrivalCandidateContext:
     busy_stack_groups: set[str]
     baseline_assignable_ids: set[str]
     soft_departure_times: Mapping[str, int]
+    path_lookup: Mapping[tuple[str, str], Mapping[str, Any]]
 
 
 def deterministic_target(request: DecisionRequest) -> PendingRequest | None:
@@ -128,7 +129,10 @@ def _path(
     layout: Mapping[str, Any],
     from_node_id: str,
     to_node_id: str,
+    lookup: Mapping[tuple[str, str], Mapping[str, Any]] | None = None,
 ) -> Mapping[str, Any] | None:
+    if lookup is not None:
+        return lookup.get((from_node_id, to_node_id))
     candidates = [
         item
         for item in layout["path_costs"]

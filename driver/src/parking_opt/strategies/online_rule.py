@@ -19,6 +19,7 @@ from parking_opt.strategies._selection import (
 from parking_opt.strategies.fallback import deterministic_fallback, result_from_selection
 from parking_opt.strategies.protocol import (
     validate_decision_request,
+    validate_decision_request_semantics_only,
     validate_decision_result,
 )
 
@@ -107,7 +108,7 @@ class OnlineRulePolicy:
     ) -> tuple[ArrivalCandidateAssessment, ...]:
         """Return the exact arrival filters and ordering used by :meth:`decide`."""
 
-        validate_decision_request(request, self._schema_catalog)
+        validate_decision_request_semantics_only(request)
         target = deterministic_target(request)
         if target is None or target.request_type != "ARRIVAL":
             raise ValueError("arrival candidate explanation requires one arrival target")
