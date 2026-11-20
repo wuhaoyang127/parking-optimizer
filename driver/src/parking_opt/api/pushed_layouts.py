@@ -180,13 +180,15 @@ def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
 def _offsite_estimates_for(lot_id: str, refs: tuple[str, ...]) -> tuple[OffsiteEstimate, ...]:
     """为推送布局生成稳定伪随机的离场估价（接入地图前用，后续换真实值）。
 
-    按 lot_id + 参考点做 sha256 取伪随机，保证重启后数值稳定，且量级合理。
+    距离按 300~1500 米取伪随机；时间 = 距离 / 车速，车速按 3.5~5.5 m/s 取伪随机，
+    用「红绿灯 + 路况」带来的速度差异让时间与距离大体匹配但非严格线性。
     """
     estimates = []
     for ref in refs:
         digest = hashlib.sha256(f"{lot_id}:{ref}".encode()).hexdigest()
-        distance_m = 300 + int(digest[:6], 16) % 1200  # 300~1500 米
-        eta_s = 90 + int(digest[6:12], 16) % 300       # 90~390 秒（1.5~6.5 分钟）
+        distance_m = 300 + int(digest[:6], 16) % 1200
+        speed_mps = 3.5 + (int(digest[6:10], 16) % 200) / 100.0
+        eta_s = max(45, round(distance_m / speed_mps))
         estimates.append(OffsiteEstimate(reference_id=ref, distance_m=distance_m, eta_s=eta_s))
     return tuple(estimates)
 
