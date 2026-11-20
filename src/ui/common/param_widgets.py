@@ -63,6 +63,20 @@ def _coerce_float(value, default, lo, hi):
     return max(float(lo), min(float(hi), v))
 
 
+def leaf_strategy_names():
+    """返回可作为子策略的「叶子」策略名（与车主端 catalog 的 CHILDREN 一致）。
+
+    排除机器学习策略、自身带子策略的复合策略（rho_rolling / peak_offpeak_fusion），
+    以及离线研究算法 mosa（读未来真值，不能作为在线子策略）。
+    """
+    return [
+        n for n in StrategyRegistry.all().keys()
+        if n != "mosa"
+        and getattr(StrategyRegistry.get(n), "category", "classic") != "ml"
+        and not any(p.get("type") == "strategy" for p in StrategyRegistry.specs(n))
+    ]
+
+
 def _render_param_widget(p, prefix, disabled, initial=None):
     """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。
 
@@ -102,7 +116,7 @@ def _render_param_widget(p, prefix, disabled, initial=None):
         val = iv if isinstance(iv, bool) else bool(default)
         return st.checkbox(label, val, key=wkey, disabled=dis, help=help_text)
     if ptype == "strategy":
-        names = list(StrategyRegistry.all().keys())
+        names = leaf_strategy_names()
         fmt = {n: StrategyRegistry.get(n).label for n in names}
         iv = initial.get(key)
         idx = names.index(iv) if iv in names else (names.index(default) if default in names else 0)
