@@ -33,6 +33,8 @@ def _render_import_layout():
 
     uploaded = st.file_uploader("📤 上传布局 JSON", type=["json"], key="import_layout")
     if uploaded is not None:
+        if not check_upload_size(uploaded, 10, "布局文件"):
+            st.stop()
         try:
             data = json.loads(uploaded.read().decode("utf-8"))
             if "name" not in data or "nodes" not in data or "edges" not in data:

@@ -29,6 +29,8 @@ def render_algo_import_page(role):
     uploaded = st.file_uploader("📤 上传算法文件", type=["md", "txt", "py", "json"],
                                 key="algo_upload")
     if uploaded is not None:
+        if not check_upload_size(uploaded, 5, "算法文件"):
+            st.stop()
         try:
             content = uploaded.read().decode("utf-8", errors="replace")
             target = pending_dir / uploaded.name

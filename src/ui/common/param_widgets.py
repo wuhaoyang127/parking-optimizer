@@ -77,6 +77,24 @@ def leaf_strategy_names():
     ]
 
 
+def check_upload_size(uploaded, max_mb: int = 10, label: str = "文件") -> bool:
+    """拒绝超大上传，防止超大文件拖垮内存/解析（上传不做 zip 解压，无 zip bomb 风险）。"""
+    if uploaded is not None and uploaded.size > max_mb * 1024 * 1024:
+        st.error(f"❌ {label}过大（{uploaded.size / 1048576:.1f}MB），上限 {max_mb}MB")
+        return False
+    return True
+
+
+def normalize_strategy_params(algo, params):
+    """把子策略参数归一化到合法叶子策略，防止历史脏数据导致车主端校验失败。"""
+    leaf = leaf_strategy_names()
+    clean = dict(params)
+    for spec in StrategyRegistry.specs(algo):
+        if spec.get("type") == "strategy" and clean.get(spec["key"]) not in leaf:
+            clean[spec["key"]] = spec.get("default")
+    return clean
+
+
 def _render_param_widget(p, prefix, disabled, initial=None):
     """按单个参数声明渲染控件，返回参数值。prefix 用于生成唯一 widget key。
 

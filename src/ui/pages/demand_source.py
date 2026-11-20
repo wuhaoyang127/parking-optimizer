@@ -57,6 +57,8 @@ def _render_demand_source(disabled, role):
                      "系统默认对车牌脱敏后转换为需求序列",
             )
             if up is not None:
+                if not check_upload_size(up, 50, "道闸流水 CSV"):
+                    st.stop()
                 try:
                     from parking_opt.io.realtime_io import gate_csv_to_demand_json
                     demand_text = gate_csv_to_demand_json(up.getvalue().decode("utf-8"))
@@ -84,6 +86,8 @@ def _render_demand_source(disabled, role):
                                   disabled=not role["can_import_demand"],
                                   help="文件来自「指标分析页 → 需求时序分布 → 下载/保存需求序列 JSON」")
             if up is not None:
+                if not check_upload_size(up, 50, "需求序列 JSON"):
+                    st.stop()
                 try:
                     imported_vehicles, imported_meta = parse_demand_json(up.getvalue().decode("utf-8"))
                     st.session_state.imported_vehicles = imported_vehicles

@@ -10,17 +10,6 @@ from driver_bridge.settings import configured, _owner_app_connected  # noqa: F40
 OWNER_APP_CONNECTED = configured()
 
 
-def _normalize_strategy_params(algo, params):
-    """把子策略参数归一化到合法叶子策略，防止历史脏数据导致车主端校验失败。"""
-    from ui.common.param_widgets import leaf_strategy_names
-    leaf = leaf_strategy_names()
-    clean = dict(params)
-    for spec in StrategyRegistry.specs(algo):
-        if spec.get("type") == "strategy" and clean.get(spec["key"]) not in leaf:
-            clean[spec["key"]] = spec.get("default")
-    return clean
-
-
 def _best_algo_from_runs(runs, weights):
     """从 sim_runs 记录计算当前测试最优算法。
 
@@ -117,7 +106,7 @@ def render_algo_push_section(role):
                       or StrategyRegistry.default_params(algo))
             if algo == "ml_duration_tree":
                 params = st.session_state.get("driver_trained_params", params)
-            params = _normalize_strategy_params(algo, params)
+            params = normalize_strategy_params(algo, params)
             st.caption(f"将发布参数：`{json.dumps(params, ensure_ascii=False)}`")
             note = st.text_input("备注（可选）", key="push_algo_note",
                                  placeholder="如：算法三 RHO 默认参数")
@@ -169,7 +158,7 @@ def render_algo_push_section(role):
                       or StrategyRegistry.default_params(best))
             if best == "ml_duration_tree":
                 params = st.session_state.get("driver_trained_params", params)
-            params = _normalize_strategy_params(best, params)
+            params = normalize_strategy_params(best, params)
             confirm2 = st.checkbox("我确认推送该最优算法", key="auto_push_confirm")
             if st.button("📤 确认推送", type="primary",
                          disabled=not confirm2, key="auto_push_ok"):
