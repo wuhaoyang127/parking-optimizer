@@ -69,8 +69,9 @@ class PublicFacilityDataSource(FacilityStateProjectionMixin):
         return self._profiles_enabled
 
     def list_bundles(self) -> tuple[ScenarioBundle, ...]:
-        # 仅内置停车场：供发现区地图使用，发现区 JSON 只含内置 lot，推送布局不放这里
-        return tuple(self._by_lot[key].bundle for key in sorted(self._by_lot))
+        builtin = tuple(self._by_lot[key].bundle for key in sorted(self._by_lot))
+        pushed = tuple(self._pushed[key] for key in sorted(self._pushed))
+        return builtin + pushed
 
     def get_bundle(self, parking_lot_id: str) -> ScenarioBundle:
         if parking_lot_id in self._pushed:

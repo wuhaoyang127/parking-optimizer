@@ -19,6 +19,10 @@ from parking_opt.api.models import (
 from parking_opt.api.models_discovery import (
     ChannelZone,
     Coordinate,
+    DiscoveryArea,
+    DiscoveryLotSummary,
+    DiscoveryPosition,
+    OffsiteEstimate,
     ParkingSpace,
     RoadEdge,
     RoadNode,
@@ -170,3 +174,19 @@ def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
             LOGGER.warning("跳过无效推送布局 %s: %s", lot_id, exc)
             continue
     return result
+
+
+def with_pushed_lots(area: DiscoveryArea, pushed: dict[str, ScenarioBundle]) -> DiscoveryArea:
+    """把推送布局追加到发现区（默认位置与估价），保证与 parking-lots 列表同源。"""
+    refs = tuple(item.reference_id for item in area.references)
+    lots = list(area.lots)
+    for i, lot_id in enumerate(sorted(pushed)):
+        lots.append(DiscoveryLotSummary(
+            parking_lot_id=lot_id,
+            opening_hours_label="自定义布局",
+            position=DiscoveryPosition(x_pct=48 + (i % 3) * 8, y_pct=48 + (i // 3) * 8),
+            offsite_estimates=tuple(
+                OffsiteEstimate(reference_id=ref, distance_m=800, eta_s=180) for ref in refs
+            ),
+        ))
+    return area.model_copy(update={"lots": tuple(lots)})

@@ -30,7 +30,7 @@ from parking_opt.api.facility import (
     UnavailableParkingFacilityDataSource,
 )
 from parking_opt.api.facility_scenarios import PublicFacilityDataSource
-from parking_opt.api.pushed_layouts import load_pushed_scenarios
+from parking_opt.api.pushed_layouts import load_pushed_scenarios, with_pushed_lots
 from parking_opt.api.models import DataMode, ErrorResponse
 from parking_opt.api.routing import RouteCostService
 from parking_opt.api.scenarios import load_scenarios
@@ -101,10 +101,12 @@ def create_app(
                 if driver_demo_profiles_enabled is None
                 else driver_demo_profiles_enabled
             )
-            public_source = PublicFacilityDataSource(session_store=session_store, route_service=route_service, profiles_enabled=profiles_enabled, pushed_scenarios=load_pushed_scenarios())
+            pushed = load_pushed_scenarios()
+            public_source = PublicFacilityDataSource(session_store=session_store, route_service=route_service, profiles_enabled=profiles_enabled, pushed_scenarios=pushed)
             source = public_source
+            base_area = load_discovery_area(REPO_ROOT / "data" / "synthetic" / "web-v2" / "discovery-area.v1.json")
             discovery_source = SyntheticDiscoveryDataSource(
-                load_discovery_area(REPO_ROOT / "data" / "synthetic" / "web-v2" / "discovery-area.v1.json"),
+                with_pushed_lots(base_area, pushed),
                 (item.parking_lot for item in source.list_bundles()),
             )
     else:
