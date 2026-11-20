@@ -1,6 +1,7 @@
-"""Supabase 快照持久化：车主端 ReleaseStore 状态经 service_role 直连 driver_state 表。
+"""Supabase 快照持久化：车主端 ReleaseStore 状态经 service_role 直连 app_settings 表。
 
-与 auth_supabase（anon key 调 RPC）不同：这里用 SUPABASE_SERVICE_KEY 直连读写表，
+复用研究端已有的 app_settings 键值表（key -> JSONB），避免额外建表（DDL）。
+与 auth_supabase（anon key 调 RPC）不同：这里用 SUPABASE_SERVICE_KEY 直连读写，
 让「已发布算法/激活/试用/审计/观测/备份」在 Render 重新部署/重启后仍能恢复。
 """
 from __future__ import annotations
@@ -9,7 +10,7 @@ import os
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-STATE_KEY = "release_store"
+STATE_KEY = "driver_release_store_state"
 
 
 def _settings() -> tuple[str, str]:
@@ -40,16 +41,16 @@ def _rest(method: str, path: str, key: str, payload=None, prefer: str | None = N
 def pull_state():
     """读取最近一次持久化的 ReleaseStore 快照；无记录返回 None。"""
     _, key = _settings()
-    body = _rest("GET", f"driver_state?key=eq.{STATE_KEY}&select=data", key)
+    body = _rest("GET", f"app_settings?key=eq.{STATE_KEY}&select=value", key)
     rows = json.loads(body)
     if not rows:
         return None
-    return rows[0].get("data")
+    return rows[0].get("value")
 
 
 def push_state(snapshot):
-    """把 ReleaseStore 快照 upsert 到 driver_state（按主键 key 合并）。"""
+    """把 ReleaseStore 快照 upsert 到 app_settings（按主键 key 合并）。"""
     _, key = _settings()
-    _rest("POST", "driver_state", key,
-          payload={"key": STATE_KEY, "data": snapshot},
+    _rest("POST", "app_settings", key,
+          payload={"key": STATE_KEY, "value": snapshot},
           prefer="resolution=merge-duplicates")
