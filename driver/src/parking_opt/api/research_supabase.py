@@ -54,3 +54,27 @@ def push_state(snapshot):
     _rest("POST", "app_settings", key,
           payload={"key": STATE_KEY, "value": snapshot},
           prefer="resolution=merge-duplicates")
+
+
+LAYOUTS_KEY = "driver_layouts"
+
+
+def pull_layouts():
+    """读取推送布局列表；无记录返回 []。"""
+    _, key = _settings()
+    body = _rest("GET", f"app_settings?key=eq.{LAYOUTS_KEY}&select=value", key)
+    rows = json.loads(body)
+    if not rows:
+        return []
+    val = rows[0].get("value")
+    return val if isinstance(val, list) else []
+
+
+def push_layout(layout):
+    """追加/覆盖一个布局（按 id）。研究端「布局推送」调用。"""
+    _, key = _settings()
+    items = [x for x in pull_layouts() if x.get("id") != layout.get("id")]
+    items.append(layout)
+    _rest("POST", "app_settings", key,
+          payload={"key": LAYOUTS_KEY, "value": items},
+          prefer="resolution=merge-duplicates")

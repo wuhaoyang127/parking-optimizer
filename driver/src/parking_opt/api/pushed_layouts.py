@@ -143,3 +143,27 @@ def build_scenario_bundle(lot_id: str, name: str, venue_type: str, data: dict) -
         scenario_id=f"{lot_id}-scenario-1", seed=0,
         parking_lot=lot, layout=layout, cost_snapshot=cost,
     )
+
+
+def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
+    """从 Supabase 读取推送布局并转换成 {lot_id: ScenarioBundle}；失败/无效项跳过。"""
+    try:
+        from parking_opt.api.research_supabase import pull_layouts
+        items = pull_layouts()
+    except Exception:
+        return {}
+    result: dict[str, ScenarioBundle] = {}
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        lot_id = str(it.get("id", "")).strip()
+        name = str(it.get("name", lot_id)).strip()
+        venue = str(it.get("venue_type", "commercial"))
+        data = it.get("data")
+        if not lot_id or not name or not isinstance(data, dict):
+            continue
+        try:
+            result[lot_id] = build_scenario_bundle(lot_id, name, venue, data)
+        except Exception:
+            continue
+    return result

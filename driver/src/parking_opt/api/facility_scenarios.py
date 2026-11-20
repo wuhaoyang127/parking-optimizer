@@ -41,8 +41,10 @@ class PublicFacilityDataSource(FacilityStateProjectionMixin):
         session_store: InMemorySessionStore,
         route_service: RouteCostService,
         profiles_enabled: bool = True,
+        pushed_scenarios: dict | None = None,
     ) -> None:
         self._by_lot = build_public_facility_scenarios()
+        self._pushed = pushed_scenarios or {}
         self._driver_profiles = {
             lot_id: _build_driver_demo_scenarios(scenario)
             for lot_id, scenario in self._by_lot.items()
@@ -67,9 +69,13 @@ class PublicFacilityDataSource(FacilityStateProjectionMixin):
         return self._profiles_enabled
 
     def list_bundles(self) -> tuple[ScenarioBundle, ...]:
-        return tuple(self._by_lot[key].bundle for key in sorted(self._by_lot))
+        builtin = tuple(self._by_lot[key].bundle for key in sorted(self._by_lot))
+        pushed = tuple(self._pushed[key] for key in sorted(self._pushed))
+        return builtin + pushed
 
     def get_bundle(self, parking_lot_id: str) -> ScenarioBundle:
+        if parking_lot_id in self._pushed:
+            return self._pushed[parking_lot_id]
         try:
             return self._by_lot[parking_lot_id].bundle
         except KeyError as exc:
@@ -78,10 +84,12 @@ class PublicFacilityDataSource(FacilityStateProjectionMixin):
     def list_driver_bundles(self, *, session_id: str) -> tuple[ScenarioBundle, ...]:
         return tuple(
             self.get_driver_bundle(parking_lot_id, session_id=session_id)
-            for parking_lot_id in sorted(self._by_lot)
+            for parking_lot_id in sorted(self._by_lot) + sorted(self._pushed)
         )
 
     def get_driver_bundle(self, parking_lot_id: str, *, session_id: str) -> ScenarioBundle:
+        if parking_lot_id in self._pushed:
+            return self._pushed[parking_lot_id]
         return self._driver_scenario(parking_lot_id, session_id=session_id).bundle
 
     def get_driver_demo_profile(self, parking_lot_id: str, *, session_id: str) -> DriverDemoProfile:
