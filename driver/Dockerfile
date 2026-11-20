@@ -16,13 +16,15 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# 仅安装车主端 API 运行时所需依赖（fastapi/uvicorn/pydantic/jsonschema/referencing/networkx）
+# 车主端 API 依赖 + 研究算法运行时依赖（版本与 driver/pyproject.toml 一致）
 RUN pip install --no-cache-dir \
     "fastapi==0.139.2" \
     "uvicorn==0.51.0" \
     "jsonschema[format-nongpl]>=4.25,<5" \
     "referencing>=0.36,<1" \
-    "networkx==3.6.1"
+    "networkx==3.6.1" \
+    "simpy==4.1.2" \
+    "numpy>=1.24,<2"
 
 # serve.py 依赖 driver/ 目录结构（src/configs/data/schemas/apps/web/dist）
 COPY driver/serve.py ./serve.py
@@ -31,6 +33,11 @@ COPY driver/configs ./configs
 COPY driver/data ./data
 COPY driver/schemas ./schemas
 COPY --from=web /web/dist ./apps/web/dist
+
+# 研究算法运行时：「推送到车主端」校验/执行发布的研究算法（driver_bridge + 研究端 src/parking_opt）
+COPY driver_bridge ./research/driver_bridge
+COPY src/parking_opt ./research/src/parking_opt
+ENV PARKING_RESEARCH_ROOT=/research
 
 EXPOSE 8000
 
