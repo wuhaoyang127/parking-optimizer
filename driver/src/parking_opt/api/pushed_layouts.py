@@ -5,6 +5,7 @@
 坐标原样保留，供后续 2D/3D 渲染复用。
 """
 from __future__ import annotations
+import logging
 from datetime import UTC, datetime
 
 from parking_opt.api.models import (
@@ -29,6 +30,7 @@ from parking_opt.api.models_state import CostSnapshot
 
 _WALK_SPEED_M_S = 1.4
 _CHANNEL_ZONE_ID = "zone-default"
+LOGGER = logging.getLogger(__name__)
 
 
 def _coords(nodes: list[dict]) -> dict[str, tuple[float, float]]:
@@ -164,6 +166,7 @@ def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
             continue
         try:
             result[lot_id] = build_scenario_bundle(lot_id, name, venue, data)
-        except Exception:
+        except Exception as exc:
+            LOGGER.warning("跳过无效推送布局 %s: %s", lot_id, exc)
             continue
     return result

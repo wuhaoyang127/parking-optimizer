@@ -1,4 +1,5 @@
 """页面：布局推送（把自定义布局推到车主端，作为新增停车场）。"""
+import hashlib
 from ui.common import *
 from ui.common.custom_layouts import ensure_custom_layouts_loaded
 
@@ -27,7 +28,7 @@ def render_layout_push(role):
         if not isinstance(data, dict):
             st.error("布局数据无效，无法推送")
         else:
-            lot_id = "lot-" + selected
+            lot_id = "lot-push-" + hashlib.sha256(selected.encode("utf-8")).hexdigest()[:10]
             try:
                 from auth.driver_layouts import push_driver_layout
                 push_driver_layout({"id": lot_id, "name": labels[selected],
