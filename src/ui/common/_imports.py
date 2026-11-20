@@ -45,6 +45,14 @@ except ImportError:
                 "latency_ms": None, "checked_at": ""}
 
 try:
+    from auth import check_driver_health
+except ImportError:
+    def check_driver_health():
+        return {"web_online": False, "research_runtime_ok": False, "push_configured": False,
+                "web_url": "", "message": "功能未加载：后端代码未同步，请在 Streamlit Cloud 重新部署",
+                "checked_at": ""}
+
+try:
     from auth import submit_feedback as auth_submit_feedback
     from auth import list_my_feedbacks as auth_list_my_feedbacks
     from auth import list_feedbacks as auth_list_feedbacks

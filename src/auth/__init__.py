@@ -13,7 +13,7 @@ from auth.users import (login, register, validate_session, logout,  # noqa: F401
 from auth.session import (set_session_token, get_session_token,  # noqa: F401
                           clear_session_token, restore_session,
                           _cookie_token, _set_cookie_js, _clear_cookie_js)
-from auth.health import check_supabase_health  # noqa: F401
+from auth.health import check_supabase_health, check_driver_health  # noqa: F401
 from auth.feedback import (submit_feedback, list_my_feedbacks, list_feedbacks,  # noqa: F401
                            update_feedback_status, reply_feedback, delete_feedback,
                            update_feedback_display_time, _normalize_list)

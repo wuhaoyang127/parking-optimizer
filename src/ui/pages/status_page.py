@@ -34,6 +34,7 @@ def render_status_page(role):
 
     if st.button("🔄 立即重新探测"):
         st.session_state.health_check = None
+        st.session_state.driver_health_check = None
         st.rerun()
 
     if st.session_state.health_check is None:
@@ -61,6 +62,31 @@ def render_status_page(role):
         _metric("响应耗时", f"{lat}ms" if lat is not None else "—")
 
     st.caption(f"探测时间：{h.get('checked_at')}")
+
+    # ── 车主端（Render）探测 ──
+    st.markdown("---")
+    st.subheader("🚗 车主端")
+    if "driver_health_check" not in st.session_state:
+        st.session_state.driver_health_check = None
+    if st.session_state.driver_health_check is None:
+        with st.spinner("探测车主端..."):
+            st.session_state.driver_health_check = check_driver_health()
+    dh = st.session_state.driver_health_check
+    if not dh.get("web_url"):
+        st.warning("⚠️ 未配置车主端地址（PARKING_DRIVER_WEB_URL）")
+    else:
+        dc1, dc2, dc3 = st.columns(3)
+        with dc1:
+            _metric("车主端在线", "✅ 是" if dh.get("web_online") else "❌ 否",
+                    "good" if dh.get("web_online") else "bad")
+        with dc2:
+            _metric("研究运行时", "✅ 是" if dh.get("research_runtime_ok") else "❌ 否",
+                    "good" if dh.get("research_runtime_ok") else "bad")
+        with dc3:
+            _metric("推送对接", "✅ 已配置" if dh.get("push_configured") else "⚠️ 未配置")
+        if dh.get("message"):
+            st.warning(f"⚠️ {dh['message']}")
+    st.caption(f"探测时间：{dh.get('checked_at')}")
 
     # ── 前端 UI 兼容性检测（use_container_width 废弃预警）──
     st.markdown("---")
