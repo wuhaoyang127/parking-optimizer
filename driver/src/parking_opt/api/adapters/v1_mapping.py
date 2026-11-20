@@ -17,6 +17,7 @@ def v1_layout_mapping(route_service, layout: Layout, costs: CostSnapshot) -> dic
             *(item.access_node_id for item in layout.buffers),
         }
     )
+    edge_by_id = {item.edge_id: item for item in layout.edges}
     path_costs: list[dict[str, Any]] = []
     for from_node in relevant_nodes:
         for to_node in relevant_nodes:
@@ -30,9 +31,7 @@ def v1_layout_mapping(route_service, layout: Layout, costs: CostSnapshot) -> dic
                 dict.fromkeys(
                     zone
                     for edge_id in route.edge_ids
-                    for zone in next(
-                        item for item in layout.edges if item.edge_id == edge_id
-                    ).channel_zone_ids
+                    for zone in edge_by_id[edge_id].channel_zone_ids
                 )
             )
             path_costs.append(
