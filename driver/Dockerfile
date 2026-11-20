@@ -37,7 +37,7 @@ COPY --from=web /web/dist ./apps/web/dist
 # 研究算法运行时：「推送到车主端」校验/执行发布的研究算法（driver_bridge + 研究端 src/parking_opt）
 COPY driver_bridge ./research/driver_bridge
 COPY src/parking_opt ./research/src/parking_opt
-ENV PARKING_RESEARCH_ROOT=/research
+ENV PARKING_RESEARCH_ROOT=/app/research
 
 EXPOSE 8000
 
