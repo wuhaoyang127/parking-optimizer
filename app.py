@@ -1,5 +1,6 @@
 """智能停车场优化系统 — 多页面导航版（瘦入口，页面逻辑在 src/ui/）"""
 
+import html
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
@@ -41,7 +42,7 @@ with st.sidebar:
     st.markdown(f'<div style="display:flex;align-items:center;gap:8px;padding:0.3rem 0 0.8rem 0;">'
         f'<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.2);'
         f'display:flex;align-items:center;justify-content:center;font-size:1rem">🚗</div>'
-        f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{st.session_state.username}</div>'
+        f'<div><div style="font-weight:700;font-size:0.9rem;color:white;">{html.escape(str(st.session_state.username))}</div>'
         f'<div style="font-size:0.7rem;color:rgba(255,255,255,0.7);">{role["label"]}</div></div></div>',
         unsafe_allow_html=True)
     render_driver_connect_panel()
