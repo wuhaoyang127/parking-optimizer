@@ -5,6 +5,7 @@
 坐标原样保留，供后续 2D/3D 渲染复用。
 """
 from __future__ import annotations
+import hashlib
 import logging
 from datetime import UTC, datetime
 
@@ -176,8 +177,22 @@ def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
     return result
 
 
+def _offsite_estimates_for(lot_id: str, refs: tuple[str, ...]) -> tuple[OffsiteEstimate, ...]:
+    """为推送布局生成稳定伪随机的离场估价（接入地图前用，后续换真实值）。
+
+    按 lot_id + 参考点做 sha256 取伪随机，保证重启后数值稳定，且量级合理。
+    """
+    estimates = []
+    for ref in refs:
+        digest = hashlib.sha256(f"{lot_id}:{ref}".encode()).hexdigest()
+        distance_m = 300 + int(digest[:6], 16) % 1200  # 300~1500 米
+        eta_s = 90 + int(digest[6:12], 16) % 300       # 90~390 秒（1.5~6.5 分钟）
+        estimates.append(OffsiteEstimate(reference_id=ref, distance_m=distance_m, eta_s=eta_s))
+    return tuple(estimates)
+
+
 def with_pushed_lots(area: DiscoveryArea, pushed: dict[str, ScenarioBundle]) -> DiscoveryArea:
-    """把推送布局追加到发现区（默认位置与估价），保证与 parking-lots 列表同源。"""
+    """把推送布局追加到发现区（默认位置 + 稳定伪随机估价），保证与 parking-lots 列表同源。"""
     refs = tuple(item.reference_id for item in area.references)
     lots = list(area.lots)
     for i, lot_id in enumerate(sorted(pushed)):
@@ -185,8 +200,6 @@ def with_pushed_lots(area: DiscoveryArea, pushed: dict[str, ScenarioBundle]) -> 
             parking_lot_id=lot_id,
             opening_hours_label="自定义布局",
             position=DiscoveryPosition(x_pct=48 + (i % 3) * 8, y_pct=48 + (i // 3) * 8),
-            offsite_estimates=tuple(
-                OffsiteEstimate(reference_id=ref, distance_m=800, eta_s=180) for ref in refs
-            ),
+            offsite_estimates=_offsite_estimates_for(lot_id, refs),
         ))
     return area.model_copy(update={"lots": tuple(lots)})
