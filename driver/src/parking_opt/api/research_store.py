@@ -1,17 +1,23 @@
 """Single-host persistent release, activation CAS, and execution audit storage."""
 import json
+import logging
 from pathlib import Path
 import sqlite3
+import threading
+import time
 from threading import RLock
 from datetime import datetime, UTC
 from parking_opt.api.research_runtime import canonical_hash
 from parking_opt.api.research_lifecycle import TrialLifecycleMixin
 
+LOGGER = logging.getLogger(__name__)
+
 
 class ReleaseStore(TrialLifecycleMixin):
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, sync="auto"):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.lock = RLock()
+        self.sync = sync if callable(sync) else None
         self.db = sqlite3.connect(path, check_same_thread=False)
         self.db.executescript("""
             CREATE TABLE IF NOT EXISTS releases (id TEXT PRIMARY KEY, hash TEXT, data TEXT,
@@ -26,6 +32,8 @@ class ReleaseStore(TrialLifecycleMixin):
         """)
         self._migrate()
         self.db.commit()
+        if sync == "auto":
+            self._auto_attach()
 
     def _migrate(self):
         cols = {r[1] for r in self.db.execute("PRAGMA table_info(releases)")}
@@ -112,3 +120,70 @@ class ReleaseStore(TrialLifecycleMixin):
                 self.db.commit()
                 return snapshot
             return old
+
+    # ── 快照持久化（Supabase）──
+    def snapshot(self):
+        """把当前全部状态序列化为可 JSON 化的快照字典。"""
+        with self.lock:
+            releases = [list(r) for r in self.db.execute(
+                "SELECT id,hash,data,validation,status,trial_started_at,"
+                "trial_ratio,research_score FROM releases ORDER BY rowid")]
+            active_hash = self.db.execute("SELECT hash FROM active WHERE id=1").fetchone()[0]
+            audit = [r[0] for r in self.db.execute("SELECT data FROM audit ORDER BY seq")]
+            observations = [list(r) for r in self.db.execute(
+                "SELECT scope,lot,data FROM observations")]
+            backup = [list(r) for r in self.db.execute(
+                "SELECT release_id,backed_up_at,expires_at FROM backup ORDER BY id")]
+        return {"releases": releases, "active_hash": active_hash, "audit": audit,
+                "observations": observations, "backup": backup}
+
+    def restore(self, snap):
+        """用快照覆盖当前本地状态（启动时从 Supabase 恢复）。"""
+        with self.lock, self.db:
+            self.db.execute("DELETE FROM releases")
+            self.db.execute("DELETE FROM audit")
+            self.db.execute("DELETE FROM observations")
+            self.db.execute("DELETE FROM backup")
+            self.db.execute("UPDATE active SET hash=?", (snap.get("active_hash"),))
+            for r in snap.get("releases", []):
+                self.db.execute(
+                    "INSERT INTO releases (id,hash,data,validation,status,"
+                    "trial_started_at,trial_ratio,research_score) VALUES (?,?,?,?,?,?,?,?)", r)
+            for a in snap.get("audit", []):
+                self.db.execute("INSERT INTO audit(data) VALUES (?)", (a,))
+            for o in snap.get("observations", []):
+                self.db.execute("INSERT INTO observations (scope,lot,data) VALUES (?,?,?)", o)
+            for b in snap.get("backup", []):
+                self.db.execute(
+                    "INSERT INTO backup (release_id,backed_up_at,expires_at) VALUES (?,?,?)", b)
+
+    def attach_sync(self, sync_fn):
+        """挂接 Supabase 快照同步，并启动后台定时落盘线程。"""
+        self.sync = sync_fn
+        threading.Thread(target=self._sync_loop, daemon=True).start()
+
+    def _auto_attach(self):
+        """默认路径：从 Supabase 恢复上次快照并启动后台同步；不可用则降级为本地 SQLite。"""
+        try:
+            from parking_opt.api.research_supabase import pull_state, push_state
+            snap = pull_state()
+            if snap:
+                self.restore(snap)
+            self.attach_sync(push_state)
+        except Exception:
+            LOGGER.warning("车主端持久化不可用，降级为本地 SQLite", exc_info=True)
+
+    def _sync_loop(self):
+        last = None
+        while True:
+            time.sleep(5)
+            if self.sync is None:
+                continue
+            try:
+                snap = self.snapshot()
+                h = canonical_hash(snap)
+                if h != last:
+                    self.sync(snap)
+                    last = h
+            except Exception:
+                LOGGER.warning("车主端状态持久化失败（下次启动从上次快照恢复）", exc_info=True)
