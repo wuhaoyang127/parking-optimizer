@@ -20,6 +20,10 @@ class FacilityNotFoundError(FacilityDataError):
     """The public facility catalog has no requested parking lot."""
 
 
+class FacilityLayoutUnavailableError(FacilityDataError):
+    """The parking lot exists but has no 2D complete facility layout (e.g. pushed layout)."""
+
+
 class FacilityVersionConflictError(FacilityDataError):
     """The request references a stale or mismatched facility state."""
 

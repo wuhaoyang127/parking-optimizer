@@ -11,6 +11,7 @@ from parking_opt.api.availability import project_parking_lots
 from parking_opt.api.discovery import DiscoveryDataSource, DiscoveryDataUnavailableError
 from parking_opt.api.facility import (
     FacilityDataUnavailableError,
+    FacilityLayoutUnavailableError,
     FacilityNotFoundError,
     FacilityVersionConflictError,
     ParkingFacilityDataSource,
@@ -110,7 +111,14 @@ def register_read_routes(app: FastAPI) -> None:
                 raise FacilityDataUnavailableError("facility layout scope mismatch")
             return layout
         except FacilityNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+            from parking_opt.api.sources import ParkingLotNotFoundError
+            try:
+                request.app.state.data_source.get_bundle(parking_lot_id)
+            except ParkingLotNotFoundError:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            raise FacilityLayoutUnavailableError(
+                f"this parking lot has no 2D floor plan: {parking_lot_id}"
+            ) from exc
         except FacilityDataUnavailableError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
     @app.get("/api/v2/parking-lots/{parking_lot_id}/facility-state", response_model=ParkingFacilityStateSnapshot, responses={404: ERROR_RESPONSES[404], 422: ERROR_RESPONSES[422], 503: ERROR_RESPONSES[503]}, tags=["parking-lots"])

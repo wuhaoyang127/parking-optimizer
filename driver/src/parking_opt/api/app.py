@@ -26,6 +26,7 @@ from parking_opt.api.discovery import (
 )
 from parking_opt.api.dynamic_costs import DynamicCostService
 from parking_opt.api.facility import (
+    FacilityLayoutUnavailableError,
     ParkingFacilityDataSource,
     UnavailableParkingFacilityDataSource,
 )
@@ -161,6 +162,10 @@ def create_app(
         code_by_status = {404: "RESOURCE_NOT_FOUND", 409: "CAPABILITY_CONFLICT", 503: "DATA_SOURCE_UNAVAILABLE"}
         payload = ErrorResponse(code=code_by_status.get(exc.status_code, "HTTP_ERROR"), message=str(exc.detail), request_id=request.state.request_id)
         return JSONResponse(status_code=exc.status_code, content=payload.model_dump(mode="json"), headers={"X-Request-ID": payload.request_id})
+    @app.exception_handler(FacilityLayoutUnavailableError)
+    async def facility_layout_unavailable(request: Request, exc: FacilityLayoutUnavailableError) -> JSONResponse:
+        payload = ErrorResponse(code="FACILITY_LAYOUT_UNAVAILABLE", message=str(exc), request_id=request.state.request_id)
+        return JSONResponse(status_code=404, content=payload.model_dump(mode="json"), headers={"X-Request-ID": payload.request_id})
     @app.exception_handler(RequestValidationError)
     async def contract_error(request: Request, exc: RequestValidationError) -> JSONResponse:
         details = tuple(

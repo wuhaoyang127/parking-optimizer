@@ -90,7 +90,7 @@ export function FacilityLayoutPage() {
 
   if (parkingLotId === undefined) return <section className="state-panel"><span aria-hidden="true">!</span><h2>停车场 ID 缺失</h2><p>请从停车场列表进入完整布局。</p><Link className="secondary-action" to="/parking">返回停车场列表</Link></section>;
   if (page.status === "loading" || (page.status === "ready" && page.snapshot.layout.parking_lot_id !== parkingLotId)) return <section className="facility-page" aria-busy="true"><div className="facility-page-heading"><span>完整布局</span><h1>正在读取停车场</h1></div><div className="facility-loading" /></section>;
-  if (page.status === "error") return <section className="state-panel"><span aria-hidden="true">!</span><h2>{page.error.status === 404 ? "未找到该停车场" : "完整布局暂时不可用"}</h2><p>{page.error.message}</p><button type="button" onClick={() => { setPage({ status: "loading" }); setReloadKey((value) => value + 1); }}>重新加载</button><Link className="secondary-action" to="/parking">返回停车场列表</Link></section>;
+  if (page.status === "error") return <section className="state-panel"><span aria-hidden="true">!</span><h2>{page.error.code === "FACILITY_LAYOUT_UNAVAILABLE" ? "此停车场暂不支持平面图" : page.error.status === 404 ? "未找到该停车场" : "完整布局暂时不可用"}</h2><p>{page.error.code === "FACILITY_LAYOUT_UNAVAILABLE" ? "该停车场尚未生成 2D 平面图，3D 展示正在建设中；推荐、行程与导航功能不受影响。" : page.error.message}</p><button type="button" onClick={() => { setPage({ status: "loading" }); setReloadKey((value) => value + 1); }}>重新加载</button><Link className="secondary-action" to="/parking">返回停车场列表</Link></section>;
 
   const { snapshot } = page;
   const floorId = searchParams.get("floor") ?? snapshot.layout.default_floor_id;
