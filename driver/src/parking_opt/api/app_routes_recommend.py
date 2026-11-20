@@ -100,6 +100,12 @@ def register_recommend_routes(app: FastAPI) -> None:
         except ParkingDataUnavailableError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         nodes = {item.node_id: item for item in bundle.layout.nodes}
+        demo_profile = None
+        if session_id is not None and isinstance(source, PublicFacilityDataSource):
+            try:
+                demo_profile = source.get_driver_demo_profile(parking_lot_id, session_id=session_id)
+            except FacilityNotFoundError:
+                demo_profile = None
         return DriverRecommendationContext(
             observed_at=request.app.state.session_store.current_wall_time(),
             scenario_id=bundle.scenario_id,
@@ -109,11 +115,7 @@ def register_recommend_routes(app: FastAPI) -> None:
             spaces=bundle.layout.spaces,
             tandem_groups=bundle.layout.tandem_groups,
             data_source=bundle.parking_lot.data_source,
-            demo_profile=(
-                source.get_driver_demo_profile(parking_lot_id, session_id=session_id)
-                if session_id is not None and isinstance(source, PublicFacilityDataSource)
-                else None
-            ),
+            demo_profile=demo_profile,
         )
 
     @app.post(
