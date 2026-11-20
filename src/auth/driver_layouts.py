@@ -15,9 +15,11 @@ def _settings() -> tuple[str, str]:
     return url, key
 
 
-def _rest(method: str, path: str, key: str, payload=None) -> str:
+def _rest(method: str, path: str, key: str, payload=None, prefer: str | None = None) -> str:
     headers = {"apikey": key, "Authorization": "Bearer " + key,
                "Content-Type": "application/json", "User-Agent": "streamlit-server"}
+    if prefer:
+        headers["Prefer"] = prefer
     req = Request(_settings()[0] + "/rest/v1/" + path, method=method,
                   data=None if payload is None else json.dumps(payload, ensure_ascii=False).encode(),
                   headers=headers)
@@ -46,5 +48,6 @@ def push_driver_layout(layout: dict) -> bool:
     _, key = _settings()
     items = [x for x in list_driver_layouts() if x.get("id") != layout.get("id")]
     items.append(layout)
-    _rest("POST", "app_settings", key, payload={"key": LAYOUTS_KEY, "value": items})
+    _rest("POST", "app_settings", key, payload={"key": LAYOUTS_KEY, "value": items},
+          prefer="resolution=merge-duplicates")
     return True
