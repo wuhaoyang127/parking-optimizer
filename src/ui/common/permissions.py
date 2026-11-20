@@ -8,11 +8,12 @@
 
 # ── 板块（页面）权限 ──
 SECTION_KEYS = ["settings", "system", "layout", "path", "metrics",
-                "history", "algo_import", "status", "feedback"]
+                "history", "algo_import", "layout_push", "status", "feedback"]
 SECTION_LABELS = {
     "settings": "⚙️ 仿真设置", "system": "🔧 系统设置", "layout": "🅿️ 停车场布局图",
     "path": "🚗 动态路径", "metrics": "📊 指标分析", "history": "📜 历史运行",
-    "algo_import": "🧩 新算法接入", "status": "🚨 系统状态", "feedback": "💬 反馈",
+    "algo_import": "🧩 新算法接入", "layout_push": "📤 布局推送",
+    "status": "🚨 系统状态", "feedback": "💬 反馈",
 }
 DEFAULT_CUSTOM_SECTIONS = ["settings", "layout", "path", "metrics", "history", "feedback"]
 

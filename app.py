@@ -12,7 +12,7 @@ from ui.common.driver_launch import render_driver_connect_panel
 from ui.pages import (
     render_settings, render_system, render_layout_page, render_path_page,
     render_metrics_page, render_algo_import_page, render_status_page, render_feedback_page,
-    render_history_page,
+    render_history_page, render_layout_push,
 )
 
 st.set_page_config(page_title="智能停车场优化", page_icon="🚗", layout="wide")
@@ -29,6 +29,7 @@ PAGE_RENDERERS = {
     "metrics": render_metrics_page,
     "history": render_history_page,
     "algo_import": render_algo_import_page,
+    "layout_push": render_layout_push,
     "status": render_status_page,
     "feedback": render_feedback_page,
 }

@@ -16,5 +16,6 @@ from ui.pages.metrics_page import render_metrics_page  # noqa: F401
 from ui.pages.history_page import render_history_page  # noqa: F401
 from ui.pages.algo_import_page import render_algo_import_page  # noqa: F401
 from ui.pages.algo_push import render_algo_push_section, _best_algo_from_runs, _owner_app_connected  # noqa: F401
+from ui.pages.layout_push_page import render_layout_push  # noqa: F401
 from ui.pages.status_page import render_status_page  # noqa: F401
 from ui.pages.feedback_page import render_feedback_page  # noqa: F401
