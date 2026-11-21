@@ -20,3 +20,9 @@ GRANT driver_app TO authenticator;
 -- 只授权 app_settings，不授权 users / sim_runs 等
 GRANT USAGE ON SCHEMA public TO driver_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.app_settings TO driver_app;
+
+-- app_settings 已开 RLS，给 driver_app 放行（幂等）
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS driver_app_all ON public.app_settings;
+CREATE POLICY driver_app_all ON public.app_settings
+  FOR ALL TO driver_app USING (true) WITH CHECK (true);
