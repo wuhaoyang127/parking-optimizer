@@ -98,7 +98,8 @@ export function RecommendationPage() {
       journey !== null && journey !== undefined &&
       recommendation !== null && recommendation !== undefined &&
       driver !== null && driver !== undefined &&
-      ACTIVE_STATES.has(journey.state)
+      ACTIVE_STATES.has(journey.state) &&
+      (parkingLotId === null || journey.parking_lot_id === parkingLotId)
     ) {
       const recovered: JourneyRecommendation = {
         schema_version: "2.0.0",
@@ -125,7 +126,7 @@ export function RecommendationPage() {
     }
     setResult(null);
     return false;
-  }, [navigate]);
+  }, [navigate, parkingLotId]);
 
   useEffect(() => {
     void (async () => {
