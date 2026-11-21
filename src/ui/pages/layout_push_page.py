@@ -31,8 +31,8 @@ def render_layout_push(role):
             lot_id = "lot-push-" + hashlib.sha256(selected.encode("utf-8")).hexdigest()[:10]
             try:
                 from auth.driver_layouts import push_driver_layout
-                push_driver_layout({"id": lot_id, "name": labels[selected],
-                                    "venue_type": venue, "data": data})
+                push_driver_layout(st.session_state.token, {"id": lot_id, "name": labels[selected],
+                                                            "venue_type": venue, "data": data})
                 st.success(f"已推送「{labels[selected]}」到车主端（lot_id={lot_id}）。"
                            "车主端重新部署后即可在停车场列表看到。")
             except Exception as e:

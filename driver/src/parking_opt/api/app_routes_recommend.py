@@ -9,7 +9,7 @@ from parking_opt.api.app_contracts import (
     RequiredSessionIdHeader,
     SessionIdHeader,
 )
-from parking_opt.api.app_helpers import driver_bundle
+from parking_opt.api.app_helpers import driver_bundle, require_driver_session
 from parking_opt.api.facility import FacilityDataUnavailableError, FacilityNotFoundError, FacilityVersionConflictError
 from parking_opt.api.facility_scenarios import PublicFacilityDataSource
 from parking_opt.api.models import (
@@ -192,9 +192,9 @@ def register_recommend_routes(app: FastAPI) -> None:
         responses={404: ERROR_RESPONSES[404]},
         tags=["journeys"],
     )
-    def get_journey(journey_id: str, request: Request) -> Journey:
-        store: InMemorySessionStore = request.app.state.session_store
-        record = store.refresh_journey(journey_id)
+    def get_journey(journey_id: str, request: Request, session_id: SessionIdHeader = None) -> Journey:
+        record = request.app.state.session_store.refresh_journey(journey_id)
         if record is None:
             raise JourneyNotFoundError(f"unknown journey: {journey_id}")
+        require_driver_session(record, session_id)
         return journey_to_contract(record)

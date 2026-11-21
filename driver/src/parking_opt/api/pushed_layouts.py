@@ -1,9 +1,4 @@
-"""研究端 nodes/edges 布局 → 车主端 v2 ScenarioBundle 转换器（布局推送用）。
-
-把研究端自定义布局（nodes: entry/exit/road/spot，edges: from/to/distance）
-转换成车主端推荐引擎需要的 ScenarioBundle（ParkingLot + Layout + CostSnapshot）。
-坐标原样保留，供后续 2D/3D 渲染复用。
-"""
+"""研究端 nodes/edges 布局 → 车主端 ScenarioBundle 转换器（布局推送用）。"""
 from __future__ import annotations
 import hashlib
 import logging
@@ -178,19 +173,14 @@ def load_pushed_scenarios() -> dict[str, ScenarioBundle]:
 
 
 def _offsite_estimates_for(lot_id: str, refs: tuple[str, ...]) -> tuple[OffsiteEstimate, ...]:
-    """为推送布局生成稳定伪随机的离场估价（接入地图前用，后续换真实值）。
-
-    距离按 300~1500 米取伪随机；时间 = 距离 / 车速，车速按 3.5~5.5 m/s 取伪随机，
-    用「红绿灯 + 路况」带来的速度差异让时间与距离大体匹配但非严格线性。
-    """
-    estimates = []
+    """稳定伪随机离场估价：距离 300~1500m，时间=距离/车速(3.5~5.5m/s 模拟红绿灯路况)。"""
+    out = []
     for ref in refs:
-        digest = hashlib.sha256(f"{lot_id}:{ref}".encode()).hexdigest()
-        distance_m = 300 + int(digest[:6], 16) % 1200
-        speed_mps = 3.5 + (int(digest[6:10], 16) % 200) / 100.0
-        eta_s = max(45, round(distance_m / speed_mps))
-        estimates.append(OffsiteEstimate(reference_id=ref, distance_m=distance_m, eta_s=eta_s))
-    return tuple(estimates)
+        d = hashlib.sha256(f"{lot_id}:{ref}".encode()).hexdigest()
+        distance = 300 + int(d[:6], 16) % 1200
+        speed = 3.5 + (int(d[6:10], 16) % 200) / 100.0
+        out.append(OffsiteEstimate(reference_id=ref, distance_m=distance, eta_s=max(45, round(distance / speed))))
+    return tuple(out)
 
 
 def with_pushed_lots(area: DiscoveryArea, pushed: dict[str, ScenarioBundle]) -> DiscoveryArea:
