@@ -38,6 +38,19 @@ from parking_opt.api.sources import (
     ParkingDataUnavailableError,
     ParkingLotNotFoundError,
 )
+
+
+def _raise_facility_missing(request: Request, parking_lot_id: str, exc: Exception) -> None:
+    """推送布局存在于公共数据源但无 2D 设施布局 → FACILITY_LAYOUT_UNAVAILABLE；否则 404。"""
+    try:
+        request.app.state.data_source.get_bundle(parking_lot_id)
+    except ParkingLotNotFoundError:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    raise FacilityLayoutUnavailableError(
+        f"this parking lot has no 2D floor plan: {parking_lot_id}"
+    ) from exc
+
+
 def register_read_routes(app: FastAPI) -> None:
     @app.get("/api/v2/health", response_model=HealthResponse, tags=["system"])
     def health(request: Request) -> HealthResponse:
@@ -111,14 +124,7 @@ def register_read_routes(app: FastAPI) -> None:
                 raise FacilityDataUnavailableError("facility layout scope mismatch")
             return layout
         except FacilityNotFoundError as exc:
-            from parking_opt.api.sources import ParkingLotNotFoundError
-            try:
-                request.app.state.data_source.get_bundle(parking_lot_id)
-            except ParkingLotNotFoundError:
-                raise HTTPException(status_code=404, detail=str(exc)) from exc
-            raise FacilityLayoutUnavailableError(
-                f"this parking lot has no 2D floor plan: {parking_lot_id}"
-            ) from exc
+            _raise_facility_missing(request, parking_lot_id, exc)
         except FacilityDataUnavailableError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
     @app.get("/api/v2/parking-lots/{parking_lot_id}/facility-state", response_model=ParkingFacilityStateSnapshot, responses={404: ERROR_RESPONSES[404], 422: ERROR_RESPONSES[422], 503: ERROR_RESPONSES[503]}, tags=["parking-lots"])
@@ -138,7 +144,7 @@ def register_read_routes(app: FastAPI) -> None:
                 raise FacilityDataUnavailableError(str(exc)) from exc
             return state_snapshot
         except FacilityNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+            _raise_facility_missing(request, parking_lot_id, exc)
         except FacilityDataUnavailableError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
     @app.post("/api/v2/parking-lots/{parking_lot_id}/route-previews", response_model=RoutePreview, responses={404: ERROR_RESPONSES[404], 409: ERROR_RESPONSES[409], 422: ERROR_RESPONSES[422], 503: ERROR_RESPONSES[503]}, tags=["parking-lots"])
@@ -168,7 +174,7 @@ def register_read_routes(app: FastAPI) -> None:
                 raise FacilityDataUnavailableError(str(exc)) from exc
             return preview
         except FacilityNotFoundError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+            _raise_facility_missing(request, parking_lot_id, exc)
         except FacilityVersionConflictError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except FacilityDataUnavailableError as exc:
